@@ -7,12 +7,14 @@ using UnityEngine.InputSystem;
 public class Character : NetworkBehaviour
 {
     private PMovement movement;
-   
+    private WeaponSwitcher weaponSwitcher;
+
 
     private void Awake()
     {
         movement = GetComponent<PMovement>();
-        
+        weaponSwitcher = GetComponentInChildren<WeaponSwitcher>();
+
     }
 
 
@@ -31,5 +33,38 @@ public class Character : NetworkBehaviour
         {
             movement.TryJump();
         }
+    }
+
+    public void OnSelectWeapon1(InputAction.CallbackContext context)
+    {
+      
+        if (IsOwner && context.performed)
+            weaponSwitcher.SelectWeapon(-1);
+
+    }
+
+    public void OnSelectWeapon2(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.SelectWeapon(0);
+    }
+
+    public void OnSelectWeapon3(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.SelectWeapon(1);
+    }
+
+    public void OnShoot(InputAction.CallbackContext context)
+    {
+        
+        if (IsOwner && context.performed)
+            weaponSwitcher.Shoot(context);
+    }
+
+    public void OnReload(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.Reload(context);
     }
 }

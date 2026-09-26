@@ -11,7 +11,7 @@ public class WeaponSwitcher : NetworkBehaviour
     public AudioClip switchSound;
     public AmmoUI ammoUI;
 
-    private Shoot currentWeaponShoot;
+    private ShootLogic currentWeaponShoot;
 
     private NetworkVariable<int> networkWeaponIndex = new NetworkVariable<int>(
         -1,
@@ -19,7 +19,10 @@ public class WeaponSwitcher : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
+    /// <summary>Índice del arma actualmente seleccionada (sincronizado por red).</summary>
     public int CurrentWeaponIndex => networkWeaponIndex.Value;
+
+    /// <summary>Cantidad total de armas configuradas.</summary>
     public int WeaponCount => weapons.Length;
 
     public override void OnNetworkSpawn()
@@ -113,6 +116,7 @@ public class WeaponSwitcher : NetworkBehaviour
             if (weapons[i] == null) continue;
 
             bool isSelected = (i == index);
+            // "true" incluye componentes en hijos inactivos, por las dudas
             foreach (var renderer in weapons[i].GetComponentsInChildren<Renderer>(true))
             {
                 renderer.enabled = isSelected;
@@ -120,6 +124,7 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
+    /// <summary>Selecciona el arma en el índice dado. Llamado por WeaponInput.</summary>
     public void SelectWeapon(int index)
     {
         UpdateWeaponVisuals(index);
@@ -138,6 +143,7 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
+    /// <summary>Reenvía el disparo al arma actualmente seleccionada. Llamado por WeaponInput.</summary>
     public void Shoot(InputAction.CallbackContext context)
     {
         if (currentWeaponShoot != null)
@@ -145,6 +151,8 @@ public class WeaponSwitcher : NetworkBehaviour
             currentWeaponShoot.OnShoot(context);
         }
     }
+
+    /// <summary>Reenvía la recarga al arma actualmente seleccionada. Llamado por WeaponInput.</summary>
     public void Reload(InputAction.CallbackContext context)
     {
         if (currentWeaponShoot != null)
@@ -153,10 +161,11 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
-    public Shoot GetShootAt(int index)
+    /// <summary>Devuelve el componente ShootLogic del arma en ese índice, o null si no hay. Usado por WeaponPowerUps.</summary>
+    public ShootLogic GetShootAt(int index)
     {
         return (index >= 0 && index < weapons.Length && weapons[index] != null)
-            ? weapons[index].GetComponent<Shoot>()
+            ? weapons[index].GetComponent<ShootLogic>()
             : null;
     }
 

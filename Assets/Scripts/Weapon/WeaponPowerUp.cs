@@ -27,7 +27,7 @@ public class WeaponPowerUp : NetworkBehaviour
 
         for (int i = 0; i < weaponSwitcher.WeaponCount; i++)
         {
-            Shoot shootComponent = weaponSwitcher.GetShootAt(i);
+            ShootLogic shootComponent = weaponSwitcher.GetShootAt(i);
             shootComponent?.AddReserveAmmo(amount);
         }
     }

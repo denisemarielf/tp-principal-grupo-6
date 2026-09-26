@@ -26,7 +26,7 @@ public class AmmoManager : MonoBehaviour
         currentAmmo = magazineSize;
     }
 
-  
+    /// <summary>Descuenta una bala del cargador. Llamar solo si HasAmmo es true.</summary>
     public void ConsumeShot()
     {
         currentAmmo--;

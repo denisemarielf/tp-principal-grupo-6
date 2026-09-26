@@ -4,7 +4,7 @@ using TMPro;
 public class AmmoUI : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    private Shoot currentShoot;
+    private ShootLogic currentShoot;
     [SerializeField] private TMP_Text clipSize;
     [SerializeField] private TMP_Text ammoRemaining;
 
@@ -16,7 +16,7 @@ public class AmmoUI : MonoBehaviour
     }
 
 
-    public void SetWeapon(Shoot weapon)
+    public void SetWeapon(ShootLogic weapon)
     {
         currentShoot = weapon;
         UpdateAmmoUI();
