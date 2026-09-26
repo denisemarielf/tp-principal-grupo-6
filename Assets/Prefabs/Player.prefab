@@ -96,7 +96,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: a
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -206,8 +206,9 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2111710071635218752}
   - {fileID: 5519863314142599088}
+  - {fileID: 2111710071635218752}
+  - {fileID: 6553770985854529722}
   - {fileID: 8199481190134059020}
   - {fileID: 6722369151651382974}
   m_Father: {fileID: 0}
@@ -629,12 +630,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4649564465121990177}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.32300007, y: 0.16399956, z: -0.579}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 5519863314142599088}
+  m_Father: {fileID: 6553770985854529722}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &5743687346431982588
 Camera:
@@ -882,13 +883,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5882455863281091098}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.323, y: -0.164, z: 0.579}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.26049006, y: 0.4470005, z: 0.53627}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7162096218806923419}
-  m_Father: {fileID: 5519863314142599088}
+  - {fileID: 1558741388325472026}
+  m_Father: {fileID: 8278241215752657282}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7975292663152841441
 GameObject:
@@ -922,9 +924,7 @@ Transform:
   m_LocalPosition: {x: -0.06251, y: 0.61100006, z: -0.042729974}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 6553770985854529722}
-  - {fileID: 1558741388325472026}
+  m_Children: []
   m_Father: {fileID: 8278241215752657282}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &5868556828970376066
@@ -1044,7 +1044,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraControllerFPS
   ShowTopMostFoldoutHeaderGroup: 1
   sensitivity: 5
-  weaponPivot: {fileID: 0}
+  weaponPivot: {fileID: 6553770985854529722}
 --- !u!1 &8129078867365746841
 GameObject:
   m_ObjectHideFlags: 0
@@ -1160,7 +1160,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: a
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
