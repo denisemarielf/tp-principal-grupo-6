@@ -13,6 +13,10 @@ public class AmmoManager : MonoBehaviour
     [SerializeField] private AudioClip reloadSound;
     [SerializeField] private AudioClip emptySound;
 
+    /*
+    [Header("Visual")]
+    [SerializeField] private WeaponSway weaponSway; */
+
     private int currentAmmo;
     private bool isReloading = false;
 
@@ -24,9 +28,19 @@ public class AmmoManager : MonoBehaviour
     private void Awake()
     {
         currentAmmo = magazineSize;
+
+      //  FindWeaponsway();
     }
 
-    /// <summary>Descuenta una bala del cargador. Llamar solo si HasAmmo es true.</summary>
+    /*
+    private void FindWeaponsway()
+    {
+        if (weaponSway == null)
+            weaponSway = GetComponentInParent<WeaponSway>();
+
+        if (weaponSway == null)
+            weaponSway = GetComponentInChildren<WeaponSway>();
+    }*/
     public void ConsumeShot()
     {
         currentAmmo--;
@@ -50,6 +64,8 @@ public class AmmoManager : MonoBehaviour
     {
         isReloading = true;
         PlayReloadSound();
+      //  weaponSway?.PlayReloadDip(reloadTime); // NUEVO
+
         yield return new WaitForSeconds(reloadTime);
         int ammoNeeded = magazineSize - currentAmmo;
         int ammoToLoad = Mathf.Min(ammoNeeded, reserveAmmo);

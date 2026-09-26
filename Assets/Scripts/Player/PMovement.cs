@@ -13,6 +13,8 @@ public class PMovement : NetworkBehaviour
     [SerializeField] private float jumpHeight = 3.5f;
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private Animator animator;
+    public Vector2 MoveInput => moveInput;
+    public bool IsGrounded => controller != null && controller.isGrounded;
 
     private CharacterController controller;
     private Vector2 moveInput;

@@ -99,6 +99,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7366450088628311224}
+  - component: {fileID: 2877971320943349927}
   - component: {fileID: -819757449049607138}
   - component: {fileID: 8227139647498267238}
   - component: {fileID: 6083373331801020035}
@@ -127,6 +128,33 @@ Transform:
   - {fileID: 1492890254992362748}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2877971320943349927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2551779756491308786}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3932423697
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &-819757449049607138
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -277,6 +305,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   reloadSound: {fileID: 0}
   emptySound: {fileID: 0}
+  weaponSway: {fileID: 264646383216885656}
 --- !u!1 &2697004007442480403
 GameObject:
   m_ObjectHideFlags: 0
@@ -419,10 +448,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSway
   ShowTopMostFoldoutHeaderGroup: 1
+  bobFrequency: 2
+  bobAmount: 0.02
+  breathingFrequency: 1.5
+  breathingAmount: 0.004
   swayAmount: 15
   mouseSensitivity: 1.25
   recoilKick: 5
   recoilRecoverySpeed: 6
+  reloadDipAmount: 0.15
 --- !u!1 &7190517475149102801
 GameObject:
   m_ObjectHideFlags: 0

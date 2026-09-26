@@ -12,6 +12,7 @@ public class ShootLogic : NetworkBehaviour
     private AmmoManager ammoManager;
     private WeaponLogic weaponLogic;
 
+
     private void Awake()
     {
         ammoManager = GetComponent<AmmoManager>();
