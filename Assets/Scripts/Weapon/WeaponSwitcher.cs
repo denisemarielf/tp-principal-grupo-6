@@ -11,6 +11,9 @@ public class WeaponSwitcher : NetworkBehaviour
     public AudioClip switchSound;
     public AmmoUI ammoUI;
 
+    [Header("Brazos (se ocultan cuando no hay arma equipada)")]
+    public GameObject armsModel;
+
     private ShootLogic currentWeaponShoot;
 
     private NetworkVariable<int> networkWeaponIndex = new NetworkVariable<int>(
@@ -130,6 +133,13 @@ public class WeaponSwitcher : NetworkBehaviour
         UpdateWeaponVisuals(index);
 
         currentWeaponShoot = GetShootAt(index);
+
+        // Sin arma equipada (currentWeaponShoot null), no tiene sentido mostrar
+        // las manos sosteniendo algo que no existe.
+        if (armsModel != null)
+        {
+            armsModel.SetActive(currentWeaponShoot != null);
+        }
 
         if (ammoUI != null)
         {
