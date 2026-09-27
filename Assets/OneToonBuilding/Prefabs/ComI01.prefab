@@ -1,0 +1,224 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1252777116895276659
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3754696747696856879}
+  - component: {fileID: 8844384956933069840}
+  - component: {fileID: 5827123803835815786}
+  - component: {fileID: 8321241515859345969}
+  m_Layer: 0
+  m_Name: Placeholder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3754696747696856879
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1252777116895276659}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 6, z: 0}
+  m_LocalScale: {x: 12, y: 12, z: 12}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4787154904481601745}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &8844384956933069840
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1252777116895276659}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &5827123803835815786
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1252777116895276659}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 79b2d5ab078cdd246bfcc044c54f62c5, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &8321241515859345969
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1252777116895276659}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &2795069839801992301
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4787154904481601745}
+  - component: {fileID: 4170126992972236161}
+  m_Layer: 0
+  m_Name: ComI01
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4787154904481601745
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795069839801992301}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3754696747696856879}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4170126992972236161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2795069839801992301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e934cc0b2512d4049a929e982d47099c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  FloorLimit: 24
+  FloorsPrefabs:
+  - {fileID: 8359377039168976808, guid: f7caa602c206b284d8507a66ec2ae4de, type: 3}
+  - {fileID: 8359377039168976808, guid: e8666f0d8b99f9d4b9082cedc03827b0, type: 3}
+  - {fileID: 8359377039168976808, guid: f9c08f0c60725ff4b834764a16094319, type: 3}
+  - {fileID: 7700429954509642605, guid: cfa21516a8e1cb043935af2b76f2127d, type: 3}
+  - {fileID: 3927618030394462167, guid: efd74ca6ffb415f48a8d854f68f7e429, type: 3}
+  - {fileID: 6195736368905641647, guid: f2350d8f9f022a94bb66046641675a61, type: 3}
+  - {fileID: 8272846525942523064, guid: 74189923ff7b577419250f8160d1f764, type: 3}
+  - {fileID: 8359377039168976808, guid: 1b86674b545985c4f9ccc4c03136b49b, type: 3}
+  FloorsHight:
+  - 5.5
+  - 2.290775
+  - 2.69319
+  - 2.290775
+  StandAloneFloorHight: 5.5
+  Road: {fileID: 8117666184220828287, guid: 8542fed6e01132d4e92d098ac545bd7f, type: 3}
+  SARoad: {fileID: 1103727693902850220, guid: 37d21300b4303fa418e6b7dc99d73c69, type: 3}
+  MatWalls:
+  - {fileID: 2100000, guid: 2ab492e7e5507cc4f9e096769cb66947, type: 2}
+  - {fileID: 2100000, guid: 04522c451d872ba40a95b72742548b1e, type: 2}
+  - {fileID: 2100000, guid: e653b28ae0a72624b855af5d1f68e304, type: 2}
+  - {fileID: 2100000, guid: 97ffc7784c3c38444aad518c882d2b40, type: 2}
+  - {fileID: 2100000, guid: eb7718e3f210e2d4397868e3a14f33ff, type: 2}
+  MatConcretes:
+  - {fileID: 2100000, guid: ae58a40fa0fe45d498f48ea175ec123c, type: 2}
+  - {fileID: 2100000, guid: 1fc9bdcffaa287d4492ee3b8469476be, type: 2}
+  - {fileID: 2100000, guid: 852e9ccbf6d34e64bacf17737f3fdf27, type: 2}
+  MatDoorsWindows:
+  - {fileID: 2100000, guid: b80066bd2d019fe4796e47589aae4cfd, type: 2}
+  - {fileID: 2100000, guid: d6fffa381467a1542b76e288325ba1f1, type: 2}
+  - {fileID: 2100000, guid: 44f02ddfb533c3a418e85cd7d7ff2fff, type: 2}
+  - {fileID: 2100000, guid: bd1cbb3730157604cab383e8646356fc, type: 2}
+  MatDoorsWindowsNight:
+  - {fileID: 2100000, guid: 9a058206ef669cb4fb5aa556acbfd722, type: 2}
+  - {fileID: 2100000, guid: 28c557e84a8d38d43b355317dab8a184, type: 2}
+  - {fileID: 2100000, guid: 05171c037dd2f2e4c8d6094a2da7c6cd, type: 2}
+  - {fileID: 2100000, guid: 75170080512e14f4a96d919ec23ccd8b, type: 2}
+  MatDoors:
+  - {fileID: 2100000, guid: 74ca173b09e5acd4eb02c7576632a565, type: 2}
+  - {fileID: 2100000, guid: 11f9a4c8525b57e4da7aded39f4efa1f, type: 2}
+  - {fileID: 2100000, guid: e314693003ce1e7448f941d9e69b2836, type: 2}
+  - {fileID: 2100000, guid: 33752c71981c45b49844e4e648dac23b, type: 2}
+  MatDoorsNight:
+  - {fileID: 2100000, guid: 46a02914515274a419fc7a2aeb37c45c, type: 2}
+  - {fileID: 2100000, guid: 6ee2c403a6c91194896c0d645d231bb4, type: 2}
+  - {fileID: 2100000, guid: 55c06e1f848e06b4bbb928325ec37162, type: 2}
+  - {fileID: 2100000, guid: 0802b5e89d323f745b1719cfeb590122, type: 2}
+  DayShops:
+  - {fileID: 2100000, guid: 4d4b0a06b908372409a51ea7ab4a5798, type: 2}
+  - {fileID: 2100000, guid: 784d158ebe1cbfb44a448b4e4c878e6e, type: 2}
+  NightShops:
+  - {fileID: 2100000, guid: 942a5f009e386a54e928a54cc72dd363, type: 2}
+  - {fileID: 2100000, guid: 1330f94cb94299f4ba91990423b96710, type: 2}
+  ClosedShops:
+  - {fileID: 2100000, guid: e70a6125e17ec5146b91876caa26a7db, type: 2}
+  - {fileID: 2100000, guid: cf29d46d63d79154c861a20cfa080bf8, type: 2}
+  DayShops2:
+  - {fileID: 2100000, guid: de8bd908ae456694e93fc5a4961f4fab, type: 2}
+  - {fileID: 2100000, guid: 1d306346f192cbc4fbf88d3b1a7a4426, type: 2}
+  - {fileID: 2100000, guid: 1c79de55a8dac284abfb33d7b174dbf7, type: 2}
+  NightShops2:
+  - {fileID: 2100000, guid: 5ee880e4dcbd5c742baeaabc659e7284, type: 2}
+  - {fileID: 2100000, guid: 58464681ce504524c85dcd8f456c77ee, type: 2}
+  - {fileID: 2100000, guid: 591a117636c857c45a5fe38883421d63, type: 2}
+  ClosedShops2:
+  - {fileID: 2100000, guid: 404730d9e2df5bb41b110db1a02d54a9, type: 2}
+  - {fileID: 2100000, guid: 22894292212f82b40aa6451d9e98337d, type: 2}
+  - {fileID: 2100000, guid: 3e0bf021f230222488c478974d8058de, type: 2}
+  DayMaterials:
+  - {fileID: 2100000, guid: 496cc04d900894b4187f0796d3fba35a, type: 2}
+  - {fileID: 2100000, guid: 1a1c2f850c1198a40a5fbc5cf3f7adbd, type: 2}
+  NightMaterials:
+  - {fileID: 2100000, guid: a3c706a80cc46c145b31acfe71f27546, type: 2}
+  - {fileID: 2100000, guid: 3bd0a2db067338c439c27c5f9b103064, type: 2}
+  RandomGenericMaterials: []
+  BuildingID: 0a00000001000000010000000000000001000000000000000000000001000000
+  BBP: 00000000050000003200000032000000320000000200000003000000030000000300000004000000
+  MatsID: 0000000000000000000000000000000000000000
+  Populated: 0
