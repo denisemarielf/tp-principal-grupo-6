@@ -5546,10 +5546,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponLogic
   ShowTopMostFoldoutHeaderGroup: 1
+  projectileType: 1
   spawnPoint: {fileID: 1369646122279268066}
+  aimReference: {fileID: 0}
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 2000
   damageAmount: 120
+  hitscanRange: 100
+  hitscanLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  hitscanImpactEffect: {fileID: 0}
+  bulletTracer:
+    bullet_Tracer_prefab: {fileID: 1898068084250203151, guid: b3b8dd34eec1f60469efccd89a47f182, type: 3}
+    bullet_Tracer_Holder: {fileID: 7352687563660884943, guid: 6678920dca1e0154eaf237157e07a709, type: 3}
+    No_Of_Tracers: 300
+    tracer_Speed: 300
+    tracer_Life_Time: 2
   audioSource: {fileID: 7818307986381326826}
   shootSound: {fileID: 8300000, guid: 1d87a286b68e2ba42aa22e66ca63659d, type: 3}
   muzzleFlash: {fileID: 8647501805832917146}
@@ -5684,6 +5697,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShootLogic
   ShowTopMostFoldoutHeaderGroup: 1
   shootRate: 0.3
+  isAutomatic: 1
 --- !u!1 &7320859285263305595
 GameObject:
   m_ObjectHideFlags: 0

@@ -140,7 +140,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3932423697
+  GlobalObjectIdHash: 2802640342
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -169,6 +169,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShootLogic
   ShowTopMostFoldoutHeaderGroup: 1
   shootRate: 0.5
+  isAutomatic: 1
 --- !u!114 &8227139647498267238
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -182,10 +183,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponLogic
   ShowTopMostFoldoutHeaderGroup: 1
+  projectileType: 0
   spawnPoint: {fileID: 8272655070458586369}
+  aimReference: {fileID: 0}
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 1500
   damageAmount: 20
+  hitscanRange: 100
+  hitscanLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  hitscanImpactEffect: {fileID: 0}
+  bulletTracer:
+    bullet_Tracer_prefab: {fileID: 0}
+    bullet_Tracer_Holder: {fileID: 0}
+    No_Of_Tracers: 300
+    tracer_Speed: 300
+    tracer_Life_Time: 2
   audioSource: {fileID: 6083373331801020035}
   shootSound: {fileID: 8300000, guid: 75f49386b5437e740aa200b85c3c8cd6, type: 3}
   muzzleFlash: {fileID: 823067421703444809}
