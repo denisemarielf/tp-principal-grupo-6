@@ -26,6 +26,9 @@ public class WeaponLogic : NetworkBehaviour
     public ParticleSystem muzzleFlash;
     public WeaponSway weaponSway;
 
+    [Header("Camera Recoil (solo afecta al dueño del arma)")]
+    public CameraRecoil cameraRecoil;
+
     private void Awake()
     {
         bulletTracer?.initializeTracers();
@@ -44,6 +47,11 @@ public class WeaponLogic : NetworkBehaviour
 
         if (weaponSway != null)
             weaponSway.AddRecoil();
+    }
+
+    public void ApplyCameraRecoil(bool isAiming = false)
+    {
+        cameraRecoil?.AddRecoil(isAiming);
     }
 
     /// <summary>Pide al servidor que dispare de verdad. Llamado por ShootLogic cuando ya validó cooldown/munición.</summary>

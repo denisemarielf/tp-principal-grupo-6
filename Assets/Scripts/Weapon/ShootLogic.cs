@@ -71,6 +71,8 @@ public class ShootLogic : NetworkBehaviour
         // Efectos para mí mismo, instantáneos, sin esperar ida y vuelta al servidor
         weaponLogic.PlayShootEffectsLocal();
 
+        weaponLogic.ApplyCameraRecoil();
+
         // La bala real la crea el servidor, y desde ahí avisa al resto
         weaponLogic.RequestFire();
     }

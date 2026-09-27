@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 [Serializable]
 
-public class BulletTracer 
+public class BulletTracer
 {
-    private List<GameObject> bullet_Tracer_List = new List<GameObject> ();
+    private List<GameObject> bullet_Tracer_List = new List<GameObject>();
     [SerializeField] private GameObject bullet_Tracer_prefab;
     [SerializeField] private Transform bullet_Tracer_Holder;
     [Header("Tracer settings")]
@@ -19,7 +19,12 @@ public class BulletTracer
     {
         for (int i = 0; i < No_Of_Tracers; ++i)
         {
-            GameObject new_Tracer = UnityEngine.Object.Instantiate(bullet_Tracer_prefab, bullet_Tracer_Holder);
+            // Instanciamos SIN padre y reparenteamos después: Unity no permite
+            // crear un objeto ya parentado a algo que vive en la escena
+            // persistente (DontDestroyOnLoad, como Player) en la misma llamada
+            // a Instantiate, pero SetParent posterior sí es válido.
+            GameObject new_Tracer = UnityEngine.Object.Instantiate(bullet_Tracer_prefab);
+            new_Tracer.transform.SetParent(bullet_Tracer_Holder, false);
             bullet_Tracer_List.Add(new_Tracer);
             bullet_Tracer_List[i].SetActive(false);
         }
@@ -30,7 +35,6 @@ public class BulletTracer
     {
         GameObject current_Trace = GetPoolBulletTracers(start_pos);
         if (current_Trace == null) return;
-        current_Trace.transform.parent = null;
         current_Trace.SetActive(true);
         BulletTracerMovement tracer_Movement = current_Trace.GetComponent<BulletTracerMovement>();
         if (tracer_Movement != null)
@@ -56,9 +60,8 @@ public class BulletTracer
 
             }
 
-           
+
         }
         return null;
     }
 }
-

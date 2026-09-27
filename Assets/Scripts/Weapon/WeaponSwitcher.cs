@@ -28,6 +28,8 @@ public class WeaponSwitcher : NetworkBehaviour
 
     /// <summary>Cantidad total de armas configuradas.</summary>
     public int WeaponCount => weapons.Length;
+    /// <summary>WeaponLogic del arma equipada (y por lo tanto su CameraRecoil), o null si no hay arma. Usado por el script de mouse look/cámara.</summary>
+    public WeaponLogic CurrentWeaponLogic => currentWeaponShoot != null ? currentWeaponShoot.GetComponent<WeaponLogic>() : null;
 
     public override void OnNetworkSpawn()
     {
