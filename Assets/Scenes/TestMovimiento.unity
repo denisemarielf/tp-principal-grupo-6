@@ -833,6 +833,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -12.905
       objectReference: {fileID: 0}
+    - target: {fileID: 825182377304328118, guid: f3e46bbce9ed1b142b6e0f562ae0ba04, type: 3}
+      propertyPath: crosshair.max_Size
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 825182377304328118, guid: f3e46bbce9ed1b142b6e0f562ae0ba04, type: 3}
+      propertyPath: crosshair.compact_Size
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 825182377304328118, guid: f3e46bbce9ed1b142b6e0f562ae0ba04, type: 3}
+      propertyPath: crosshair.expanded_Size
+      value: 65
+      objectReference: {fileID: 0}
     - target: {fileID: 1167257765638307257, guid: f3e46bbce9ed1b142b6e0f562ae0ba04, type: 3}
       propertyPath: m_InScenePlaced
       value: 1

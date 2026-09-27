@@ -28,10 +28,17 @@ public class WeaponLogic : NetworkBehaviour
 
     [Header("Camera Recoil (solo afecta al dueño del arma)")]
     public CameraRecoil cameraRecoil;
+    [SerializeField] private CrosshairController crosshairController;
 
-    private void Awake()
+    private void Start()
     {
         bulletTracer?.initializeTracers();
+    }
+    private void Awake()
+    {
+        
+        if (crosshairController == null)
+            crosshairController = transform.root.GetComponentInChildren<CrosshairController>();
     }
 
     public void PlayShootEffectsLocal()
@@ -47,6 +54,7 @@ public class WeaponLogic : NetworkBehaviour
 
         if (weaponSway != null)
             weaponSway.AddRecoil();
+        crosshairController?.NotifyShotFired();
     }
 
     public void ApplyCameraRecoil(bool isAiming = false)
