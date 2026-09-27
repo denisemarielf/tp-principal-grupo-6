@@ -6,34 +6,56 @@ public class ArmsGripController : MonoBehaviour
 {
     [Header("Constraints a re-targetear")]
     public TwoBoneIKConstraint rightHandConstraint;
-    public TwoBoneIKConstraint leftHandConstraint; // opcional, para armas a dos manos
+    public TwoBoneIKConstraint leftHandConstraint;
 
     [Header("Nombre del hijo que cada arma debe tener")]
     public string rightGripChildName = "RightHandGrip";
-    public string leftGripChildName = "LeftHandGrip"; // opcional
+    public string leftGripChildName = "LeftHandGrip";
 
+    [Header("Rig Builder (para forzar reconstrucción tras retargetear)")]
+    public RigBuilder rigBuilder; // NUEVO: arrastrá el que está en ArmsSoldier
+    public Transform leftHandRestPosition;
 
-    /// <summary>Llamado por WeaponSwitcher cada vez que se equipa un arma.</summary>
     public void SetGripsForWeapon(GameObject weapon)
     {
         if (weapon == null)
         {
-            
             return;
         }
 
         Transform rightGrip = FindDeepChild(weapon.transform, rightGripChildName);
-        
-        SetTarget(rightHandConstraint, rightGrip);
+        SetTarget(rightHandConstraint, rightGrip, null);
 
         if (leftHandConstraint != null)
         {
-            SetTarget(leftHandConstraint, FindDeepChild(weapon.transform, leftGripChildName));
+            Transform leftGrip = FindDeepChild(weapon.transform, leftGripChildName);
+            SetTarget(leftHandConstraint, leftGrip, leftHandRestPosition); // NUEVO: pasa el fallback
+        }
+
+        if (rigBuilder != null)
+        {
+            rigBuilder.Build();
         }
     }
 
-    /// <summary>Busca un hijo por nombre en toda la jerarquía del arma (a cualquier profundidad),
-    /// ya que el grip puede estar anidado dentro del mesh visual (ej. WeaponModel) y no ser un hijo directo.</summary>
+    private void SetTarget(TwoBoneIKConstraint constraint, Transform target, Transform restFallback)
+    {
+        if (constraint == null) return;
+
+        // Si no hay grip para esta mano, usamos la posición de descanso en vez de apagar el constraint.
+        Transform finalTarget = target != null ? target : restFallback;
+
+        if (finalTarget == null)
+        {
+            constraint.weight = 0f;
+            return;
+        }
+
+        constraint.weight = 1f;
+        var data = constraint.data;
+        data.target = finalTarget;
+        constraint.data = data;
+    }
     private Transform FindDeepChild(Transform parent, string name)
     {
         foreach (Transform child in parent)
@@ -44,33 +66,5 @@ public class ArmsGripController : MonoBehaviour
             if (found != null) return found;
         }
         return null;
-    }
-
-    private void SetTarget(TwoBoneIKConstraint constraint, Transform target)
-    {
-        if (constraint == null)
-        {
-           
-            return;
-        }
-
-        if (target == null)
-        {
-          
-            // Esta arma no usa esta mano (ej. pistola a una mano): apagamos el
-            // constraint para que el brazo vuelva a su pose de reposo, en vez
-            // de quedar estirado hacia el último target que tuvo.
-            constraint.weight = 0f;
-            return;
-        }
-
-        
-        constraint.weight = 1f;
-
-        // TwoBoneIKConstraintData es un struct: hay que copiarlo, modificarlo
-        // y reasignarlo entero, no se puede escribir constraint.data.target directo.
-        var data = constraint.data;
-        data.target = target;
-        constraint.data = data;
     }
 }

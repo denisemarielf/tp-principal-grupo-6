@@ -1013,6 +1013,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2182238379102785432}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3624374075876920110
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4023231829213222018}
+  m_Layer: 7
+  m_Name: LeftHandsRestPostition
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4023231829213222018
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3624374075876920110}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.765, y: -0.754, z: 0.166}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4186847541876534607}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3727862149751463894
 GameObject:
   m_ObjectHideFlags: 0
@@ -1994,6 +2025,7 @@ Transform:
   m_Children:
   - {fileID: 3997631915318015780}
   - {fileID: 3789542037736730674}
+  - {fileID: 4023231829213222018}
   m_Father: {fileID: 5034083148111287247}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &8250603032713723357
@@ -2051,7 +2083,9 @@ MonoBehaviour:
   rightHandConstraint: {fileID: 2806496781868007388}
   leftHandConstraint: {fileID: 2219611353859677187}
   rightGripChildName: RightHandGrip
-  leftGripChildName: 
+  leftGripChildName: LefttHandGrip
+  rigBuilder: {fileID: 5476876236695549937}
+  leftHandRestPosition: {fileID: 4023231829213222018}
 --- !u!1 &6116286911251370614
 GameObject:
   m_ObjectHideFlags: 0
@@ -3504,7 +3538,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3915090534
+  GlobalObjectIdHash: 3639153924
   InScenePlacedSourceGlobalObjectIdHash: 2344703204
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0

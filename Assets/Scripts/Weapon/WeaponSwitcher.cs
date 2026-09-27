@@ -125,6 +125,15 @@ public class WeaponSwitcher : NetworkBehaviour
             {
                 renderer.enabled = isSelected;
             }
+
+            // El GameObject del arma sigue activo (y su Update corriendo) aunque
+            // no esté equipada, así que le avisamos explícitamente para que no
+            // reaccione al input mientras está guardada.
+            ShootLogic shootLogic = weapons[i].GetComponent<ShootLogic>();
+            if (shootLogic != null)
+            {
+                shootLogic.SetEquipped(isSelected);
+            }
         }
     }
 
@@ -142,12 +151,11 @@ public class WeaponSwitcher : NetworkBehaviour
             armsModel.SetActive(currentWeaponShoot != null);
         }
 
-        // Reapunta el IK de la mano al grip del arma reci\u00e9n equipada (o la deja
+        // Reapunta el IK de la mano al grip del arma recién equipada (o la deja
         // como estaba si no hay arma, ya que las manos igual quedan ocultas).
         if (armsGripController != null && currentWeaponShoot != null)
         {
             armsGripController.SetGripsForWeapon(weapons[index]);
-
         }
 
         if (ammoUI != null)

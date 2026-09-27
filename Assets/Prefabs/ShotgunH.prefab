@@ -5548,8 +5548,8 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   spawnPoint: {fileID: 1369646122279268066}
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
-  shootForce: 1500
-  damageAmount: 20
+  shootForce: 2000
+  damageAmount: 120
   audioSource: {fileID: 7818307986381326826}
   shootSound: {fileID: 8300000, guid: 1d87a286b68e2ba42aa22e66ca63659d, type: 3}
   muzzleFlash: {fileID: 8647501805832917146}
@@ -5663,9 +5663,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1810b7865582dd459fc33b3ebdc7f9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AmmoManager
-  magazineSize: 12
-  reserveAmmo: 60
-  reloadTime: 1.5
+  magazineSize: 5
+  reserveAmmo: 30
+  reloadTime: 2
   audioSource: {fileID: 7818307986381326826}
   reloadSound: {fileID: 8300000, guid: 6fb2e541f2c11c845be0b5fcfa350458, type: 3}
   emptySound: {fileID: 8300000, guid: 9d870ca9fc1cd81479fa23b258630035, type: 3}
@@ -5683,7 +5683,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShootLogic
   ShowTopMostFoldoutHeaderGroup: 1
-  shootRate: 0.5
+  shootRate: 0.3
 --- !u!1 &7320859285263305595
 GameObject:
   m_ObjectHideFlags: 0

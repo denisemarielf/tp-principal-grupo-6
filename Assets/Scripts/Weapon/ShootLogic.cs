@@ -7,11 +7,13 @@ using Unity.Netcode;
 public class ShootLogic : NetworkBehaviour
 {
     public float shootRate = 0.5f;
+    public bool isAutomatic = true; // false = semiautomática (un disparo por apretón)
 
     private float shootRateTime = 0;
+    private InputAction shootAction;
+    private bool isEquipped = false;
     private AmmoManager ammoManager;
     private WeaponLogic weaponLogic;
-
 
     private void Awake()
     {
@@ -19,27 +21,58 @@ public class ShootLogic : NetworkBehaviour
         weaponLogic = GetComponent<WeaponLogic>();
     }
 
+    /// <summary>Llamado por WeaponSwitcher cada vez que cambia el arma equipada,
+    /// para que esta arma solo reaccione al input cuando es la activa (el
+    /// GameObject sigue vivo y corriendo aunque no esté equipada).</summary>
+    public void SetEquipped(bool equipped)
+    {
+        isEquipped = equipped;
+    }
+
+    private void Update()
+    {
+        // Mientras el botón siga apretado (consultado directamente, no vía
+        // eventos) y el arma sea automática, seguimos intentando disparar cada
+        // frame; TryShoot respeta el cooldown solo. isEquipped evita que un
+        // arma guardada (no equipada) siga disparando porque el botón físico
+        // es el mismo para todas.
+        if (!IsOwner || !isEquipped) return;
+        if (isAutomatic && shootAction != null && shootAction.IsPressed())
+        {
+            TryShoot();
+        }
+    }
+
     public void OnShoot(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
-        if (context.performed && Time.time >= shootRateTime)
+
+        shootAction = context.action; // guardamos la referencia para consultarla en Update
+
+        if (context.performed)
         {
-            shootRateTime = Time.time + shootRate;
-
-            if (!ammoManager.HasAmmo)
-            {
-                ammoManager.PlayEmptySound();
-                ammoManager.TryReload();
-                return;
-            }
-            ammoManager.ConsumeShot();
-
-            // Efectos para mí mismo, instantáneos, sin esperar ida y vuelta al servidor
-            weaponLogic.PlayShootEffectsLocal();
-
-            // La bala real la crea el servidor, y desde ahí avisa al resto
-            weaponLogic.RequestFire();
+            TryShoot(); // primer disparo inmediato al apretar, tanto auto como semi-auto
         }
+    }
+
+    private void TryShoot()
+    {
+        if (Time.time < shootRateTime) return;
+        shootRateTime = Time.time + shootRate;
+
+        if (!ammoManager.HasAmmo)
+        {
+            ammoManager.PlayEmptySound();
+            ammoManager.TryReload();
+            return;
+        }
+        ammoManager.ConsumeShot();
+
+        // Efectos para mí mismo, instantáneos, sin esperar ida y vuelta al servidor
+        weaponLogic.PlayShootEffectsLocal();
+
+        // La bala real la crea el servidor, y desde ahí avisa al resto
+        weaponLogic.RequestFire();
     }
 
     public void OnReload(InputAction.CallbackContext context)
@@ -48,7 +81,8 @@ public class ShootLogic : NetworkBehaviour
         if (context.performed) ammoManager.TryReload();
     }
 
-
+    // Pasamanos hacia AmmoManager / WeaponLogic para no romper el API que ya usan
+    // otros scripts (WeaponSwitcher, WeaponPowerUps, AmmoUI, etc.)
     public void AddReserveAmmo(int amount) => ammoManager.AddReserveAmmo(amount);
     public int CurrentAmmo => ammoManager.CurrentAmmo;
     public int ReserveAmmo => ammoManager.ReserveAmmo;
