@@ -13,9 +13,9 @@ public class AmmoManager : MonoBehaviour
     [SerializeField] private AudioClip reloadSound;
     [SerializeField] private AudioClip emptySound;
 
-    /*
+    
     [Header("Visual")]
-    [SerializeField] private WeaponSway weaponSway; */
+    [SerializeField] private WeaponSway weaponSway; 
 
     private int currentAmmo;
     private bool isReloading = false;
@@ -29,10 +29,10 @@ public class AmmoManager : MonoBehaviour
     {
         currentAmmo = magazineSize;
 
-      //  FindWeaponsway();
+        FindWeaponsway();
     }
 
-    /*
+    
     private void FindWeaponsway()
     {
         if (weaponSway == null)
@@ -40,7 +40,7 @@ public class AmmoManager : MonoBehaviour
 
         if (weaponSway == null)
             weaponSway = GetComponentInChildren<WeaponSway>();
-    }*/
+    }
     public void ConsumeShot()
     {
         currentAmmo--;
@@ -64,7 +64,7 @@ public class AmmoManager : MonoBehaviour
     {
         isReloading = true;
         PlayReloadSound();
-      //  weaponSway?.PlayReloadDip(reloadTime); // NUEVO
+       weaponSway?.PlayReloadDip(reloadTime); // NUEVO
 
         yield return new WaitForSeconds(reloadTime);
         int ammoNeeded = magazineSize - currentAmmo;

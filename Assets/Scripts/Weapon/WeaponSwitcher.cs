@@ -13,6 +13,7 @@ public class WeaponSwitcher : NetworkBehaviour
 
     [Header("Brazos (se ocultan cuando no hay arma equipada)")]
     public GameObject armsModel;
+    public ArmsGripController armsGripController;
 
     private ShootLogic currentWeaponShoot;
 
@@ -139,6 +140,14 @@ public class WeaponSwitcher : NetworkBehaviour
         if (armsModel != null)
         {
             armsModel.SetActive(currentWeaponShoot != null);
+        }
+
+        // Reapunta el IK de la mano al grip del arma reci\u00e9n equipada (o la deja
+        // como estaba si no hay arma, ya que las manos igual quedan ocultas).
+        if (armsGripController != null && currentWeaponShoot != null)
+        {
+            armsGripController.SetGripsForWeapon(weapons[index]);
+
         }
 
         if (ammoUI != null)

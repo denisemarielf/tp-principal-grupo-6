@@ -15,7 +15,6 @@ public class WeaponLogic : NetworkBehaviour
     public ParticleSystem muzzleFlash;
     public WeaponSway weaponSway;
 
-
     public void PlayShootEffectsLocal()
     {
         if (audioSource != null && shootSound != null)
@@ -29,7 +28,7 @@ public class WeaponLogic : NetworkBehaviour
 
         if (weaponSway != null)
             weaponSway.AddRecoil();
-    
+
     }
 
     /// <summary>Pide al servidor que dispare de verdad (spawnea la bala). Llamado por ShootLogic cuando ya validó cooldown/munición.</summary>
@@ -77,6 +76,4 @@ public class WeaponLogic : NetworkBehaviour
         PlayShootEffectsLocal();
     }
 
-
-   
 }

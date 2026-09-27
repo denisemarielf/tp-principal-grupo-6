@@ -24,11 +24,11 @@ public class WeaponSway : NetworkBehaviour
     public float recoilRecoverySpeed = 6f;
     private float currentRecoil;
 
-    /*
+    
     [Header("Recarga (dip visual)")]
     public float reloadDipAmount = 0.08f;
     private float reloadDipCurrent = 0f;
-    private Coroutine reloadDipRoutine;*/
+    private Coroutine reloadDipRoutine;
 
     void Start()
     {
@@ -78,7 +78,7 @@ public class WeaponSway : NetworkBehaviour
         );
     }
 
-    /*
+    
     public void PlayReloadDip(float duration)
     {
         if (reloadDipRoutine != null) StopCoroutine(reloadDipRoutine);
@@ -97,7 +97,7 @@ public class WeaponSway : NetworkBehaviour
             yield return null;
         }
         reloadDipCurrent = 0f;
-    }*/
+    }
 
     private void ApplyBob()
     {
@@ -124,9 +124,9 @@ public class WeaponSway : NetworkBehaviour
         float breathingY = Mathf.Sin(breathingTimer * 1.7f) * breathingAmount * 0.6f;
         Vector3 breathingOffset = new Vector3(breathingX, breathingY, 0f);
 
-        // Vector3 reloadOffset = Vector3.down * reloadDipAmount * reloadDipCurrent; // NUEVO
-       // Vector3 targetLocalPosition = startPosition + bobOffset + breathingOffset + reloadOffset;
-        Vector3 targetLocalPosition = startPosition + bobOffset + breathingOffset;
+         Vector3 reloadOffset = Vector3.down * reloadDipAmount * reloadDipCurrent; // NUEVO
+        Vector3 targetLocalPosition = startPosition + bobOffset + breathingOffset + reloadOffset;
+       // Vector3 targetLocalPosition = startPosition + bobOffset + breathingOffset;
 
         transform.localPosition = Vector3.Lerp(
             transform.localPosition,
