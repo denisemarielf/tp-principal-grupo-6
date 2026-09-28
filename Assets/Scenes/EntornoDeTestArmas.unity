@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &73533342 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2766267941979423857, guid: 472185ff6711bc640a830aa557a055ba, type: 3}
+  m_PrefabInstance: {fileID: 1602761167}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &519908420 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7725550455073907413, guid: fc5a676d2c90b3d4f8a22e369c35950d, type: 3}
@@ -166,6 +171,18 @@ PrefabInstance:
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
       value: 4143580535
       objectReference: {fileID: 0}
+    - target: {fileID: 1799769263884393209, guid: 472185ff6711bc640a830aa557a055ba, type: 3}
+      propertyPath: 'weapons.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1859299656}
+    - target: {fileID: 1799769263884393209, guid: 472185ff6711bc640a830aa557a055ba, type: 3}
+      propertyPath: 'weapons.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1874674718}
+    - target: {fileID: 1799769263884393209, guid: 472185ff6711bc640a830aa557a055ba, type: 3}
+      propertyPath: 'weapons.Array.data[2]'
+      value: 
+      objectReference: {fileID: 73533342}
     - target: {fileID: 2959950592350160960, guid: 472185ff6711bc640a830aa557a055ba, type: 3}
       propertyPath: m_LocalPosition.x
       value: 80.65911
@@ -284,6 +301,16 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 75c91b2d8e4ead447ba7215b6b0581cc, type: 3}
+--- !u!1 &1859299656 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6963574897020813600, guid: 472185ff6711bc640a830aa557a055ba, type: 3}
+  m_PrefabInstance: {fileID: 1602761167}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1874674718 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 706563539546468153, guid: 472185ff6711bc640a830aa557a055ba, type: 3}
+  m_PrefabInstance: {fileID: 1602761167}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1999400227
 PrefabInstance:
   m_ObjectHideFlags: 0
