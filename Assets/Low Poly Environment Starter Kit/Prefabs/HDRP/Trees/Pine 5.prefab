@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7635443232374445347}
   - component: {fileID: 4078077054378427883}
+  - component: {fileID: 908656325782147374}
   m_Layer: 0
   m_Name: Pine 5
   m_TagString: Untagged
@@ -24,6 +25,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3142375159810358118}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -31,7 +33,6 @@ Transform:
   m_Children:
   - {fileID: 8130426297347047291}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &4078077054378427883
 MeshCollider:
@@ -41,9 +42,39 @@ MeshCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3142375159810358118}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 4
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 0}
+--- !u!64 &908656325782147374
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3142375159810358118}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
@@ -52,6 +83,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 7635443232374445347}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: ebdf8a63c4c10294b9d9adb53d34eade, type: 3}
@@ -99,7 +131,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7577739868436781572, guid: ebdf8a63c4c10294b9d9adb53d34eade, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 28195f6f4f5ca414dbf3f5b4cbe1ebc3, type: 2}
     - target: {fileID: 919132149155446097, guid: ebdf8a63c4c10294b9d9adb53d34eade, type: 3}
@@ -107,10 +139,13 @@ PrefabInstance:
       value: Pine5
       objectReference: {fileID: 0}
     - target: {fileID: 5156380648761706199, guid: ebdf8a63c4c10294b9d9adb53d34eade, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: a1bff7b5fcb387341a4fa0d4c451c853, type: 2}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ebdf8a63c4c10294b9d9adb53d34eade, type: 3}
 --- !u!4 &8130426297347047291 stripped
 Transform:
