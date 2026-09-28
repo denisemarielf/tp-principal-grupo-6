@@ -17,7 +17,7 @@ public class PMovement : NetworkBehaviour
 
     [Header("Sprint")]
     [SerializeField] private float sprintMultiplier = 1.5f;
-    private bool isSprinting;
+    public bool isSprinting;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
