@@ -194,9 +194,9 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.multiplayer": {
-      "version": "file:com.unity.services.multiplayer",
+      "version": "2.3.3",
       "depth": 0,
-      "source": "embedded",
+      "source": "registry",
       "dependencies": {
         "com.unity.modules.unitywebrequest": "1.0.0",
         "com.unity.nuget.newtonsoft-json": "3.2.2",
@@ -207,7 +207,8 @@
         "com.unity.transport": "2.7.3",
         "com.unity.collections": "2.6.7",
         "com.unity.services.deployment": "1.7.2"
-      }
+      },
+      "url": "https://packages.unity.com"
     },
     "com.unity.services.qos": {
       "version": "1.4.1",
