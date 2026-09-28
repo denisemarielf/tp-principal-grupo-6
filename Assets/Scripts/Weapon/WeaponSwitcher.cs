@@ -14,7 +14,7 @@ public class WeaponSwitcher : NetworkBehaviour
     [Header("Brazos (se ocultan cuando no hay arma equipada)")]
     public GameObject armsModel;
     public ArmsGripController armsGripController;
-
+    public CrosshairController crosshairController;
     private ShootLogic currentWeaponShoot;
 
     private NetworkVariable<int> networkWeaponIndex = new NetworkVariable<int>(
@@ -158,6 +158,11 @@ public class WeaponSwitcher : NetworkBehaviour
         if (armsGripController != null && currentWeaponShoot != null)
         {
             armsGripController.SetGripsForWeapon(weapons[index]);
+        }
+
+        if (crosshairController != null)
+        {
+            crosshairController.SetVisible(currentWeaponShoot != null);
         }
 
         if (ammoUI != null)

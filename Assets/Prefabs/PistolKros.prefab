@@ -192,7 +192,7 @@ MonoBehaviour:
   hitscanRange: 100
   hitscanLayers:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 119
   hitscanImpactEffect: {fileID: 0}
   bulletTracer:
     bullet_Tracer_prefab: {fileID: 0}
@@ -205,6 +205,7 @@ MonoBehaviour:
   muzzleFlash: {fileID: 823067421703444809}
   weaponSway: {fileID: 264646383216885656}
   cameraRecoil: {fileID: 0}
+  crosshairController: {fileID: 0}
 --- !u!82 &6083373331801020035
 AudioSource:
   m_ObjectHideFlags: 0

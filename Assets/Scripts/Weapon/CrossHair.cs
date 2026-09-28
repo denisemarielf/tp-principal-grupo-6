@@ -26,7 +26,7 @@ public class CrossHair
         {
             target_Size = expanded_Size;
         }
-        else if (isSprinting && isShooting)
+        else if (isSprinting || isShooting)
         {
             target_Size = max_Size;
         }
