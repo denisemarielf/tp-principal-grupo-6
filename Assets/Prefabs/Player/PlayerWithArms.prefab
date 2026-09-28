@@ -390,9 +390,9 @@ MonoBehaviour:
   audioSource: {fileID: 638893746949520940}
   switchSound: {fileID: 8300000, guid: f014808e9b00534459b7b5b870299e05, type: 3}
   ammoUI: {fileID: 7910136439071068312}
+  crosshairController: {fileID: 3510812090917450130}
   armsModel: {fileID: 6038114048733576130}
   armsGripController: {fileID: 1758513140151346474}
-  crosshairController: {fileID: 3510812090917450130}
 --- !u!82 &638893746949520940
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1055,6 +1055,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8100362660947317478}
+  - {fileID: 5067925491298460675}
   - {fileID: 2593859757263211104}
   - {fileID: 7489896279429546393}
   - {fileID: 4155173265544484851}
@@ -2600,6 +2601,22 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: b54660ff-ac4e-4c25-b4a9-6dcdc1970859
     m_ActionName: 'Player/Reload[/Keyboard/3]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 4418800004660970719}
+        m_TargetAssemblyTypeName: Character, Assembly-CSharp
+        m_MethodName: OnSprint
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: aef047ab-4258-464d-8248-ba652ad9161d
+    m_ActionName: 'Player/Sprint[/Keyboard/shift]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
@@ -2646,8 +2663,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PMovement
   ShowTopMostFoldoutHeaderGroup: 1
   moveSpeed: 5
+  acceleration: 10
+  airAcceleration: 2
+  friction: 6
   jumpHeight: 3.5
   gravity: -9.81
+  sprintMultiplier: 1.5
   animator: {fileID: 0}
 --- !u!114 &4418800004660970719
 MonoBehaviour:
@@ -3546,6 +3567,37 @@ Transform:
   m_Children:
   - {fileID: 5263623422971299476}
   m_Father: {fileID: 6420228269123164661}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6372843796455390410
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5067925491298460675}
+  m_Layer: 7
+  m_Name: WeaponHolder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5067925491298460675
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6372843796455390410}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3397521597446235570}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6742716661631385752
 GameObject:

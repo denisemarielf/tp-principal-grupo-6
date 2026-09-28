@@ -11,10 +11,12 @@ public class WeaponSwitcher : NetworkBehaviour
     public AudioClip switchSound;
     public AmmoUI ammoUI;
 
-    [Header("Brazos (se ocultan cuando no hay arma equipada)")]
+    [Header("CrossHair")]
+    public CrosshairController crosshairController;
+
+    [Header("Brazos")]
     public GameObject armsModel;
     public ArmsGripController armsGripController;
-    public CrosshairController crosshairController;
     private ShootLogic currentWeaponShoot;
 
     private NetworkVariable<int> networkWeaponIndex = new NetworkVariable<int>(

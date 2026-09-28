@@ -23,6 +23,20 @@ public class Character : NetworkBehaviour
        
         movement.SetMoveInput(context.ReadValue<Vector2>());
     }
+    public void OnSprint(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+        
+            movement.SetSprint(true);
+        }
+        else if (context.canceled)
+        {
+            
+            movement.SetSprint(false);
+        }
+        
+    }
 
     public void OnJump(InputAction.CallbackContext context)
     {
