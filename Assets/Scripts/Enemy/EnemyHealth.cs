@@ -100,4 +100,9 @@ public class EnemyHealth : NetworkBehaviour
     {
         return isDead.Value;
     }
+
+    public float GetCurrentHealth()
+    {
+        return currentHealth.Value;
+    }
 }
