@@ -112,12 +112,25 @@ public static class GameSessionManager
             return;
         }
 
+        // Sin PlayerSpawnPoint en la escena se usa la posicion del prefab.
+        PlayerSpawnPoint spawnPoint = Object.FindFirstObjectByType<PlayerSpawnPoint>();
+        Vector3 spawnPosition = spawnPoint != null ? spawnPoint.transform.position : playerPrefab.transform.position;
+        Quaternion spawnRotation = spawnPoint != null ? spawnPoint.transform.rotation : playerPrefab.transform.rotation;
+
+        int playerIndex = 0;
         foreach (ulong clientId in networkManager.ConnectedClientsIds)
         {
             if (networkManager.ConnectedClients[clientId].PlayerObject != null) continue;
 
-            GameObject player = Object.Instantiate(playerPrefab);
+            GameObject player = Object.Instantiate(playerPrefab, spawnPosition, spawnRotation);
             player.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
+
+            Character character = player.GetComponent<Character>();
+            if (character != null)
+            {
+                character.PlaceAtSpawn(spawnPosition, spawnRotation, playerIndex);
+            }
+            playerIndex++;
         }
     }
 
