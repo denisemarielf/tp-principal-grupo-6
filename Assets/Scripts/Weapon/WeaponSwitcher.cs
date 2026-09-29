@@ -3,13 +3,27 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 using System.Collections;
+using System;
 
 public class WeaponSwitcher : NetworkBehaviour
 {
+    [System.Serializable]
+    public struct WeaponEntry
+    {
+        public WeaponType type;
+        public GameObject weaponObject;
+    }
+
     public GameObject[] weapons;
     public AudioSource audioSource;
     public AudioClip switchSound;
     public AmmoUI ammoUI;
+
+    [Header("Catálogo de armas (TODAS las que existen bajo WeaponPivot)")]
+    public WeaponEntry[] allWeapons;
+
+    [Header("Drop de armas")]
+    [SerializeField] private GameObject weaponPickupPrefab; // debe estar registrado en NetworkManager > Network Prefabs
 
     [Header("CrossHair")]
     public CrosshairController crosshairController;
@@ -25,32 +39,43 @@ public class WeaponSwitcher : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
-    /// <summary>Índice del arma actualmente seleccionada (sincronizado por red).</summary>
-    public int CurrentWeaponIndex => networkWeaponIndex.Value;
+    // Qué WeaponType ocupa cada slot. -1 = slot vacío. Solo el servidor escribe,
+    // todos leen: así cada cliente reconstruye weapons[] de forma consistente.
+    private NetworkVariable<int> slot0Type = new NetworkVariable<int>(
+        -1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<int> slot1Type = new NetworkVariable<int>(
+        -1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    /// <summary>Cantidad total de armas configuradas.</summary>
+    public int CurrentWeaponIndex => networkWeaponIndex.Value;
     public int WeaponCount => weapons.Length;
-    /// <summary>WeaponLogic del arma equipada (y por lo tanto su CameraRecoil), o null si no hay arma. Usado por el script de mouse look/cámara.</summary>
     public WeaponLogic CurrentWeaponLogic => currentWeaponShoot != null ? currentWeaponShoot.GetComponent<WeaponLogic>() : null;
 
     public override void OnNetworkSpawn()
     {
-        // Aseguramos que TODOS los GameObjects de arma esten activos siempre,
-        // sin importar en que estado haya quedado guardado el prefab.
         foreach (var weapon in weapons)
         {
             if (weapon != null) weapon.SetActive(true);
         }
 
-        // Asignamos la layer según sea mi arma o la de otro jugador.
         int targetLayer = IsOwner
             ? LayerMask.NameToLayer("Weapon")
             : LayerMask.NameToLayer("Default");
 
-        foreach (var weapon in weapons)
+        foreach (var entry in allWeapons)
         {
-            if (weapon != null) SetLayerRecursively(weapon, targetLayer);
+            if (entry.weaponObject != null) SetLayerRecursively(entry.weaponObject, targetLayer);
         }
+
+        // El servidor inicializa los slots en base a lo que ya venía asignado
+        // a mano en el Inspector (el loadout inicial por defecto).
+        if (IsServer)
+        {
+            slot0Type.Value = weapons.Length > 0 ? (int)GetTypeForWeaponObject(weapons[0]) : -1;
+            slot1Type.Value = weapons.Length > 1 ? (int)GetTypeForWeaponObject(weapons[1]) : -1;
+        }
+
+        slot0Type.OnValueChanged += (_, __) => RebuildSlot(0);
+        slot1Type.OnValueChanged += (_, __) => RebuildSlot(1);
 
         networkWeaponIndex.OnValueChanged += OnWeaponIndexChanged;
         if (IsOwner)
@@ -58,9 +83,6 @@ public class WeaponSwitcher : NetworkBehaviour
             StartCoroutine(BuscarAmmoUI());
             SelectWeapon(0);
 
-            // El jugador persiste entre reinicios de partida, pero la escena
-            // (y con ella el AmmoUI viejo) se destruye y se recrea. Cada vez
-            // que carga una escena nueva, volvemos a buscar el AmmoUI actual.
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
@@ -82,8 +104,6 @@ public class WeaponSwitcher : NetworkBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // La escena vieja (y su AmmoUI) ya no existen; la referencia quedó
-        // apuntando a un objeto destruido. Buscamos el AmmoUI de la escena nueva.
         ammoUI = null;
         StartCoroutine(BuscarAmmoUI());
     }
@@ -97,8 +117,8 @@ public class WeaponSwitcher : NetworkBehaviour
 
     private IEnumerator ReforzarVisualTrasSpawn()
     {
-        yield return null; // espera un frame
-        yield return null; // y otro mas, para dar margen a la sincronizacion inicial
+        yield return null;
+        yield return null;
         UpdateWeaponVisuals(networkWeaponIndex.Value);
     }
 
@@ -124,15 +144,12 @@ public class WeaponSwitcher : NetworkBehaviour
             if (weapons[i] == null) continue;
 
             bool isSelected = (i == index);
-            // "true" incluye componentes en hijos inactivos, por las dudas
             foreach (var renderer in weapons[i].GetComponentsInChildren<Renderer>(true))
             {
                 renderer.enabled = isSelected;
+                Debug.Log($"[UpdateWeaponVisuals] {weapons[i].name} -> {renderer.name}.enabled = {isSelected}");
             }
 
-            // El GameObject del arma sigue activo (y su Update corriendo) aunque
-            // no esté equipada, así que le avisamos explícitamente para que no
-            // reaccione al input mientras está guardada.
             ShootLogic shootLogic = weapons[i].GetComponent<ShootLogic>();
             if (shootLogic != null)
             {
@@ -141,22 +158,17 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
-    /// <summary>Selecciona el arma en el índice dado. Llamado por WeaponInput.</summary>
     public void SelectWeapon(int index)
     {
         UpdateWeaponVisuals(index);
 
         currentWeaponShoot = GetShootAt(index);
 
-        // Sin arma equipada (currentWeaponShoot null), no tiene sentido mostrar
-        // las manos sosteniendo algo que no existe.
         if (armsModel != null)
         {
             armsModel.SetActive(currentWeaponShoot != null);
         }
 
-        // Reapunta el IK de la mano al grip del arma recién equipada (o la deja
-        // como estaba si no hay arma, ya que las manos igual quedan ocultas).
         if (armsGripController != null && currentWeaponShoot != null)
         {
             armsGripController.SetGripsForWeapon(weapons[index]);
@@ -179,7 +191,6 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
-    /// <summary>Reenvía el disparo al arma actualmente seleccionada. Llamado por WeaponInput.</summary>
     public void Shoot(InputAction.CallbackContext context)
     {
         if (currentWeaponShoot != null)
@@ -188,7 +199,6 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
-    /// <summary>Reenvía la recarga al arma actualmente seleccionada. Llamado por WeaponInput.</summary>
     public void Reload(InputAction.CallbackContext context)
     {
         if (currentWeaponShoot != null)
@@ -197,7 +207,6 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
-    /// <summary>Devuelve el componente ShootLogic del arma en ese índice, o null si no hay. Usado por WeaponPowerUps.</summary>
     public ShootLogic GetShootAt(int index)
     {
         return (index >= 0 && index < weapons.Length && weapons[index] != null)
@@ -210,6 +219,132 @@ public class WeaponSwitcher : NetworkBehaviour
         if (audioSource != null && switchSound != null)
         {
             audioSource.PlayOneShot(switchSound);
+        }
+    }
+
+    // ---------- Sistema de pickup ----------
+
+    private GameObject GetWeaponObjectByType(WeaponType type)
+    {
+        foreach (var entry in allWeapons)
+        {
+            if (entry.type == type) return entry.weaponObject;
+        }
+        return null;
+    }
+
+    private WeaponType GetTypeForWeaponObject(GameObject weaponObject)
+    {
+        foreach (var entry in allWeapons)
+        {
+            if (entry.weaponObject == weaponObject) return entry.type;
+        }
+        return (WeaponType)(-1);
+    }
+
+    private bool HasWeaponType(WeaponType type)
+    {
+        return slot0Type.Value == (int)type || slot1Type.Value == (int)type;
+    }
+
+    // Se llama cada vez que slot0Type/slot1Type cambian, en TODOS los clientes.
+    private void RebuildSlot(int slotIndex)
+    {
+        int typeValue = slotIndex == 0 ? slot0Type.Value : slot1Type.Value;
+        GameObject newWeaponObject = typeValue >= 0 ? GetWeaponObjectByType((WeaponType)typeValue) : null;
+
+        GameObject oldWeaponObject = weapons[slotIndex];
+
+        // Si había otra arma antes en este slot, la apagamos a mano: al salir
+        // del array weapons[], UpdateWeaponVisuals ya nunca más la va a tocar.
+        if (oldWeaponObject != null && oldWeaponObject != newWeaponObject)
+        {
+            foreach (var renderer in oldWeaponObject.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.enabled = false;
+            }
+
+            ShootLogic oldShoot = oldWeaponObject.GetComponent<ShootLogic>();
+            oldShoot?.SetEquipped(false);
+        }
+
+        weapons[slotIndex] = newWeaponObject;
+
+        if (newWeaponObject != null)
+        {
+            newWeaponObject.SetActive(true);
+            int targetLayer = IsOwner ? LayerMask.NameToLayer("Weapon") : LayerMask.NameToLayer("Default");
+            SetLayerRecursively(newWeaponObject, targetLayer);
+            Debug.Log($"[RebuildSlot] {newWeaponObject.name} | activeInHierarchy: {newWeaponObject.activeInHierarchy} | layer: {newWeaponObject.layer} | renderers encontrados: {newWeaponObject.GetComponentsInChildren<Renderer>(true).Length}");
+        }
+
+
+        if (slotIndex == networkWeaponIndex.Value)
+        {
+            SelectWeapon(slotIndex);
+        }
+        else
+        {
+            UpdateWeaponVisuals(networkWeaponIndex.Value);
+        }
+    }
+
+    /// <summary>Llamado por Character.OnInteraction() cuando el dueño presiona E cerca de un WeaponPickup.</summary>
+    [ServerRpc]
+    public void RequestPickupWeaponServerRpc(int weaponTypeIndex, ulong pickupNetworkObjectId)
+    {
+        WeaponType type = (WeaponType)weaponTypeIndex;
+
+        // Ya tenés esta arma: no hacer nada (el pickup se queda en el piso).
+        if (HasWeaponType(type)) return;
+
+        GameObject weaponObj = GetWeaponObjectByType(type);
+        if (weaponObj == null) return; // esta arma no existe en el catálogo de este jugador
+
+        if (slot0Type.Value < 0)
+        {
+            slot0Type.Value = weaponTypeIndex;
+        }
+        else if (slot1Type.Value < 0)
+        {
+            slot1Type.Value = weaponTypeIndex;
+        }
+        else
+        {
+            // Los 2 slots están ocupados: reemplazamos el arma que tenés EN LA MANO,
+            // y esa cae al piso.
+            int slotToReplace = networkWeaponIndex.Value >= 0 ? networkWeaponIndex.Value : 0;
+            int droppedTypeValue = slotToReplace == 0 ? slot0Type.Value : slot1Type.Value;
+
+            if (slotToReplace == 0) slot0Type.Value = weaponTypeIndex;
+            else slot1Type.Value = weaponTypeIndex;
+
+            SpawnDroppedWeapon((WeaponType)droppedTypeValue, transform.position + transform.forward * 1f + Vector3.up * 0.3f);
+        }
+
+        // Hacemos desaparecer el pickup del mundo para todos.
+        if (NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(pickupNetworkObjectId, out NetworkObject pickupNetObj))
+        {
+            WeaponPickup pickup = pickupNetObj.GetComponent<WeaponPickup>();
+            pickup?.Consume();
+        }
+    }
+
+    private void SpawnDroppedWeapon(WeaponType type, Vector3 position)
+    {
+        if (weaponPickupPrefab == null) return;
+
+        GameObject dropped = Instantiate(weaponPickupPrefab, position, Quaternion.identity);
+        WeaponPickup pickup = dropped.GetComponent<WeaponPickup>();
+        if (pickup != null)
+        {
+            pickup.weaponType = type;
+        }
+
+        NetworkObject netObj = dropped.GetComponent<NetworkObject>();
+        if (netObj != null)
+        {
+            netObj.Spawn();
         }
     }
 }

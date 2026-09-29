@@ -8,6 +8,9 @@ public class Character : NetworkBehaviour
 {
     private PMovement movement;
     private WeaponSwitcher weaponSwitcher;
+    [SerializeField] private float interactRange = 2f;
+    [SerializeField] private LayerMask pickupLayer;
+
 
 
     private void Awake()
@@ -80,5 +83,36 @@ public class Character : NetworkBehaviour
     {
         if (IsOwner && context.performed)
             weaponSwitcher.Reload(context);
+    }
+    public void OnInteraction(InputAction.CallbackContext context)
+    {
+        Debug.Log("interactuando");
+        if (!IsOwner) return;
+        if (!context.performed) return;
+
+        Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, pickupLayer);
+        WeaponPickup nearest = null;
+        float nearestDist = float.MaxValue;
+
+        foreach (var hit in hits)
+        {
+            WeaponPickup pickup = hit.GetComponent<WeaponPickup>();
+            if (pickup == null) continue;
+
+            float dist = Vector3.Distance(transform.position, hit.transform.position);
+            if (dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = pickup;
+            }
+        }
+
+        if (nearest != null)
+        {
+            weaponSwitcher?.RequestPickupWeaponServerRpc(
+                (int)nearest.weaponType,
+                nearest.GetComponent<NetworkObject>().NetworkObjectId
+            );
+        }
     }
 }
