@@ -1,0 +1,601 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!43 &-3020138697171291446
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Conifer_Impostor
+  serializedVersion: 11
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 18
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 8
+    localAABB:
+      m_Center: {x: 0.059129477, y: -0.13797379, z: 0}
+      m_Extent: {x: 7.568434, y: 14.901207, z: 0}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 0
+  m_IsReadable: 1
+  m_KeepVertices: 1
+  m_KeepIndices: 1
+  m_IndexFormat: 0
+  m_IndexBuffer: 070005000300030001000700070006000500050004000300030002000100010000000700
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 8
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 3
+    - stream: 0
+      offset: 12
+      format: 0
+      dimension: 3
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 24
+      format: 0
+      dimension: 2
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 256
+    _typelessdata: 384cf0c0c895ad40000000000000000000000000000080bfabfb7d3e0cc82f3f6d17f0c0bffce2c0000000000000000000000000000080bf5a347e3e0482883e063ffbbf7ca070c1000000000000000000000000000080bf4647de3e00000000579bfc3f7ca070c1000000000000000000000000000080bfbdf3103f0000000019d9f3408e41d0c0000000000000000000000000000080bf0f75413f6890923eff14f44046ff8c40000000000000000000000000000080bf2385413fa108273faf4e6a4034366c41000000000000000000000000000080bfb7721f3f0000803fe0ef4cc034366c41000000000000000000000000000080bfe1fcc83e0000803f
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UV:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Normals:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Tangents:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_TangentSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UVInfo: 0
+  m_LocalAABB:
+    m_Center: {x: -0.98846674, y: 14.69436, z: -0.6802752}
+    m_Extent: {x: 7.1134048, y: 14.708301, z: 6.7296762}
+  m_MeshUsageFlags: 0
+  m_CookingOptions: 30
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  m_MeshMetrics[0]: 1
+  m_MeshMetrics[1]: 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7ba7a43222473d4292f91ae936fe2cc, type: 3}
+  m_Name: Conifer_Impostor
+  m_EditorClassIdentifier: 
+  Material: {fileID: 564778352881802099}
+  Mesh: {fileID: -3020138697171291446}
+  Version: 9905
+  ImpostorType: 1
+  LockedSizes: 1
+  SelectedSize: 4096
+  TexSize: {x: 4096, y: 4096}
+  DecoupleAxisFrames: 0
+  HorizontalFrames: 16
+  VerticalFrames: 16
+  PixelPadding: 32
+  MaxVertices: 8
+  Tolerance: 0.15
+  NormalScale: 0.01
+  ShapePoints:
+  - {x: 0.24803035, y: 0.31335378}
+  - {x: 0.24824658, y: 0.73338306}
+  - {x: 0.43413752, y: 1}
+  - {x: 0.56621915, y: 1}
+  - {x: 0.7556924, y: 0.713742}
+  - {x: 0.75593776, y: 0.34752458}
+  - {x: 0.62284416, y: 0}
+  - {x: 0.3925543, y: 0}
+  Preset: {fileID: 11400000, guid: eafc2aa7bd78be2479c6f7af837d920a, type: 2}
+  OverrideOutput: []
+--- !u!21 &564778352881802099
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Conifer_Impostor
+  m_Shader: {fileID: 4800000, guid: 9c5a37374f2e1be42a577e1a2a245be3, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - TVE_CUTOUT
+  - TVE_CUTOUT_ELEMENT
+  - TVE_DRYNESS
+  - TVE_DRYNESS_ELEMENT
+  - TVE_IMPOSTOR_MASK_PACKED
+  - TVE_MOTION
+  - TVE_MOTION_ELEMENT
+  - TVE_OVERLAY
+  - TVE_OVERLAY_ELEMENT
+  - TVE_SUBSURFACE
+  - TVE_WETNESS
+  - TVE_WETNESS_ELEMENT
+  m_InvalidKeywords:
+  - TVE_CUTOUT_NOISE
+  - TVE_LEGACY
+  - TVE_MOTION_BASE_BENDING
+  - TVE_MOTION_PUSH_BENDING
+  - TVE_MOTION_WIND_OPTIMIZED
+  - TVE_OVERLAY_PROJ
+  - TVE_PIPELINE_STANDARD
+  - TVE_PIVOT_OFF
+  - TVE_SECOND_SAMPLE_MAIN_UV
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap:
+    NatureRendererInstancing: true
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Albedo:
+        m_Texture: {fileID: 2800000, guid: 1d8aa851b58dbd64ba89765aa4d84783, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Emissive:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Mask:
+        m_Texture: {fileID: 2800000, guid: 83933089fc69bdc47a2972994d3e1601, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MasksA:
+        m_Texture: {fileID: 2800000, guid: 83933089fc69bdc47a2972994d3e1601, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MasksB:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MotionNoiseTex:
+        m_Texture: {fileID: 2800000, guid: 9881e099480439147ba51cc2d31303b6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MotionNoiseTexRT:
+        m_Texture: {fileID: 8600000, guid: f1dda7bbb52bc174aad312d92cd1c060, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseTex3D:
+        m_Texture: {fileID: 11700000, guid: 038de154ac2857945b4e07ea7b2c8629, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseTexSS:
+        m_Texture: {fileID: 2800000, guid: f1a365de37df7dc4ca1aa45a448194b6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normals:
+        m_Texture: {fileID: 2800000, guid: c6f2538cd3ebf084bbc3eee9d7dfe7e3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Packed:
+        m_Texture: {fileID: 2800000, guid: 83933089fc69bdc47a2972994d3e1601, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Shader:
+        m_Texture: {fileID: 2800000, guid: 65fc4a0cc6e86e24c86e9fd49bc3e9ab, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Vertex:
+        m_Texture: {fileID: 2800000, guid: ae27a246167204d4aba71867307f7bfa, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AI_Clip: 0.5
+    - _AI_DepthSize: 29.686953
+    - _AI_Frames: 16
+    - _AI_FramesX: 16
+    - _AI_FramesY: 16
+    - _AI_ImpostorSize: 29.802414
+    - _AI_Parallax: 1
+    - _AI_ShadowBias: 1
+    - _AI_ShadowView: 1
+    - _AI_TextureBias: -1
+    - _AlphaCutoff: 0.1
+    - _AlphaVariationValue: 0.5
+    - _CategoryEmissive: 1
+    - _CategoryGlobal: 1
+    - _CategoryMotion: 1
+    - _CategoryNoise: 1
+    - _CategoryOcclusion: 1
+    - _CategoryRender: 1
+    - _CategorySizeFade: 1
+    - _CategorySubsurface: 1
+    - _ColorsIntensityValue: 1
+    - _ColorsPositionMode: 0
+    - _ColorsVariationValue: 0.5
+    - _CutoutBakeInfo: 0
+    - _CutoutCategory: 1
+    - _CutoutElementMode: 1
+    - _CutoutEnd: 1
+    - _CutoutGlobalValue: 1
+    - _CutoutIntensityValue: 1
+    - _CutoutMeshMode: 0
+    - _CutoutMeshValue: 0
+    - _CutoutMultiValue: 1
+    - _CutoutNoiseTillingValue: 1
+    - _CutoutNoiseValue: 1
+    - _DitherCategory: 1
+    - _DitherConstantValue: 0
+    - _DitherDistanceMaxValue: 0
+    - _DitherDistanceMinValue: 0
+    - _DitherDistanceValue: 0
+    - _DitherEnd: 1
+    - _DitherMultiValue: 1
+    - _DitherNoiseTillingValue: 20
+    - _DrynessBakeInfo: 0
+    - _DrynessCategory: 1
+    - _DrynessElementMode: 1
+    - _DrynessEnd: 1
+    - _DrynessGlobalValue: 1
+    - _DrynessGrayValue: 1
+    - _DrynessIntensityValue: 1
+    - _DrynessLumaValue: 1
+    - _DrynessMeshMode: 0
+    - _DrynessMeshValue: 0
+    - _DrynessMultiValue: 1
+    - _DrynessShiftValue: 0
+    - _DrynessSmoothnessValue: 0.5
+    - _DrynessSpace: 1
+    - _DrynessSubsurfaceValue: 0.5
+    - _EmissiveCategory: 1
+    - _EmissiveColorMode: 0
+    - _EmissiveElementMode: 1
+    - _EmissiveEnd: 1
+    - _EmissiveExposureValue: 0.5
+    - _EmissiveGlobalValue: 1
+    - _EmissiveIntensityMode: 0
+    - _EmissiveIntensityValue: 0
+    - _EmissiveMode: 0
+    - _EmissivePhaseValue: 1
+    - _EmissivePowerMode: 0
+    - _EmissivePowerValue: 0
+    - _EndRender: 1
+    - _ExtrasPositionMode: 0
+    - _GlobalAlpha: 1
+    - _GlobalAtmoLayerValue: 0
+    - _GlobalAtmoPivotValue: 0
+    - _GlobalCategory: 1
+    - _GlobalColors: 0.497
+    - _GlobalEmissive: 1
+    - _GlobalEnd: 1
+    - _GlobalFadeLayerValue: 0
+    - _GlobalFadePivotValue: 0
+    - _GlobalFlowLayerValue: 0
+    - _GlobalFlowPivotValue: 1
+    - _GlobalFormLayerValue: 0
+    - _GlobalFormPivotValue: 1
+    - _GlobalGlowLayerValue: 0
+    - _GlobalGlowPivotValue: 0
+    - _GlobalOverlay: 0.3
+    - _GlobalPaintLayerValue: 0
+    - _GlobalPaintPivotValue: 0
+    - _GlobalPivotInfo: 0
+    - _GlobalPushLayerValue: 0
+    - _GlobalSize: 0
+    - _GlobalWetness: 1
+    - _GlobalWindLayerValue: 0
+    - _HasDefaultTextures: 0
+    - _HasEmissive: 1
+    - _HasGradient: 0
+    - _HasOcclusion: 1
+    - _ImpostorAlphaClipValue: 0.5
+    - _ImpostorCat: 0
+    - _ImpostorCategory: 1
+    - _ImpostorColorMode: 0
+    - _ImpostorEnd: 1
+    - _ImpostorMaskDefaultInfo: 0
+    - _ImpostorMaskMode: 2
+    - _ImpostorMaskOffInfo: 0
+    - _ImpostorMaskPackedInfo: 0
+    - _ImpostorMaskShadingInfo: 0
+    - _ImpostorMetallicValue: 0
+    - _ImpostorOcclusionValue: 0
+    - _ImpostorSmoothnessValue: 1
+    - _InteractionAmplitude: 0.2
+    - _InteractionInteractionEnd: 1
+    - _IsCollected: 0
+    - _IsConverted: 1
+    - _IsCustomShader: 0
+    - _IsIdentifier: 74
+    - _IsImpostorShader: 1
+    - _IsInitialized: 1
+    - _IsPlantShader: 1
+    - _IsShared: 1
+    - _IsStandardShader: 0
+    - _IsSubsurfaceShader: 1
+    - _IsTVEShader: 1
+    - _IsVersion: 2050
+    - _LayerColorsValue: 0
+    - _LayerExtrasValue: 0
+    - _LayerMotionValue: 0
+    - _LayerVertexValue: 0
+    - _MessageOcclusion: 0
+    - _MotionAmplitude_10: 0.2
+    - _MotionBaseDelayValue: 1
+    - _MotionBaseIntensityValue: 0.2
+    - _MotionBaseNoiseValue: 0.5
+    - _MotionBasePivotValue: 0.9
+    - _MotionBasePushValue: 0.2
+    - _MotionBaseSpeedValue: 5
+    - _MotionBaseTillingValue: 5
+    - _MotionCategory: 1
+    - _MotionDelayValue: 1
+    - _MotionElementMode: 1
+    - _MotionEnd: 1
+    - _MotionIntensityValue: 1
+    - _MotionInteractionCategory: 1
+    - _MotionNoiseValue: 0.25
+    - _MotionPosition_10: 0.5
+    - _MotionPushElementMode: 1
+    - _MotionPushInfo: 0
+    - _MotionPushIntensityValue: 0.2
+    - _MotionPushMaskValue: 0
+    - _MotionPushPivotValue: 1
+    - _MotionScale_10: 1
+    - _MotionSpeedValue: 5
+    - _MotionSpeed_10: 2
+    - _MotionTillingValue: 5
+    - _MotionWindAdvancedInfo: 0
+    - _MotionWindCategory: 1
+    - _MotionWindElementMode: 0
+    - _MotionWindEnd: 1
+    - _MotionWindMode: 1
+    - _MotionWindOffInfo: 0
+    - _MotionWindOptimizedInfo: 0
+    - _NoiseCategory: 1
+    - _NoiseEnd: 1
+    - _OverlayBakeInfo: 0
+    - _OverlayCategory: 1
+    - _OverlayElementMode: 1
+    - _OverlayEnd: 1
+    - _OverlayGlobalValue: 1
+    - _OverlayIntensityValue: 0.3
+    - _OverlayLumaValue: 0.782
+    - _OverlayMeshMode: 1
+    - _OverlayMeshValue: 0
+    - _OverlayNormalValue: 1
+    - _OverlayProjValue: 0.5
+    - _OverlayProjectionValue: 0.5
+    - _OverlaySmoothnessValue: 0.5
+    - _OverlaySpace: 1
+    - _OverlaySubsurfaceValue: 0.5
+    - _OverlayVariationValue: 0.2
+    - _RenderCoverage: 0
+    - _RenderDecals: 0
+    - _RenderMotion: 0
+    - _RenderPriority: 0
+    - _RenderQueue: 0
+    - _RenderSSR: 0
+    - _RenderShadow: 1
+    - _RenderSpecular: 1
+    - _SizeFadeCategory: 1
+    - _SizeFadeDistMaxValue: 0
+    - _SizeFadeDistMinValue: 0
+    - _SizeFadeElementMode: 0
+    - _SizeFadeEnd: 1
+    - _SizeFadeGlobalValue: 1
+    - _SizeFadeIntensityValue: 0
+    - _SizeFadeScaleMode: 0
+    - _SizeFadeScaleValue: 1
+    - _SpaceGlobalLayers: 0
+    - _SpaceGlobalLocals: 0
+    - _SpaceGlobalOptions: 0
+    - _SpaceMotionGlobals: 0
+    - _SpaceSubsurface: 0
+    - _SubsurfaceAmbientValue: 0.2
+    - _SubsurfaceAngleValue: 8
+    - _SubsurfaceCategory: 1
+    - _SubsurfaceDiffusion: 2.4708886
+    - _SubsurfaceDirectValue: 1
+    - _SubsurfaceElementMode: 0
+    - _SubsurfaceEnd: 1
+    - _SubsurfaceGlobalValue: 0
+    - _SubsurfaceHDRPInfo: 0
+    - _SubsurfaceIntensityValue: 1
+    - _SubsurfaceMaskValue: 1
+    - _SubsurfaceMultiValue: 1
+    - _SubsurfaceNormalValue: 0
+    - _SubsurfaceScatteringValue: 2
+    - _SubsurfaceShadowValue: 1
+    - _SubsurfaceSpace: 0
+    - _SubsurfaceThicknessMaskValue: 0
+    - _SubsurfaceThicknessValue: 0
+    - _SubsurfaceValue: 1
+    - _TintingBakeInfo: 0
+    - _TintingCategory: 1
+    - _TintingElementMode: 1
+    - _TintingEnd: 1
+    - _TintingGlobalValue: 1
+    - _TintingGrayValue: 1
+    - _TintingIntensityValue: 0
+    - _TintingLumaValue: 1
+    - _TintingMeshMode: 3
+    - _TintingMeshValue: 0
+    - _TintingMultiValue: 1
+    - _TintingSpace: 1
+    - _TransAmbient: 0.2
+    - _TransDirect: 1
+    - _TransNormal: 0
+    - _TransScattering: 8
+    - _TransShadow: 1
+    - _TransStrength: 2
+    - _VariationCategory: 1
+    - _VariationEnd: 1
+    - _VariationIntensityValue: 0
+    - _VariationMultiValue: 1
+    - _VariationNoisePivotValue: 0
+    - _VariationNoiseTillingValue: 1
+    - _VegetationMode: 1
+    - _VertexDynamicMode: 0
+    - _VertexOcclusionColorsMode: 0
+    - _VertexOcclusionOverlayMode: 0
+    - _VertexPivotMode: 0
+    - _VertexVariationMode: 0
+    - _WetnessBakeInfo: 0
+    - _WetnessCategory: 1
+    - _WetnessContrastValue: 0.25
+    - _WetnessElementMode: 1
+    - _WetnessEnd: 1
+    - _WetnessGlobalValue: 1
+    - _WetnessIntensityValue: 1
+    - _WetnessSmoothnessValue: 1
+    - _emissive_intensity_value: 1
+    - _emissive_power_value: 0
+    - _global_push_layer_value: 0
+    - _global_wind_layer_value: 0
+    - _render_specular: 1
+    m_Colors:
+    - _AI_Offset: {r: -0.98846674, g: 14.69436, b: -0.6802752, a: 0.0046296297}
+    - _AI_SizeOffset: {r: 29.802414, g: 29.686953, b: 0, a: -0.00028935185}
+    - _CutoutMeshRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _DrynessBlendRemap: {r: 0.1, g: 0.2, b: 10, a: 0}
+    - _DrynessColor: {r: 0.6132076, g: 0.4356667, b: 0.30371094, a: 1}
+    - _DrynessLumaRemap: {r: 0.26507077, g: 1, b: 1.3606752, a: 0}
+    - _DrynessMeshRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissiveColor: {r: 0, g: 0, b: 0, a: 0}
+    - _ImpostorColor: {r: 0.735849, g: 0.735849, b: 0.735849, a: 1}
+    - _ImpostorColorTwo: {r: 1, g: 1, b: 1, a: 1}
+    - _NoiseMaskRemap: {r: 0, g: 0, b: 0, a: 0}
+    - _OverlayBlendRemap: {r: 0.1, g: 0.2, b: 10, a: 0}
+    - _OverlayBlendRemap1: {r: 0.1, g: 0.2, b: 0, a: 0}
+    - _OverlayColor: {r: 0.2815503, g: 0.4009458, b: 0.5377358, a: 1}
+    - _OverlayLumaRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _OverlayMeshRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _OverlayProjRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _SubsurfaceColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SubsurfaceDiffusion_Asset: {r: -0.2281605, g: -3.4108302e+22, b: -2.5569337e-24, a: 36.053864}
+    - _TintingBlendRemap: {r: 0.1, g: 0.2, b: 10, a: 0}
+    - _TintingColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TintingLumaRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _TintingMeshRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _VariationColorOne: {r: 0.4573758, g: 0.6226415, b: 0.2144001, a: 1}
+    - _VariationColorTwo: {r: 0.7450981, g: 0.5238863, b: 0.1098039, a: 1}
+    - _VariationNoiseRemap: {r: 0, g: 1, b: 1, a: 0}
+    - _VertexOcclusionColor: {r: 0, g: 0, b: 0, a: 0.4392157}
+    - _cutout_vert_mode: {r: 1, g: 0, b: 0, a: 0}
+    - _dryness_vert_mode: {r: 1, g: 0, b: 0, a: 0}
+    - _overlay_vert_mode: {r: 0, g: 1, b: 0, a: 0}
+    - _tinting_vert_mode: {r: 0, g: 0, b: 0, a: 1}
+  m_BuildTextureStacks: []
