@@ -38,6 +38,7 @@ public class EnemySceneSetup : MonoBehaviour
         if (!NetworkManager.Singleton.IsServer)
             yield break;
 
+
         BuildNavMesh();
         yield return null;
 
@@ -81,6 +82,22 @@ public class EnemySceneSetup : MonoBehaviour
         {
             Debug.LogError("EnemySceneSetup: no hay geometria para armar el NavMesh.", this);
             return;
+        }
+
+        
+        foreach (var source in sources)
+        {
+            if (source.sourceObject is Mesh mesh)
+            {
+                Debug.Log(
+                $"Mesh: {mesh.name} | Readable: {mesh.isReadable}");
+
+                if (mesh.name == "COL")
+                {
+                    Debug.LogError(
+                    $"Encontrada mesh COL en objeto: {source.component?.gameObject.name}");
+                }
+            }
         }
 
         NavMeshData data = NavMeshBuilder.BuildNavMeshData(
