@@ -85,7 +85,7 @@
     },
     "com.unity.mathematics": {
       "version": "1.4.0",
-      "depth": 2,
+      "depth": 1,
       "source": "builtin",
       "dependencies": {}
     },
@@ -211,15 +211,15 @@
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.modules.unitywebrequest": "1.0.0",
-        "com.unity.nuget.newtonsoft-json": "3.2.2",
-        "com.unity.services.authentication": "3.7.0",
-        "com.unity.services.core": "1.18.0",
-        "com.unity.services.qos": "1.4.1",
-        "com.unity.services.wire": "1.5.1",
         "com.unity.transport": "2.7.3",
         "com.unity.collections": "2.6.7",
-        "com.unity.services.deployment": "1.7.2"
+        "com.unity.services.qos": "1.4.1",
+        "com.unity.services.core": "1.18.0",
+        "com.unity.services.wire": "1.5.1",
+        "com.unity.services.deployment": "1.7.2",
+        "com.unity.nuget.newtonsoft-json": "3.2.2",
+        "com.unity.modules.unitywebrequest": "1.0.0",
+        "com.unity.services.authentication": "3.7.0"
       },
       "url": "https://packages.unity.com"
     },

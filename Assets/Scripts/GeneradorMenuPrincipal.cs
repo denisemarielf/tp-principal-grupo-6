@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -12,9 +13,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // ============================================================
 
     [Header("Configuración de Escenas (3 Mapas)")]
-    public string nombreEscenaMapa1 = "Mapa_Suburbio";
-    public string nombreEscenaMapa2 = "Mapa_Ciudad";
-    public string nombreEscenaMapa3 = "Mapa_Bosque";
+    public string nombreEscenaMapa1 = "SampleScene";
+    public string nombreEscenaMapa2 = "TestConexion";
+    public string nombreEscenaMapa3 = "TestConexion";
 
     [Header("Objetivos de los Mapas")]
     [TextArea(2, 5)]
@@ -67,10 +68,25 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private TextMeshProUGUI[] listaRanurasJugadores =
         new TextMeshProUGUI[4];
 
-    private TMP_InputField inputIP;
-    private TMP_InputField inputPuerto;
+    private TMP_InputField inputCodigoSala;
     private TMP_InputField inputNombreHost;
     private TMP_InputField inputNombreCliente;
+
+    // Solo el host puede iniciar la partida; los clientes no ven el botón.
+    private Button btnIniciarPartida;
+
+
+    // ============================================================
+    // ESTADO DE RED
+    // ============================================================
+
+    private string codigoSala;
+
+    // Se incrementa al salir del lobby, para descartar una creación/conexión
+    // que todavía estaba en curso cuando el jugador se fue.
+    private int intentoConexion;
+
+    private bool suscritoARed;
 
 
     // ============================================================
@@ -123,6 +139,12 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     {
         InicializarAudio();
         ConstruirInterfazCompleta();
+    }
+
+
+    void OnDestroy()
+    {
+        DesuscribirDeRed();
     }
 
 
@@ -523,7 +545,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         CrearTitulo(
             panelUnirseSala.transform,
             "UNIRSE A SALA",
-            "— CONEXIÓN DIRECTA POR IP —"
+            "— CONEXIÓN POR CÓDIGO DE SALA —"
         );
 
         GameObject marcoUnirse =
@@ -547,18 +569,11 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 "Sobreviviente"
             );
 
-        inputIP =
+        inputCodigoSala =
             CrearCampoTextoRetro(
                 contUnirse.transform,
-                "DIRECCIÓN IP",
-                "127.0.0.1"
-            );
-
-        inputPuerto =
-            CrearCampoTextoRetro(
-                contUnirse.transform,
-                "PUERTO",
-                "7777"
+                "CÓDIGO DE SALA",
+                ""
             );
 
         CrearBotonZombieTMP(
@@ -631,8 +646,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         rtDetalles.anchoredPosition =
             new Vector2(0, 180);
 
+        // Dos líneas: código de sala + detalles de la partida.
         rtDetalles.sizeDelta =
-            new Vector2(900, 50);
+            new Vector2(900, 90);
 
 
         // MARCO
@@ -768,17 +784,18 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         rtContLobby.sizeDelta =
             new Vector2(900, 80);
 
-        CrearBotonZombieTMP(
-            contBotonesLobby.transform,
-            "INICIAR PARTIDA",
-            IniciarPartidaDesdeLobby,
-            colorRojoSangre
-        );
+        btnIniciarPartida =
+            CrearBotonZombieTMP(
+                contBotonesLobby.transform,
+                "INICIAR PARTIDA",
+                IniciarPartidaDesdeLobby,
+                colorRojoSangre
+            );
 
         CrearBotonZombieTMP(
             contBotonesLobby.transform,
             "SALIR DEL LOBBY",
-            AbrirSeleccionRed,
+            SalirDelLobby,
             new Color(0.2f, 0.22f, 0.25f)
         );
 
@@ -1391,10 +1408,112 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
 
     // ============================================================
-    // CREAR SALA
+    // CREAR SALA (HOST)
     // ============================================================
 
-    public void ConfirmarCrearSala()
+    public async void ConfirmarCrearSala()
+    {
+        int intento =
+            PrepararLobbyRed("CREANDO SALA...");
+
+        try
+        {
+            await GameSessionManager.PrepareHostAsync();
+
+            if (intento != intentoConexion)
+                return;
+
+            // Antes de arrancar, para recibir también la conexión del propio host.
+            SuscribirARed();
+
+            string codigo =
+                await RelayConnectionManager.StartHostAsync(
+                    GameSessionManager.MaxPlayers - 1
+                );
+
+            if (intento != intentoConexion)
+            {
+                // El jugador salió del lobby mientras se creaba la sala.
+                CerrarConexion();
+                return;
+            }
+
+            codigoSala = codigo;
+
+            Debug.Log(
+                $"GeneradorMenuPrincipal: código de sala -> {codigoSala}"
+            );
+
+            btnIniciarPartida.gameObject.SetActive(true);
+            btnIniciarPartida.interactable = true;
+
+            ActualizarLobbyRed();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+
+            if (intento == intentoConexion)
+                TerminarLobbyConMensaje("NO SE PUDO CREAR LA SALA.");
+        }
+    }
+
+
+    // ============================================================
+    // UNIRSE A SALA (CLIENTE)
+    // ============================================================
+
+    public async void ConfirmarUnirseSala()
+    {
+        string codigo =
+            inputCodigoSala.text.Trim().ToUpperInvariant();
+
+        if (string.IsNullOrEmpty(codigo))
+        {
+            if (inputCodigoSala.placeholder is TMP_Text placeholder)
+                placeholder.text = "¡Ingresá un código de sala!";
+
+            return;
+        }
+
+        int intento =
+            PrepararLobbyRed($"CONECTANDO A LA SALA {codigo}...");
+
+        codigoSala = codigo;
+
+        try
+        {
+            await GameSessionManager.PrepareClientAsync();
+
+            if (intento != intentoConexion)
+                return;
+
+            SuscribirARed();
+
+            await RelayConnectionManager.StartClientAsync(codigo);
+
+            if (intento != intentoConexion)
+                CerrarConexion();
+
+            // El lobby se actualiza al llegar el evento de conexión (OnEventoConexion).
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+
+            if (intento == intentoConexion)
+                TerminarLobbyConMensaje("NO SE PUDO CONECTAR. VERIFICÁ EL CÓDIGO.");
+        }
+    }
+
+
+    // ============================================================
+    // LOBBY EN RED
+    // ============================================================
+
+    // Muestra el lobby vacío con un mensaje de estado y devuelve el
+    // número de intento, para detectar si el jugador se fue mientras tanto.
+    private int PrepararLobbyRed(string estado)
     {
         OcultarTodosLosPaneles();
 
@@ -1402,6 +1521,82 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         LimpiarSeleccionUI();
 
+        codigoSala = null;
+
+        btnIniciarPartida.gameObject.SetActive(false);
+
+        txtDetallesLobby.text = estado;
+
+        MostrarRanurasJugadores(0);
+
+        return ++intentoConexion;
+    }
+
+
+    // clienteSaliente: id que se está desconectando y puede seguir en la lista.
+    private void ActualizarLobbyRed(ulong? clienteSaliente = null)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        if (networkManager == null || !networkManager.IsListening)
+            return;
+
+        int cantidad = 0;
+
+        foreach (ulong clientId in networkManager.ConnectedClientsIds)
+        {
+            if (clientId != clienteSaliente)
+                cantidad++;
+        }
+
+        MostrarRanurasJugadores(cantidad);
+
+        if (string.IsNullOrEmpty(codigoSala))
+            return;
+
+        if (networkManager.IsServer)
+        {
+            txtDetallesLobby.text =
+                $"CÓDIGO DE SALA: {codigoSala}\n" +
+                TextoDetallesPartida();
+        }
+        else if (networkManager.IsConnectedClient)
+        {
+            txtDetallesLobby.text =
+                $"SALA: {codigoSala}\n" +
+                "ESPERANDO A QUE EL LÍDER INICIE LA PARTIDA";
+        }
+    }
+
+
+    private void MostrarRanurasJugadores(int cantidadConectados)
+    {
+        for (int i = 0; i < listaRanurasJugadores.Length; i++)
+        {
+            if (i < cantidadConectados)
+            {
+                listaRanurasJugadores[i].text =
+                    (i == 0)
+                    ? "1. Jugador 1 (LÍDER)"
+                    : $"{i + 1}. Jugador {i + 1}";
+
+                listaRanurasJugadores[i].color =
+                    colorVerdeZombie;
+            }
+            else
+            {
+                listaRanurasJugadores[i].text =
+                    $"{i + 1}. [ Esperando Jugador... ]";
+
+                listaRanurasJugadores[i].color =
+                    Color.gray;
+            }
+        }
+    }
+
+
+    private string TextoDetallesPartida()
+    {
         string[] nombresMapas =
         {
             "Suburbio Zombie",
@@ -1416,110 +1611,144 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             "Difícil"
         };
 
-        string nombreHost =
-            string.IsNullOrEmpty(
-                inputNombreHost.text
-            )
-            ? "Host_Zombie"
-            : inputNombreHost.text;
-
-
-        txtDetallesLobby.text =
+        return
             $"MAPA: {nombresMapas[mapaSeleccionado].ToUpper()}  |  " +
             $"DIFICULTAD: {nombresDifs[dificultadSeleccionada].ToUpper()}";
+    }
 
 
-        listaRanurasJugadores[0].text =
-            $"1. {nombreHost} (LÍDER)";
-
-        listaRanurasJugadores[0].color =
-            colorVerdeZombie;
-
-
-        for (int i = 1; i < 4; i++)
+    private void OnEventoConexion(
+        NetworkManager networkManager,
+        ConnectionEventData data
+    )
+    {
+        switch (data.EventType)
         {
-            listaRanurasJugadores[i].text =
-                $"{i + 1}. [ Esperando Jugador... ]";
+            case ConnectionEvent.ClientConnected:
+            case ConnectionEvent.PeerConnected:
+                ActualizarLobbyRed();
+                break;
 
-            listaRanurasJugadores[i].color =
-                Color.gray;
+            case ConnectionEvent.PeerDisconnected:
+                ActualizarLobbyRed(data.ClientId);
+                break;
+
+            case ConnectionEvent.ClientDisconnected:
+                if (networkManager.IsServer)
+                {
+                    if (data.ClientId != NetworkManager.ServerClientId)
+                        ActualizarLobbyRed(data.ClientId);
+                }
+                else
+                {
+                    // Rechazado (partida iniciada / sala llena) o el host cerró la sala.
+                    string motivo =
+                        string.IsNullOrEmpty(networkManager.DisconnectReason)
+                        ? "EL LÍDER CERRÓ LA SALA O SE PERDIÓ LA CONEXIÓN."
+                        : networkManager.DisconnectReason.ToUpper();
+
+                    TerminarLobbyConMensaje(motivo);
+                }
+                break;
         }
     }
 
 
-    // ============================================================
-    // UNIRSE
-    // ============================================================
-
-    public void ConfirmarUnirseSala()
+    private void OnFalloTransporte()
     {
-        OcultarTodosLosPaneles();
-
-        panelLobby.SetActive(true);
-
-        LimpiarSeleccionUI();
-
-        string nombreCliente =
-            string.IsNullOrEmpty(
-                inputNombreCliente.text
-            )
-            ? "Sobreviviente"
-            : inputNombreCliente.text;
-
-        string ip =
-            string.IsNullOrEmpty(
-                inputIP.text
-            )
-            ? "127.0.0.1"
-            : inputIP.text;
-
-        string puerto =
-            string.IsNullOrEmpty(
-                inputPuerto.text
-            )
-            ? "7777"
-            : inputPuerto.text;
+        TerminarLobbyConMensaje("SE PERDIÓ LA CONEXIÓN DE RED.");
+    }
 
 
-        txtDetallesLobby.text =
-            $"CONECTADO A: {ip}:{puerto}";
+    // Corta la conexión pero deja el lobby abierto mostrando el motivo;
+    // el jugador vuelve con "SALIR DEL LOBBY".
+    private void TerminarLobbyConMensaje(string mensaje)
+    {
+        intentoConexion++;
+
+        CerrarConexion();
+
+        codigoSala = null;
+
+        btnIniciarPartida.gameObject.SetActive(false);
+
+        MostrarRanurasJugadores(0);
+
+        txtDetallesLobby.text = mensaje;
+    }
 
 
-        listaRanurasJugadores[0].text =
-            "1. Host_Server (LÍDER)";
+    public void SalirDelLobby()
+    {
+        intentoConexion++;
 
-        listaRanurasJugadores[0].color =
-            Color.white;
+        CerrarConexion();
 
+        codigoSala = null;
 
-        listaRanurasJugadores[1].text =
-            $"2. {nombreCliente} (TÚ)";
-
-        listaRanurasJugadores[1].color =
-            colorVerdeZombie;
+        AbrirSeleccionRed();
+    }
 
 
-        listaRanurasJugadores[2].text =
-            "3. [ Esperando Jugador... ]";
+    // Si el que sale es el host, la sala se cierra para todos.
+    private void CerrarConexion()
+    {
+        DesuscribirDeRed();
 
-        listaRanurasJugadores[2].color =
-            Color.gray;
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        if (networkManager != null &&
+            networkManager.IsListening &&
+            !networkManager.ShutdownInProgress)
+        {
+            networkManager.Shutdown();
+        }
+    }
 
 
-        listaRanurasJugadores[3].text =
-            "4. [ Esperando Jugador... ]";
+    private void SuscribirARed()
+    {
+        if (suscritoARed)
+            return;
 
-        listaRanurasJugadores[3].color =
-            Color.gray;
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        networkManager.OnConnectionEvent += OnEventoConexion;
+        networkManager.OnTransportFailure += OnFalloTransporte;
+
+        suscritoARed = true;
+    }
+
+
+    private void DesuscribirDeRed()
+    {
+        if (!suscritoARed)
+            return;
+
+        suscritoARed = false;
+
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        if (networkManager == null)
+            return;
+
+        networkManager.OnConnectionEvent -= OnEventoConexion;
+        networkManager.OnTransportFailure -= OnFalloTransporte;
     }
 
 
     // ============================================================
-    // INICIAR PARTIDA
+    // INICIAR PARTIDA (SOLO HOST)
     // ============================================================
 
+    // Inicia con los jugadores que estén en el lobby en ese momento (1 a 4).
     public void IniciarPartidaDesdeLobby()
     {
+        NetworkManager networkManager = NetworkManager.Singleton;
+
+        if (networkManager == null || !networkManager.IsServer)
+            return;
+
         string escenaACargar =
             nombreEscenaMapa1;
 
@@ -1531,9 +1760,16 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             escenaACargar =
                 nombreEscenaMapa3;
 
-        SceneManager.LoadScene(
-            escenaACargar
-        );
+        if (GameSessionManager.StartGame(escenaACargar))
+        {
+            btnIniciarPartida.interactable = false;
+        }
+        else
+        {
+            txtDetallesLobby.text =
+                $"CÓDIGO DE SALA: {codigoSala}\n" +
+                $"NO SE PUDO CARGAR LA ESCENA '{escenaACargar}'";
+        }
     }
 
 
@@ -1924,7 +2160,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // BOTÓN PRINCIPAL
     // ============================================================
 
-    private void CrearBotonZombieTMP(
+    private Button CrearBotonZombieTMP(
         Transform padre,
         string texto,
         UnityEngine.Events.UnityAction accion,
@@ -2130,6 +2366,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         rtTxt.offsetMax =
             Vector2.zero;
+
+        return btn;
     }
 
 

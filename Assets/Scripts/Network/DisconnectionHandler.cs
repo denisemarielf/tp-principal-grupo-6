@@ -19,6 +19,7 @@ public class DisconnectionHandler : MonoBehaviour
     private NetworkManager networkManager;
     private Coroutine hideNoticeRoutine;
     private bool sessionActive;
+    private bool returnToMenuOnDismiss;
 
     private void Start()
     {
@@ -36,6 +37,9 @@ public class DisconnectionHandler : MonoBehaviour
         }
 
         HideNotice();
+
+        // La escena de juego se carga desde el lobby con la sesion ya iniciada.
+        sessionActive = networkManager.IsListening;
 
         networkManager.OnServerStarted += OnSessionStarted;
         networkManager.OnClientStarted += OnSessionStarted;
@@ -63,12 +67,19 @@ public class DisconnectionHandler : MonoBehaviour
         UnlockCursor();
         HideNotice();
         SessionEnded?.Invoke();
+        GameSessionManager.ReturnToMainMenu();
     }
 
     // Para un boton "Aceptar" en el aviso.
     public void DismissNotice()
     {
         HideNotice();
+
+        if (returnToMenuOnDismiss)
+        {
+            returnToMenuOnDismiss = false;
+            GameSessionManager.ReturnToMainMenu();
+        }
     }
 
     private void OnSessionStarted()
@@ -155,8 +166,17 @@ public class DisconnectionHandler : MonoBehaviour
 
         ShutdownNetwork();
         UnlockCursor();
-        ShowNotice(message, 0f);
         SessionEnded?.Invoke();
+
+        // Sin aviso en pantalla no hay boton "Aceptar": se vuelve directo al menu.
+        if (noticePanel == null && noticeText == null)
+        {
+            GameSessionManager.ReturnToMainMenu();
+            return;
+        }
+
+        ShowNotice(message, 0f);
+        returnToMenuOnDismiss = true;
     }
 
     private void ShutdownNetwork()

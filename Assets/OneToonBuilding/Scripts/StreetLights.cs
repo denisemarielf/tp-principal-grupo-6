@@ -9,7 +9,9 @@ namespace ToonTown
     {        
         void Update()
         {
-            Vector3 viewline = new(Camera.main.transform.position.x, transform.position.y, Camera.main.transform.position.z);
+            Camera cam = Camera.main;
+            if (cam == null) return;
+            Vector3 viewline = new(cam.transform.position.x, transform.position.y, cam.transform.position.z);
             transform.LookAt(viewline, transform.parent.transform.up);            
         }        
     }
