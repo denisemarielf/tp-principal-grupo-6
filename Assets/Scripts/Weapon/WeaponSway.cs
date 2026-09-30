@@ -24,9 +24,10 @@ public class WeaponSway : NetworkBehaviour
     public float recoilRecoverySpeed = 6f;
     private float currentRecoil;
 
-    
+
     [Header("Recarga (dip visual)")]
     public float reloadDipAmount = 0.08f;
+    public float reloadTiltAmount = 35f; 
     private float reloadDipCurrent = 0f;
     private Coroutine reloadDipRoutine;
 
@@ -70,7 +71,9 @@ public class WeaponSway : NetworkBehaviour
         Quaternion xAngle = Quaternion.AngleAxis(mouseX * -1f, Vector3.up);
         Quaternion yAngle = Quaternion.AngleAxis(mouseY * -1f, Vector3.right);
         Quaternion recoilRotation = Quaternion.AngleAxis(-currentRecoil, Vector3.right);
-        Quaternion targetRotation = startRotation * xAngle * yAngle * recoilRotation;
+        Quaternion reloadTiltRotation = Quaternion.AngleAxis(reloadTiltAmount * reloadDipCurrent, Vector3.right); // NUEVO
+
+        Quaternion targetRotation = startRotation * xAngle * yAngle * recoilRotation * reloadTiltRotation;
         transform.localRotation = Quaternion.Lerp(
             transform.localRotation,
             targetRotation,
@@ -78,7 +81,6 @@ public class WeaponSway : NetworkBehaviour
         );
     }
 
-    
     public void PlayReloadDip(float duration)
     {
         if (reloadDipRoutine != null) StopCoroutine(reloadDipRoutine);

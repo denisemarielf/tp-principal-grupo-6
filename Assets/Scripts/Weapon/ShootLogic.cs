@@ -61,6 +61,8 @@ public class ShootLogic : NetworkBehaviour
     private void TryShoot()
     {
         if (Time.time < shootRateTime) return;
+        if (ammoManager.IsReloading) return; 
+
         shootRateTime = Time.time + shootRate;
 
         if (!ammoManager.HasAmmo)
@@ -71,12 +73,8 @@ public class ShootLogic : NetworkBehaviour
         }
         ammoManager.ConsumeShot();
 
-        // Efectos para mí mismo, instantáneos, sin esperar ida y vuelta al servidor
         weaponLogic.PlayShootEffectsLocal();
-
         weaponLogic.ApplyCameraRecoil();
-
-        // La bala real la crea el servidor, y desde ahí avisa al resto
         weaponLogic.RequestFire();
     }
 
