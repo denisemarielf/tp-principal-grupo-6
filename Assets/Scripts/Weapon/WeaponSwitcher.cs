@@ -246,11 +246,9 @@ public class WeaponSwitcher : NetworkBehaviour
             )
         );
 
-        Debug.Log(
-            $"[UpdateWeaponVisuals] index pedido: {index} " +
-            $"| array completo: [{arrayState}] " +
-            $"| networkWeaponIndex.Value: {networkWeaponIndex.Value}"
-        );
+      
+
+
 
         for (int i = 0; i < weapons.Length; i++)
         {
