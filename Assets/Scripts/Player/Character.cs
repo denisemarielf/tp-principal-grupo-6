@@ -86,7 +86,7 @@ public class Character : NetworkBehaviour
     }
     public void OnInteraction(InputAction.CallbackContext context)
     {
-        Debug.Log("interactuando");
+        
         if (!IsOwner) return;
         if (!context.performed) return;
 

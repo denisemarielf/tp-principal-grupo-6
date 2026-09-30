@@ -26,7 +26,9 @@ public class ShootLogic : NetworkBehaviour
     /// GameObject sigue vivo y corriendo aunque no esté equipada).</summary>
     public void SetEquipped(bool equipped)
     {
+
         isEquipped = equipped;
+       
     }
 
     private void Update()
@@ -37,6 +39,7 @@ public class ShootLogic : NetworkBehaviour
         // arma guardada (no equipada) siga disparando porque el botón físico
         // es el mismo para todas.
         if (!IsOwner || !isEquipped) return;
+       
         if (isAutomatic && shootAction != null && shootAction.IsPressed())
         {
             TryShoot();
