@@ -42,6 +42,7 @@ public class WeaponSwitcher : NetworkBehaviour
 
     private ShootLogic currentWeaponShoot;
 
+
     private NetworkVariable<int> networkWeaponIndex = new NetworkVariable<int>(
         -1,
         NetworkVariableReadPermission.Everyone,
@@ -70,7 +71,16 @@ public class WeaponSwitcher : NetworkBehaviour
         currentWeaponShoot != null
             ? currentWeaponShoot.GetComponent<WeaponLogic>()
             : null;
+    public AmmoManager CurrentAmmoManager
+    {
+        get
+        {
+            if (currentWeaponShoot == null)
+                return null;
 
+            return currentWeaponShoot.GetComponent<AmmoManager>();
+        }
+    }
 
     // =========================================================
     // NETWORK SPAWN
@@ -720,4 +730,6 @@ public class WeaponSwitcher : NetworkBehaviour
             netObj.Spawn();
         }
     }
+
+    
 }

@@ -82,6 +82,9 @@ public class AmmoManager : MonoBehaviour
 
     public void AddReserveAmmo(int amount)
     {
+
+
         reserveAmmo += amount;
+
     }
 }

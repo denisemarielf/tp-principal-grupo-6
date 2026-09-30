@@ -185,7 +185,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraControllerFPS
   ShowTopMostFoldoutHeaderGroup: 1
-  sensitivity: 5
+  sensitivity: 7
   weaponPivot: {fileID: 3397521597446235570}
   weaponSwitcher: {fileID: 1799769263884393209}
 --- !u!114 &7185841138106832991
@@ -2754,7 +2754,7 @@ MonoBehaviour:
   interactRange: 2
   pickupLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 256
 --- !u!114 &3387334421733288998
 MonoBehaviour:
   m_ObjectHideFlags: 0
