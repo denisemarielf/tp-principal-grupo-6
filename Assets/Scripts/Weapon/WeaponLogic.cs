@@ -134,7 +134,7 @@ public class WeaponLogic : NetworkBehaviour
 
     private void ApplyHitscanDamage(Collider hitCollider)
     {
-        //NOTA Para cualquier dev, esto puede migrar a otro script si es necesario
+        //NOTA esto puede migrar a otro script si es necesario
         /*
         
         EnemyHealth enemyHealth = hitCollider.GetComponentInParent<EnemyHealth>();

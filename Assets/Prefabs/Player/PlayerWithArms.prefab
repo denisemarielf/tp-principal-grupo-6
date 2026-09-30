@@ -200,9 +200,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2b1c03d111f43d4e8bf9ab9eb7868b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraBob
-  walkBobSpeed: 6
-  walkBobAmount: 0.05
-  sprintBobSpeed: 10
+  walkBobSpeed: 8
+  walkBobAmount: 0.07
+  sprintBobSpeed: 12
   sprintBobAmount: 0.1
 --- !u!1 &479979523328810797
 GameObject:
@@ -4870,6 +4870,10 @@ PrefabInstance:
     - target: {fileID: 2440349589409482684, guid: a421fc8a19355184e8628e45833329e1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5686482908620264644, guid: a421fc8a19355184e8628e45833329e1, type: 3}
+      propertyPath: breathingFrequency
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 5756337227265616156, guid: a421fc8a19355184e8628e45833329e1, type: 3}
       propertyPath: m_Name

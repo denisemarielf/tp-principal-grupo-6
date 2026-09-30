@@ -41,9 +41,10 @@ public class AmmoCase : NetworkBehaviour
         UpdateVisuals(isAvailable.Value);
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
         isAvailable.OnValueChanged -= OnAvailabilityChanged;
+        base.OnDestroy();
     }
 
     private void OnAvailabilityChanged(bool oldValue, bool newValue)
