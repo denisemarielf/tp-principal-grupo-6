@@ -10007,6 +10007,7 @@ MonoBehaviour:
   recoilKick: 8
   recoilRecoverySpeed: 6
   reloadDipAmount: 0.08
+  reloadTiltAmount: 35
 --- !u!1 &3938892594572538807
 GameObject:
   m_ObjectHideFlags: 0
@@ -25219,9 +25220,9 @@ MonoBehaviour:
   magazineSize: 12
   reserveAmmo: 60
   reloadTime: 1.5
-  audioSource: {fileID: 0}
-  reloadSound: {fileID: 0}
-  emptySound: {fileID: 0}
+  audioSource: {fileID: 4486189096107744166}
+  reloadSound: {fileID: 8300000, guid: 544538693245ef04ea3630acdba418d9, type: 3}
+  emptySound: {fileID: 8300000, guid: 1a1d08bada427b34c815e52edd0b33f1, type: 3}
   weaponSway: {fileID: 0}
 --- !u!114 &3232017488082613912
 MonoBehaviour:
