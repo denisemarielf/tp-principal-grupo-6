@@ -12,7 +12,12 @@ public class Character : NetworkBehaviour
     [Header("Spawn")]
     [SerializeField] private float spawnSpacing = 2f;
 
+    [Header("HUD")]
+    [Tooltip("Canvas hijo con la barra de vida propia y la de los compañeros. Solo se activa en el personaje del jugador local.")]
+    [SerializeField] private GameObject localHud;
+
     private PMovement movement;
+    private PlayerHealth health;
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
 
@@ -20,6 +25,7 @@ public class Character : NetworkBehaviour
     private void Awake()
     {
         movement = GetComponent<PMovement>();
+        health = GetComponent<PlayerHealth>();
 
     }
 
@@ -51,20 +57,25 @@ public class Character : NetworkBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || IsDead()) return;
 
         movement.SetMoveInput(context.ReadValue<Vector2>());
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || IsDead()) return;
 
 
         if (context.performed)
         {
             movement.TryJump();
         }
+    }
+
+    private bool IsDead()
+    {
+        return health != null && health.IsDead;
     }
 
     private void SetLocalOnlyComponents(bool isLocal)
@@ -85,6 +96,13 @@ public class Character : NetworkBehaviour
         foreach (AudioListener listener in GetComponentsInChildren<AudioListener>(true))
         {
             listener.enabled = isLocal;
+        }
+
+        // Cada jugador tiene su copia del HUD en el prefab; si no se apagaran las de los demas,
+        // las barras quedarian superpuestas en pantalla.
+        if (localHud != null)
+        {
+            localHud.SetActive(isLocal);
         }
     }
 
