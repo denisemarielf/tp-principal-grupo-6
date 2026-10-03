@@ -88,8 +88,6 @@ public class WeaponSwitcher : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // Todas las armas permanecen ACTIVAS.
-        // No usamos SetActive(false) para ocultarlas.
         foreach (var entry in allWeapons)
         {
             if (entry.weaponObject != null)
@@ -98,9 +96,17 @@ public class WeaponSwitcher : NetworkBehaviour
             }
         }
 
-        // Layer de las armas:
-        // Owner -> Weapon
-        // Otros jugadores -> Default
+        // NUEVO: los brazos en primera persona (ArmsSoldier) SOLO los debe
+        // renderizar la WeaponCamera propia de cada jugador. Nadie más -ni
+        // siquiera otros jugadores mirando a este personaje- debe verlos
+        // jamás, sea o no el dueño. Por eso van siempre a "Weapon", sin
+        // depender de IsOwner.
+        if (armsModel != null)
+        {
+            SetLayerRecursively(armsModel, LayerMask.NameToLayer("Weapon"));
+        }
+
+        // Layer de las armas: Owner -> Weapon, Otros jugadores -> Default
         int targetLayer = IsOwner
             ? LayerMask.NameToLayer("Weapon")
             : LayerMask.NameToLayer("Default");
@@ -112,6 +118,7 @@ public class WeaponSwitcher : NetworkBehaviour
                 SetLayerRecursively(entry.weaponObject, targetLayer);
             }
         }
+
 
         // El servidor inicializa los slots
         // según las armas asignadas inicialmente en el Inspector.

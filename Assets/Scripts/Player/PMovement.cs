@@ -89,7 +89,8 @@ public class PMovement : NetworkBehaviour
 
         if (animator != null)
         {
-            animator.SetFloat("speed", 0f);
+            animator.SetFloat("velX", 0f);
+            animator.SetFloat("velZ", 0f);
         }
     }
 
@@ -178,10 +179,10 @@ public class PMovement : NetworkBehaviour
         if (animator == null)
             return;
 
-        float speedValue = moveInput.magnitude;
-
-
-        animator.SetFloat("speed", speedValue);
+        animator.SetFloat("velX", moveInput.x, 0.1f, Time.deltaTime);
+        animator.SetFloat("velZ", moveInput.y, 0.1f, Time.deltaTime);
+        bool isActuallySprinting = isSprinting && moveInput.magnitude > 0.1f;
+        animator.SetBool("isSprinting", isActuallySprinting);
     }
 
     public void ApplySpeedBoost(
