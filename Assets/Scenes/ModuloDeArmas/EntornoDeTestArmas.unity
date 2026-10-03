@@ -446,9 +446,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2288351036282426086, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3649585742649032125, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
       propertyPath: m_Name
       value: PlayerWithModel(ARMS)
+      objectReference: {fileID: 0}
+    - target: {fileID: 4674903644811864274, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.075
+      objectReference: {fileID: 0}
+    - target: {fileID: 4674903644811864274, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.942
       objectReference: {fileID: 0}
     - target: {fileID: 4807962756490916920, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
       propertyPath: m_InScenePlaced

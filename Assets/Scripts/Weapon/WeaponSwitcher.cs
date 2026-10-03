@@ -39,6 +39,7 @@ public class WeaponSwitcher : NetworkBehaviour
     [Header("Brazos")]
     public GameObject armsModel;
     public ArmsGripController armsGripController;
+    public ArmsGripController characterModelGripController;
 
     private ShootLogic currentWeaponShoot;
 

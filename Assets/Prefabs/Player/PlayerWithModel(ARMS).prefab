@@ -1109,6 +1109,7 @@ MonoBehaviour:
   crosshairController: {fileID: 5381888727836003776}
   armsModel: {fileID: 3661677915498007568}
   armsGripController: {fileID: 6665713398806273731}
+  characterModelGripController: {fileID: 7132282807113721876}
 --- !u!82 &5645834622738465768
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1628,9 +1629,9 @@ CapsuleCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.5
-  m_Height: 2
+  m_Height: 4.04
   m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 1.05, z: 0}
 --- !u!143 &6215505632010540220
 CharacterController:
   m_ObjectHideFlags: 0
@@ -1898,7 +1899,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2087873724
+  GlobalObjectIdHash: 649605470
   InScenePlacedSourceGlobalObjectIdHash: 2090139715
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -3759,7 +3760,7 @@ Transform:
   m_GameObject: {fileID: 6916628325417275949}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.06251, y: 2.41, z: -0.042729974}
+  m_LocalPosition: {x: 0.075, y: 1.942, z: -0.042729974}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5987,7 +5988,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2149093343584553260, guid: 926d85f70503e6247bce4841279e1446, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1516933005
+      value: 4102745408
       objectReference: {fileID: 0}
     - target: {fileID: 2149093343584553260, guid: 926d85f70503e6247bce4841279e1446, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
