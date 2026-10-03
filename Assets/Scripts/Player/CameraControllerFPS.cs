@@ -31,9 +31,16 @@ public class CameraControllerFPS : NetworkBehaviour
     {
         if (IsOwner)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            SetCursorLocked(true);
         }
+    }
+
+    // Esc libera el cursor para poder usar la UI (por ejemplo "Salir de la partida") y lo vuelve a bloquear.
+    // Mientras esta libre, el mouse no mueve la camara.
+    private void SetCursorLocked(bool locked)
+    {
+        Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible = !locked;
     }
 
     public void ResetCamera()
@@ -46,8 +53,7 @@ public class CameraControllerFPS : NetworkBehaviour
         }
         if (IsOwner)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            SetCursorLocked(true);
         }
     }
 
@@ -60,7 +66,12 @@ public class CameraControllerFPS : NetworkBehaviour
 
         if (IsOwner)
         {
-            if (Mouse.current != null)
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                SetCursorLocked(Cursor.lockState != CursorLockMode.Locked);
+            }
+
+            if (Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
             {
                 Vector2 mouseDelta = Mouse.current.delta.ReadValue();
                 float mouseX = mouseDelta.x * sensitivity * Time.deltaTime;
