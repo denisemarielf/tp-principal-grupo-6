@@ -155,6 +155,8 @@ public class WeaponSwitcher : NetworkBehaviour
 
             StartCoroutine(ReforzarVisualTrasSpawn());
         }
+
+        StartCoroutine(DeferredCatalogWeaponsActivity());
     }
 
 
@@ -210,6 +212,7 @@ public class WeaponSwitcher : NetworkBehaviour
     // LAYERS
     // =========================================================
 
+
     private void SetLayerRecursively(GameObject obj, int layer)
     {
         obj.layer = layer;
@@ -220,6 +223,42 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
+
+    // =========================================================
+    // VISIBILIDAD DE ARMAS NO EQUIPADAS (catálogo completo)
+    // =========================================================
+
+    /// <summary>
+    /// Recorre TODO el catálogo (allWeapons). Si un arma no está en el loadout
+    /// actual (weapons[]), desactiva el GameObject de su WeaponModel para que
+    /// no quede molestando en el mundo (colisiones, renders fantasma, etc.).
+    /// Las armas que SÍ están en el loadout (aunque no sean la equipada en mano)
+    /// mantienen su WeaponModel activo; UpdateWeaponVisuals ya se encarga de
+    /// mostrarlas/ocultarlas con Renderer.enabled nada más.
+    /// </summary>
+    private void UpdateCatalogWeaponsActivity()
+    {
+        foreach (var entry in allWeapons)
+        {
+            if (entry.weaponObject == null) continue;
+
+            bool isInLoadout = System.Array.IndexOf(weapons, entry.weaponObject) != -1;
+
+            Transform weaponModel = entry.weaponObject.transform.Find("WeaponModel");
+            if (weaponModel != null)
+            {
+                weaponModel.gameObject.SetActive(isInLoadout);
+            }
+        }
+    }
+    private IEnumerator DeferredCatalogWeaponsActivity()
+    {
+        // Esperamos un frame para que Netcode termine de procesar el
+        // OnNetworkSpawn de TODOS los NetworkBehaviour de este jugador
+        // (incluido WeaponSway en cada arma) antes de desactivar nada.
+        yield return null;
+        UpdateCatalogWeaponsActivity();
+    }
 
     // =========================================================
     // VISIBILIDAD DE ARMAS
@@ -576,6 +615,8 @@ public class WeaponSwitcher : NetworkBehaviour
         // ACTUALIZAR VISUAL
         // =====================================================
 
+
+        UpdateCatalogWeaponsActivity();
         if (slotIndex == networkWeaponIndex.Value)
         {
             SelectWeapon(slotIndex);

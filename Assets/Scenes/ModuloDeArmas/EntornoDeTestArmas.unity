@@ -446,6 +446,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 412469160270303865, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2288351036282426086, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -525,6 +529,14 @@ PrefabInstance:
     - target: {fileID: 8269562155449609246, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
       propertyPath: InScenePlacedSourceGlobalObjectIdHash
       value: 649605470
+      objectReference: {fileID: 0}
+    - target: {fileID: 9182063911062932141, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
+      propertyPath: weapons.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 9182063911062932141, guid: f73cb6b7c40245e42827d457fd3f66fa, type: 3}
+      propertyPath: 'weapons.Array.data[1]'
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
