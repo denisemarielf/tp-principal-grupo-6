@@ -983,7 +983,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4532196680808519682}
   m_Layer: 7
-  m_Name: LeftHandsRestPostition
+  m_Name: FPS_LeftHandsRestPostition
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1062,7 +1062,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2371208388137151791}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1949,6 +1949,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Character
   ShowTopMostFoldoutHeaderGroup: 1
+  spawnSpacing: 2
   interactRange: 2
   pickupLayer:
     serializedVersion: 2
@@ -2041,7 +2042,7 @@ Transform:
   m_GameObject: {fileID: 3661677915498007568}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.32300007, y: 0.16399956, z: -0.579}
+  m_LocalPosition: {x: -0.32299805, y: 0.16399956, z: -0.579}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2403,7 +2404,7 @@ Transform:
   m_GameObject: {fileID: 4244069672135426418}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.26049006, y: 1.917, z: 0.53627}
+  m_LocalPosition: {x: 0.26049042, y: 1.9169998, z: 0.53627014}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3760,7 +3761,7 @@ Transform:
   m_GameObject: {fileID: 6916628325417275949}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.075, y: 1.942, z: -0.042729974}
+  m_LocalPosition: {x: 0.07499695, y: 1.9419999, z: -0.042729855}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

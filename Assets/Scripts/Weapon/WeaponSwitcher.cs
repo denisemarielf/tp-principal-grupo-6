@@ -120,6 +120,13 @@ public class WeaponSwitcher : NetworkBehaviour
             }
         }
 
+        if (!IsOwner)
+        {
+           
+            // Ocultar únicamente los brazos FPS
+            if (armsModel != null)
+                armsModel.SetActive(false);
+        }
 
         // El servidor inicializa los slots
         // según las armas asignadas inicialmente en el Inspector.
