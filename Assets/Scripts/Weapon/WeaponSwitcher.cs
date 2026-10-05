@@ -372,6 +372,10 @@ public class WeaponSwitcher : NetworkBehaviour
                 weapons[index]
             );
         }
+        if (characterModelGripController != null && currentWeaponShoot != null) 
+        {
+            characterModelGripController.SetGripsForWeapon(weapons[index]);
+        }
 
 
         // =====================================================
