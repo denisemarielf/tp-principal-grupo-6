@@ -126,4 +126,9 @@ public class MedkitPickup : NetworkPickup
 
         return Vector3.Distance(localPlayer.transform.position, transform.position) <= useRadius;
     }
+
+    public float GetHealAmount()
+    {
+        return healAmount;
+    }
 }
