@@ -1,3 +1,5 @@
+ï»¿
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -6,157 +8,435 @@ public class WeaponSway : NetworkBehaviour
 {
     private Quaternion startRotation;
     private Vector3 startPosition;
+
     [Header("Bob (balanceo al caminar)")]
     private PMovement playerMovement;
-    public float bobFrequency = 8f;   // qué tan rápido oscila
-    public float bobAmount = 0.02f;   // qué tan grande es el movimiento (metros)
+
+    public float bobFrequency = 8f;
+    public float bobAmount = 0.02f;
+
     private float bobTimer = 0f;
     private float bobAmountCurrent = 0f;
 
-    [Header("Respiración en reposo")]
+    [Header("RespiraciÃ³n en reposo")]
     public float breathingFrequency = 1.5f;
     public float breathingAmount = 0.004f;
+
     private float breathingTimer = 0f;
 
+    [Header("Sway")]
     public float swayAmount = 8f;
     public float mouseSensitivity = 1.25f;
+
+    [Header("Recoil")]
     public float recoilKick = 5f;
     public float recoilRecoverySpeed = 6f;
-    private float currentRecoil;
 
+    private float currentRecoil;
 
     [Header("Recarga (dip visual)")]
     public float reloadDipAmount = 0.08f;
-    public float reloadTiltAmount = 35f; 
+    public float reloadTiltAmount = 35f;
+
     private float reloadDipCurrent = 0f;
     private Coroutine reloadDipRoutine;
 
-    void Start()
+
+    // =========================================================
+    // MOVIMIENTO SINCRONIZADO
+    // =========================================================
+
+    private NetworkVariable<bool> networkIsMoving =
+        new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner
+        );
+
+
+    // =========================================================
+    // START
+    // =========================================================
+
+    private void Start()
     {
         startRotation = transform.localRotation;
         startPosition = transform.localPosition;
-        FindPmovement();
+
+        FindPMovement();
     }
 
-    void Update()
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
+    private void Update()
     {
         HandleRecoilRecovery();
 
         if (IsOwner)
         {
-            Sway(); // sway con el mouse local + recoil, solo tiene sentido para el dueño
-            ApplyBob();
+            // Sway del mouse solamente para el jugador local.
+            Sway();
+
+            // Actualizamos el estado de movimiento.
+            UpdateMovementState();
+
+            // Bob + breathing + reload.
+            ApplyVisualMovement(
+                networkIsMoving.Value
+            );
         }
         else
         {
-            ApplyRecoilOnly(); // los demás solo ven el "kick" del retroceso, sin sway de mouse
+            // Los jugadores remotos no reciben
+            // el mouse del jugador dueÃ±o.
+
+            ApplyRemoteVisuals();
         }
     }
 
-    private void FindPmovement()
-    {
 
+    // =========================================================
+    // BUSCAR PMOVEMENT
+    // =========================================================
+
+    private void FindPMovement()
+    {
         if (playerMovement == null)
         {
-            playerMovement = GetComponentInParent<PMovement>();
+            playerMovement =
+                GetComponentInParent<PMovement>();
         }
     }
 
+
+    // =========================================================
+    // MOVIMIENTO NETWORK
+    // =========================================================
+
+    private void UpdateMovementState()
+    {
+        if (playerMovement == null)
+            return;
+
+        bool isMoving =
+            playerMovement.MoveInput.magnitude > 0.1f &&
+            playerMovement.IsGrounded;
+
+        networkIsMoving.Value = isMoving;
+    }
+
+
+    // =========================================================
+    // SWAY
+    // =========================================================
 
     private void Sway()
     {
-        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
-        float mouseX = mouseDelta.x * mouseSensitivity * Time.deltaTime;
-        float mouseY = mouseDelta.y * mouseSensitivity * Time.deltaTime;
-        Quaternion xAngle = Quaternion.AngleAxis(mouseX * -1f, Vector3.up);
-        Quaternion yAngle = Quaternion.AngleAxis(mouseY * -1f, Vector3.right);
-        Quaternion recoilRotation = Quaternion.AngleAxis(-currentRecoil, Vector3.right);
-        Quaternion reloadTiltRotation = Quaternion.AngleAxis(reloadTiltAmount * reloadDipCurrent, Vector3.right); // NUEVO
+        if (Mouse.current == null)
+            return;
 
-        Quaternion targetRotation = startRotation * xAngle * yAngle * recoilRotation * reloadTiltRotation;
-        transform.localRotation = Quaternion.Lerp(
-            transform.localRotation,
-            targetRotation,
-            Time.deltaTime * swayAmount
-        );
+        Vector2 mouseDelta =
+            Mouse.current.delta.ReadValue();
+
+        float mouseX =
+            mouseDelta.x *
+            mouseSensitivity *
+            Time.deltaTime;
+
+        float mouseY =
+            mouseDelta.y *
+            mouseSensitivity *
+            Time.deltaTime;
+
+        Quaternion xAngle =
+            Quaternion.AngleAxis(
+                mouseX * -1f,
+                Vector3.up
+            );
+
+        Quaternion yAngle =
+            Quaternion.AngleAxis(
+                mouseY * -1f,
+                Vector3.right
+            );
+
+        Quaternion recoilRotation =
+            Quaternion.AngleAxis(
+                -currentRecoil,
+                Vector3.right
+            );
+
+        Quaternion reloadTiltRotation =
+            Quaternion.AngleAxis(
+                reloadTiltAmount *
+                reloadDipCurrent,
+                Vector3.right
+            );
+
+        Quaternion targetRotation =
+            startRotation *
+            xAngle *
+            yAngle *
+            recoilRotation *
+            reloadTiltRotation;
+
+        transform.localRotation =
+            Quaternion.Lerp(
+                transform.localRotation,
+                targetRotation,
+                Time.deltaTime * swayAmount
+            );
     }
 
-    public void PlayReloadDip(float duration)
-    {
-        if (reloadDipRoutine != null) StopCoroutine(reloadDipRoutine);
-        reloadDipRoutine = StartCoroutine(ReloadDipRoutine(duration));
-    }
 
-    private System.Collections.IEnumerator ReloadDipRoutine(float duration)
-    {
-        float t = 0f;
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            float normalized = Mathf.Clamp01(t / duration);
-            // Va de 0 a 1 y vuelve a 0 a lo largo de la recarga: baja y sube.
-            reloadDipCurrent = Mathf.Sin(normalized * Mathf.PI);
-            yield return null;
-        }
-        reloadDipCurrent = 0f;
-    }
+    // =========================================================
+    // BOB + BREATHING + RELOAD
+    // =========================================================
 
-    private void ApplyBob()
+    private void ApplyVisualMovement(bool isMoving)
     {
-        if (playerMovement == null) return;
-
-        bool isMoving = playerMovement.MoveInput.magnitude > 0.1f && playerMovement.IsGrounded;
+        // =====================================================
+        // BOB
+        // =====================================================
 
         if (isMoving)
         {
-            bobTimer += Time.deltaTime * bobFrequency;
+            bobTimer +=
+                Time.deltaTime *
+                bobFrequency;
+
             bobTimer %= Mathf.PI * 2f;
         }
 
-        float targetAmplitude = isMoving ? 1f : 0f;
-        bobAmountCurrent = Mathf.Lerp(bobAmountCurrent, targetAmplitude, Time.deltaTime * 6f);
+        float targetAmplitude =
+            isMoving ? 1f : 0f;
 
-        float verticalBob = Mathf.Sin(bobTimer) * bobAmount * bobAmountCurrent;
-        float horizontalBob = Mathf.Cos(bobTimer * 0.5f) * bobAmount * 0.5f * bobAmountCurrent;
-        Vector3 bobOffset = new Vector3(horizontalBob, verticalBob, 0f);
+        bobAmountCurrent =
+            Mathf.Lerp(
+                bobAmountCurrent,
+                targetAmplitude,
+                Time.deltaTime * 6f
+            );
 
-        // NUEVO: respiración, siempre activa, se suma por encima del bob
-        breathingTimer += Time.deltaTime * breathingFrequency;
-        float breathingX = Mathf.Sin(breathingTimer) * breathingAmount;
-        float breathingY = Mathf.Sin(breathingTimer * 1.7f) * breathingAmount * 0.6f;
-        Vector3 breathingOffset = new Vector3(breathingX, breathingY, 0f);
+        float verticalBob =
+            Mathf.Sin(bobTimer) *
+            bobAmount *
+            bobAmountCurrent;
 
-         Vector3 reloadOffset = Vector3.down * reloadDipAmount * reloadDipCurrent; // NUEVO
-        Vector3 targetLocalPosition = startPosition + bobOffset + breathingOffset + reloadOffset;
-       // Vector3 targetLocalPosition = startPosition + bobOffset + breathingOffset;
+        float horizontalBob =
+            Mathf.Cos(bobTimer * 0.5f) *
+            bobAmount *
+            0.5f *
+            bobAmountCurrent;
 
-        transform.localPosition = Vector3.Lerp(
-            transform.localPosition,
-            targetLocalPosition,
-            Time.deltaTime * swayAmount
-        );
+        Vector3 bobOffset =
+            new Vector3(
+                horizontalBob,
+                verticalBob,
+                0f
+            );
+
+
+        // =====================================================
+        // BREATHING
+        // =====================================================
+
+        breathingTimer +=
+            Time.deltaTime *
+            breathingFrequency;
+
+        float breathingX =
+            Mathf.Sin(breathingTimer) *
+            breathingAmount;
+
+        float breathingY =
+            Mathf.Sin(
+                breathingTimer * 1.7f
+            ) *
+            breathingAmount *
+            0.6f;
+
+        Vector3 breathingOffset =
+            new Vector3(
+                breathingX,
+                breathingY,
+                0f
+            );
+
+
+        // =====================================================
+        // RELOAD DIP
+        // =====================================================
+
+        Vector3 reloadOffset =
+            Vector3.down *
+            reloadDipAmount *
+            reloadDipCurrent;
+
+
+        // =====================================================
+        // POSICIÃ“N FINAL
+        // =====================================================
+
+        Vector3 targetLocalPosition =
+            startPosition +
+            bobOffset +
+            breathingOffset +
+            reloadOffset;
+
+        transform.localPosition =
+            Vector3.Lerp(
+                transform.localPosition,
+                targetLocalPosition,
+                Time.deltaTime * swayAmount
+            );
     }
 
-    private void ApplyRecoilOnly()
+
+    // =========================================================
+    // VISUALES REMOTOS
+    // =========================================================
+
+    private void ApplyRemoteVisuals()
     {
-        Quaternion recoilRotation = Quaternion.AngleAxis(-currentRecoil, Vector3.right);
-        Quaternion targetRotation = startRotation * recoilRotation;
-        transform.localRotation = Quaternion.Lerp(
-            transform.localRotation,
-            targetRotation,
-            Time.deltaTime * swayAmount
+        // Bob + breathing + reload.
+        ApplyVisualMovement(
+            networkIsMoving.Value
         );
+
+
+        // Recoil + reload tilt.
+        ApplyRemoteRotation();
     }
 
-    private void HandleRecoilRecovery()
+
+    private void ApplyRemoteRotation()
     {
-        currentRecoil = Mathf.Lerp(currentRecoil, 0f, Time.deltaTime * recoilRecoverySpeed);
+        Quaternion recoilRotation =
+            Quaternion.AngleAxis(
+                -currentRecoil,
+                Vector3.right
+            );
+
+        Quaternion reloadTiltRotation =
+            Quaternion.AngleAxis(
+                reloadTiltAmount *
+                reloadDipCurrent,
+                Vector3.right
+            );
+
+        Quaternion targetRotation =
+            startRotation *
+            recoilRotation *
+            reloadTiltRotation;
+
+        transform.localRotation =
+            Quaternion.Lerp(
+                transform.localRotation,
+                targetRotation,
+                Time.deltaTime * swayAmount
+            );
     }
+
+
+    // =========================================================
+    // RELOAD
+    // =========================================================
+
+    public void PlayReloadDip(float duration)
+    {
+        // El dueÃ±o reproduce inmediatamente.
+        StartReloadDip(duration);
+
+        // Sincronizar con los demÃ¡s clientes.
+        if (IsOwner)
+        {
+            PlayReloadDipServerRpc(duration);
+        }
+    }
+
+
+    private void StartReloadDip(float duration)
+    {
+        if (reloadDipRoutine != null)
+        {
+            StopCoroutine(reloadDipRoutine);
+        }
+
+        reloadDipRoutine =
+            StartCoroutine(
+                ReloadDipRoutine(duration)
+            );
+    }
+
+
+    private IEnumerator ReloadDipRoutine(float duration)
+    {
+        float t = 0f;
+
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+
+            float normalized =
+                Mathf.Clamp01(
+                    t / duration
+                );
+
+            // 0 â†’ 1 â†’ 0
+            reloadDipCurrent =
+                Mathf.Sin(
+                    normalized * Mathf.PI
+                );
+
+            yield return null;
+        }
+
+        reloadDipCurrent = 0f;
+    }
+
+
+    [ServerRpc]
+    private void PlayReloadDipServerRpc(
+        float duration)
+    {
+        PlayReloadDipClientRpc(duration);
+    }
+
+
+    [ClientRpc]
+    private void PlayReloadDipClientRpc(
+        float duration)
+    {
+        // El dueÃ±o ya lo ejecutÃ³ localmente.
+        if (IsOwner)
+            return;
+
+        // Los demÃ¡s reproducen el reload.
+        StartReloadDip(duration);
+    }
+
+
+    // =========================================================
+    // RECOIL
+    // =========================================================
 
     public void AddRecoil()
     {
+        // Solo el dueÃ±o puede iniciar el recoil.
+        if (!IsOwner)
+            return;
+
+        // Recoil inmediato.
         currentRecoil += recoilKick;
+
+        // Sincronizar.
+        AddRecoilServerRpc();
     }
+
 
     [ServerRpc]
     private void AddRecoilServerRpc()
@@ -164,10 +444,33 @@ public class WeaponSway : NetworkBehaviour
         AddRecoilClientRpc();
     }
 
+
     [ClientRpc]
     private void AddRecoilClientRpc()
     {
-        if (IsOwner) return; // el dueño ya lo aplicó localmente, evitamos duplicarlo
+        // El dueÃ±o ya lo aplicÃ³.
+        if (IsOwner)
+            return;
+
+        // Los demÃ¡s lo reproducen.
         currentRecoil += recoilKick;
     }
+
+
+    // =========================================================
+    // RECUPERACIÃ“N DEL RECOIL
+    // =========================================================
+
+    private void HandleRecoilRecovery()
+    {
+        currentRecoil =
+            Mathf.Lerp(
+                currentRecoil,
+                0f,
+                Time.deltaTime *
+                recoilRecoverySpeed
+            );
+    }
 }
+
+

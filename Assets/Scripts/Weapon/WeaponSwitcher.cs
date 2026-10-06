@@ -39,6 +39,7 @@ public class WeaponSwitcher : NetworkBehaviour
     [Header("Brazos")]
     public GameObject armsModel;
     public ArmsGripController armsGripController;
+    public ArmsGripController characterModelGripController;
 
     private ShootLogic currentWeaponShoot;
 
@@ -88,8 +89,6 @@ public class WeaponSwitcher : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // Todas las armas permanecen ACTIVAS.
-        // No usamos SetActive(false) para ocultarlas.
         foreach (var entry in allWeapons)
         {
             if (entry.weaponObject != null)
@@ -98,9 +97,9 @@ public class WeaponSwitcher : NetworkBehaviour
             }
         }
 
-        // Layer de las armas:
-        // Owner -> Weapon
-        // Otros jugadores -> Default
+        
+
+        // Layer de las armas: Owner -> Weapon, Otros jugadores -> Default
         int targetLayer = IsOwner
             ? LayerMask.NameToLayer("Weapon")
             : LayerMask.NameToLayer("Default");
@@ -111,6 +110,14 @@ public class WeaponSwitcher : NetworkBehaviour
             {
                 SetLayerRecursively(entry.weaponObject, targetLayer);
             }
+        }
+
+        if (!IsOwner)
+        {
+           
+            // Ocultar únicamente los brazos FPS
+            if (armsModel != null)
+                armsModel.SetActive(false);
         }
 
         // El servidor inicializa los slots
@@ -147,8 +154,24 @@ public class WeaponSwitcher : NetworkBehaviour
 
             StartCoroutine(ReforzarVisualTrasSpawn());
         }
+
+        StartCoroutine(DeferredCatalogWeaponsActivity());
     }
 
+    private void ApplyGripsForWeapon(GameObject weaponObject)
+    {
+        if (weaponObject == null) return;
+
+        if (armsGripController != null)
+        {
+            armsGripController.SetGripsForWeapon(weaponObject);
+        }
+
+        if (characterModelGripController != null)
+        {
+            characterModelGripController.SetGripsForWeapon(weaponObject);
+        }
+    }
 
     public override void OnNetworkDespawn()
     {
@@ -195,12 +218,19 @@ public class WeaponSwitcher : NetworkBehaviour
         yield return null;
 
         UpdateWeaponVisuals(networkWeaponIndex.Value);
+
+        int idx = networkWeaponIndex.Value;
+        if (idx >= 0 && idx < weapons.Length && weapons[idx] != null)
+        {
+            ApplyGripsForWeapon(weapons[idx]);
+        }
     }
 
 
     // =========================================================
     // LAYERS
     // =========================================================
+
 
     private void SetLayerRecursively(GameObject obj, int layer)
     {
@@ -212,6 +242,42 @@ public class WeaponSwitcher : NetworkBehaviour
         }
     }
 
+
+    // =========================================================
+    // VISIBILIDAD DE ARMAS NO EQUIPADAS (catálogo completo)
+    // =========================================================
+
+    /// <summary>
+    /// Recorre TODO el catálogo (allWeapons). Si un arma no está en el loadout
+    /// actual (weapons[]), desactiva el GameObject de su WeaponModel para que
+    /// no quede molestando en el mundo (colisiones, renders fantasma, etc.).
+    /// Las armas que SÍ están en el loadout (aunque no sean la equipada en mano)
+    /// mantienen su WeaponModel activo; UpdateWeaponVisuals ya se encarga de
+    /// mostrarlas/ocultarlas con Renderer.enabled nada más.
+    /// </summary>
+    private void UpdateCatalogWeaponsActivity()
+    {
+        foreach (var entry in allWeapons)
+        {
+            if (entry.weaponObject == null) continue;
+
+            bool isInLoadout = System.Array.IndexOf(weapons, entry.weaponObject) != -1;
+
+            Transform weaponModel = entry.weaponObject.transform.Find("WeaponModel");
+            if (weaponModel != null)
+            {
+                weaponModel.gameObject.SetActive(isInLoadout);
+            }
+        }
+    }
+    private IEnumerator DeferredCatalogWeaponsActivity()
+    {
+        // Esperamos un frame para que Netcode termine de procesar el
+        // OnNetworkSpawn de TODOS los NetworkBehaviour de este jugador
+        // (incluido WeaponSway en cada arma) antes de desactivar nada.
+        yield return null;
+        UpdateCatalogWeaponsActivity();
+    }
 
     // =========================================================
     // VISIBILIDAD DE ARMAS
@@ -243,6 +309,11 @@ public class WeaponSwitcher : NetworkBehaviour
     private void OnWeaponIndexChanged(int oldIndex, int newIndex)
     {
         UpdateWeaponVisuals(newIndex);
+
+        if (newIndex >= 0 && newIndex < weapons.Length && weapons[newIndex] != null)
+        {
+            ApplyGripsForWeapon(weapons[newIndex]);
+        }
     }
 
 
@@ -319,11 +390,9 @@ public class WeaponSwitcher : NetworkBehaviour
             armsModel.SetActive(currentWeaponShoot != null);
         }
 
-        if (armsGripController != null && currentWeaponShoot != null)
+        if (currentWeaponShoot != null)
         {
-            armsGripController.SetGripsForWeapon(
-                weapons[index]
-            );
+            ApplyGripsForWeapon(weapons[index]);
         }
 
 
@@ -568,6 +637,8 @@ public class WeaponSwitcher : NetworkBehaviour
         // ACTUALIZAR VISUAL
         // =====================================================
 
+
+        UpdateCatalogWeaponsActivity();
         if (slotIndex == networkWeaponIndex.Value)
         {
             SelectWeapon(slotIndex);
