@@ -97,15 +97,7 @@ public class WeaponSwitcher : NetworkBehaviour
             }
         }
 
-        // NUEVO: los brazos en primera persona (ArmsSoldier) SOLO los debe
-        // renderizar la WeaponCamera propia de cada jugador. Nadie más -ni
-        // siquiera otros jugadores mirando a este personaje- debe verlos
-        // jamás, sea o no el dueño. Por eso van siempre a "Weapon", sin
-        // depender de IsOwner.
-        if (armsModel != null)
-        {
-            SetLayerRecursively(armsModel, LayerMask.NameToLayer("Weapon"));
-        }
+        
 
         // Layer de las armas: Owner -> Weapon, Otros jugadores -> Default
         int targetLayer = IsOwner
@@ -166,6 +158,20 @@ public class WeaponSwitcher : NetworkBehaviour
         StartCoroutine(DeferredCatalogWeaponsActivity());
     }
 
+    private void ApplyGripsForWeapon(GameObject weaponObject)
+    {
+        if (weaponObject == null) return;
+
+        if (armsGripController != null)
+        {
+            armsGripController.SetGripsForWeapon(weaponObject);
+        }
+
+        if (characterModelGripController != null)
+        {
+            characterModelGripController.SetGripsForWeapon(weaponObject);
+        }
+    }
 
     public override void OnNetworkDespawn()
     {
@@ -212,6 +218,12 @@ public class WeaponSwitcher : NetworkBehaviour
         yield return null;
 
         UpdateWeaponVisuals(networkWeaponIndex.Value);
+
+        int idx = networkWeaponIndex.Value;
+        if (idx >= 0 && idx < weapons.Length && weapons[idx] != null)
+        {
+            ApplyGripsForWeapon(weapons[idx]);
+        }
     }
 
 
@@ -297,6 +309,11 @@ public class WeaponSwitcher : NetworkBehaviour
     private void OnWeaponIndexChanged(int oldIndex, int newIndex)
     {
         UpdateWeaponVisuals(newIndex);
+
+        if (newIndex >= 0 && newIndex < weapons.Length && weapons[newIndex] != null)
+        {
+            ApplyGripsForWeapon(weapons[newIndex]);
+        }
     }
 
 
@@ -373,15 +390,9 @@ public class WeaponSwitcher : NetworkBehaviour
             armsModel.SetActive(currentWeaponShoot != null);
         }
 
-        if (armsGripController != null && currentWeaponShoot != null)
+        if (currentWeaponShoot != null)
         {
-            armsGripController.SetGripsForWeapon(
-                weapons[index]
-            );
-        }
-        if (characterModelGripController != null && currentWeaponShoot != null) 
-        {
-            characterModelGripController.SetGripsForWeapon(weapons[index]);
+            ApplyGripsForWeapon(weapons[index]);
         }
 
 
