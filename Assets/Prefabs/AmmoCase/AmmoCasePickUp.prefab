@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 2634055536772878006}
   - component: {fileID: 2452766266618305358}
   - component: {fileID: 4782506558127033507}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: AmmoCasePickUp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -135,14 +135,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1064953785
+  GlobalObjectIdHash: 917996019
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -246,7 +246,7 @@ GameObject:
   - component: {fileID: 1037159356094696125}
   - component: {fileID: 9087219151551824205}
   - component: {fileID: 4595652994470807019}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: AttachmentCase_A_Cover
   m_TagString: Untagged
   m_Icon: {fileID: 0}
