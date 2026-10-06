@@ -27,9 +27,79 @@
                     "priority": 0
                 },
                 {
-                    "name": "Interact",
+                    "name": "Shoot",
                     "type": "Button",
-                    "id": "5c386fe7-00b6-408d-b666-59bea3845e85",
+                    "id": "a9cc9fed-ca76-4a67-864a-29e4548a6b27",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Weapon1",
+                    "type": "Button",
+                    "id": "23f2d63c-a3c8-4275-958f-7b45f99dc12a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Weapon2",
+                    "type": "Button",
+                    "id": "787f7b5e-7de9-4561-b226-b1b29cadcadc",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Weapon3",
+                    "type": "Button",
+                    "id": "9fe27ed6-a420-4cd5-9b9c-b415fe1765ea",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Reload",
+                    "type": "Button",
+                    "id": "b54660ff-ac4e-4c25-b4a9-6dcdc1970859",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Sprint",
+                    "type": "Button",
+                    "id": "aef047ab-4258-464d-8248-ba652ad9161d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Interaction",
+                    "type": "Button",
+                    "id": "8da3b7b8-a9b9-44bc-8d79-83b854ff0ee3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "Crouch",
+                    "type": "Button",
+                    "id": "4c3484a0-8d56-4e80-9555-08eaf0932f24",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -95,7 +165,62 @@
                 },
                 {
                     "name": "",
-                    "id": "1da2794f-5956-4c66-abe9-b1ccbdc89f13",
+                    "id": "1c379dcf-2748-4c76-9d63-775b4f374fc8",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Shoot",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c935a17c-2c6d-4c69-aff6-58927c90942f",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Weapon1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "bfd0930e-8e5e-401f-8bbb-aa6bfd2f5a8d",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Weapon2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "24552d2a-1f8e-44a2-a904-1dec4e01fbc5",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Weapon3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7208bdcb-9bde-4fd2-bd3b-84b5340aa996",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Reload",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "04da745a-cbe5-4b4a-aaae-f83d55415924",
                     "path": "<Keyboard>/space",
                     "interactions": "",
                     "processors": "",
@@ -106,12 +231,34 @@
                 },
                 {
                     "name": "",
-                    "id": "3b5161bd-d46b-46ca-89a3-c8cfcaf6c0ac",
+                    "id": "b0906807-1841-4afe-9a2e-ca538940a482",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Sprint",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2ef41dba-c99a-4093-b333-b009b6b82cd3",
                     "path": "<Keyboard>/e",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Interact",
+                    "action": "Interaction",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "958ddb6d-d93a-4046-8918-163a0304a24b",
+                    "path": "<Keyboard>/ctrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Crouch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
