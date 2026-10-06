@@ -14,7 +14,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     [Header("Configuración de Escenas (3 Mapas)")]
     public string nombreEscenaMapa1 = "SampleScene";
-    public string nombreEscenaMapa2 = "TestConexion";
+    public string nombreEscenaMapa2 = "MapaOficinas";
     public string nombreEscenaMapa3 = "TestConexion";
 
     [Header("Objetivos de los Mapas")]
