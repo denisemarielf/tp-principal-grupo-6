@@ -744,8 +744,8 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 4.04
+  m_Radius: 0.67
+  m_Height: 4.95
   m_Direction: 1
   m_Center: {x: 0, y: 1.05, z: 0}
 --- !u!143 &1190589827672903456
@@ -1003,7 +1003,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2139012109
+  GlobalObjectIdHash: 2480460361
   InScenePlacedSourceGlobalObjectIdHash: 649605470
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -1054,8 +1054,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Character
   ShowTopMostFoldoutHeaderGroup: 1
   spawnSpacing: 2
-  localHud: {fileID: 0}
-  interactRange: 2
+  localHud: {fileID: 7739054632452436582}
+  interactRange: 5
   pickupLayer:
     serializedVersion: 2
     m_Bits: 256

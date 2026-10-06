@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 2634055536772878006}
   - component: {fileID: 2452766266618305358}
   - component: {fileID: 4782506558127033507}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: AmmoCasePickUp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -246,7 +246,7 @@ GameObject:
   - component: {fileID: 1037159356094696125}
   - component: {fileID: 9087219151551824205}
   - component: {fileID: 4595652994470807019}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: AttachmentCase_A_Cover
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -344,5 +344,5 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.4, y: 0.21, z: 0.27625012}
+  m_Size: {x: 0.54, y: 0.21, z: 0.34}
   m_Center: {x: 0, y: -0.01, z: 0.13312507}
