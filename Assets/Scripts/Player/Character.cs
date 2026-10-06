@@ -12,7 +12,12 @@ public class Character : NetworkBehaviour
     [Header("Spawn")]
     [SerializeField] private float spawnSpacing = 2f;
 
+    [Header("HUD")]
+    [Tooltip("Canvas hijo con la barra de vida propia y la de los compañeros. Solo se activa en el personaje del jugador local.")]
+    [SerializeField] private GameObject localHud;
+
     private PMovement movement;
+    private PlayerHealth health;
     private WeaponSwitcher weaponSwitcher;
     [SerializeField] private float interactRange = 2f;
     [SerializeField] private LayerMask pickupLayer;
@@ -24,6 +29,8 @@ public class Character : NetworkBehaviour
     private void Awake()
     {
         movement = GetComponent<PMovement>();
+        health = GetComponent<PlayerHealth>();
+
         weaponSwitcher = GetComponentInChildren<WeaponSwitcher>();
     }
 
@@ -55,7 +62,7 @@ public class Character : NetworkBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || IsDead()) return;
 
         movement.SetMoveInput(context.ReadValue<Vector2>());
     }
@@ -76,7 +83,7 @@ public class Character : NetworkBehaviour
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || IsDead()) return;
 
 
         if (context.performed)
@@ -85,6 +92,24 @@ public class Character : NetworkBehaviour
         }
     }
 
+    // Tecla E (accion Player/Interact). Por ahora solo usa botiquines: no hay inventario,
+    // asi que se consumen en el momento (US 3.1).
+    public void OnInteract(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed) return;
+
+        MedkitPickup medkit = MedkitPickup.FindNearest(transform.position);
+        if (medkit != null)
+        {
+            medkit.RequestUse();
+        }
+    }
+
+    private bool IsDead()
+    {
+        return health != null && health.IsDead;
+    }
+    
     public void OnSelectWeapon1(InputAction.CallbackContext context)
     {
         if (IsOwner && context.performed)
@@ -164,6 +189,13 @@ public class Character : NetworkBehaviour
         foreach (AudioListener listener in GetComponentsInChildren<AudioListener>(true))
         {
             listener.enabled = isLocal;
+        }
+
+        // Cada jugador tiene su copia del HUD en el prefab; si no se apagaran las de los demas,
+        // las barras quedarian superpuestas en pantalla.
+        if (localHud != null)
+        {
+            localHud.SetActive(isLocal);
         }
     }
 

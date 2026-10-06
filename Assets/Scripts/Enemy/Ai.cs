@@ -115,6 +115,7 @@ public class Ai : NetworkBehaviour
         foreach (PMovement candidate in allPlayers)
         {
             if (candidate == null) continue;
+            if (candidate.TryGetComponent(out PlayerHealth health) && health.IsDead) continue;
             float dist = Vector3.Distance(transform.position, candidate.transform.position);
             if (dist < nearestDist)
             {
