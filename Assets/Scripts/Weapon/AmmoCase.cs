@@ -66,7 +66,7 @@ public class AmmoCase : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-       
+        Debug.Log($"[AmmoCase] OnTriggerEnter con: {other.name} | IsServer: {IsServer} | isAvailable: {isAvailable.Value}");
 
         if (!IsServer)
             return;
@@ -74,75 +74,34 @@ public class AmmoCase : NetworkBehaviour
         if (!isAvailable.Value)
             return;
 
-        // ---------------------------------------------------------
-        // BUSCAR AL PLAYER
-        // ---------------------------------------------------------
-
-        CharacterController characterController =
-            other.GetComponentInParent<CharacterController>();
+        CharacterController characterController = other.GetComponentInParent<CharacterController>();
+        Debug.Log($"[AmmoCase] characterController encontrado: {characterController != null}");
 
         if (characterController == null)
-        {
-
             return;
-        }
 
-        // ---------------------------------------------------------
-        // BUSCAR WEAPON SWITCHER
-        // ---------------------------------------------------------
+        WeaponSwitcher weaponSwitcher = characterController.GetComponentInParent<WeaponSwitcher>();
+        if (weaponSwitcher == null)
+            weaponSwitcher = characterController.GetComponentInChildren<WeaponSwitcher>();
 
-        WeaponSwitcher weaponSwitcher =
-            characterController.GetComponentInParent<WeaponSwitcher>();
+        Debug.Log($"[AmmoCase] weaponSwitcher encontrado: {weaponSwitcher != null}");
 
         if (weaponSwitcher == null)
-        {
-            weaponSwitcher =
-                characterController.GetComponentInChildren<WeaponSwitcher>();
-        }
-
-        if (weaponSwitcher == null)
-        {
-            Debug.LogError(
-                $"[AmmoCase] Encontré al Player, " +
-                $"pero no encontré WeaponSwitcher."
-            );
-
             return;
-        }
 
-        // ---------------------------------------------------------
-        // OBTENER AMMO MANAGER DEL ARMA EQUIPADA
-        // ---------------------------------------------------------
-
-        AmmoManager ammoManager =
-            weaponSwitcher.CurrentAmmoManager;
+        AmmoManager ammoManager = weaponSwitcher.CurrentAmmoManager;
+        Debug.Log($"[AmmoCase] ammoManager encontrado: {ammoManager != null}");
 
         if (ammoManager == null)
-        {
-            Debug.Log(
-                "[AmmoCase] El jugador no tiene un arma equipada " +
-                "o el arma equipada no tiene AmmoManager."
-            );
-
             return;
-        }
 
-       
-
-        ammoManager.AddReserveAmmo((int)amount);
-
-     
-
+        weaponSwitcher.GrantAmmoToCurrentWeapon((int)amount);
         PlayPickupSoundClientRpc();
-
-        
         isAvailable.Value = false;
-
-        
         StartCoroutine(RespawnRoutine());
     }
 
- 
+
 
     [ClientRpc]
     private void PlayPickupSoundClientRpc()

@@ -70,15 +70,15 @@ public class Character : NetworkBehaviour
     {
         if (context.performed)
         {
-        
+
             movement.SetSprint(true);
         }
         else if (context.canceled)
         {
-            
+
             movement.SetSprint(false);
         }
-        
+
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -92,24 +92,11 @@ public class Character : NetworkBehaviour
         }
     }
 
-    // Tecla E (accion Player/Interact). Por ahora solo usa botiquines: no hay inventario,
-    // asi que se consumen en el momento (US 3.1).
-    public void OnInteract(InputAction.CallbackContext context)
-    {
-        if (!IsOwner || IsDead() || !context.performed) return;
-
-        MedkitPickup medkit = MedkitPickup.FindNearest(transform.position);
-        if (medkit != null)
-        {
-            medkit.RequestUse();
-        }
-    }
-
     private bool IsDead()
     {
         return health != null && health.IsDead;
     }
-    
+
     public void OnSelectWeapon1(InputAction.CallbackContext context)
     {
         if (IsOwner && context.performed)
@@ -140,14 +127,22 @@ public class Character : NetworkBehaviour
             weaponSwitcher.Reload(context);
     }
 
+    // Tecla E (accion Player/Interact). Atiende botiquines (US 3.1, sin
+    // inventario: se consumen en el momento) y pickups de armas tiradas en
+    // el mapa. Si hay un botiquín y un arma cerca a la vez, se usa el que
+    // esté más cerca.
     public void OnInteraction(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
-        if (!context.performed) return;
+        if (!IsOwner || IsDead() || !context.performed) return;
+
+        MedkitPickup medkit = MedkitPickup.FindNearest(transform.position);
+        float medkitDist = medkit != null
+            ? Vector3.Distance(transform.position, medkit.transform.position)
+            : float.MaxValue;
 
         Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, pickupLayer);
-        WeaponPickup nearest = null;
-        float nearestDist = float.MaxValue;
+        WeaponPickup nearestWeapon = null;
+        float nearestWeaponDist = float.MaxValue;
 
         foreach (var hit in hits)
         {
@@ -155,18 +150,22 @@ public class Character : NetworkBehaviour
             if (pickup == null) continue;
 
             float dist = Vector3.Distance(transform.position, hit.transform.position);
-            if (dist < nearestDist)
+            if (dist < nearestWeaponDist)
             {
-                nearestDist = dist;
-                nearest = pickup;
+                nearestWeaponDist = dist;
+                nearestWeapon = pickup;
             }
         }
 
-        if (nearest != null)
+        if (medkit != null && medkitDist <= nearestWeaponDist)
+        {
+            medkit.RequestUse();
+        }
+        else if (nearestWeapon != null)
         {
             weaponSwitcher?.RequestPickupWeaponServerRpc(
-                (int)nearest.weaponType,
-                nearest.GetComponent<NetworkObject>().NetworkObjectId
+                (int)nearestWeapon.weaponType,
+                nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
             );
         }
     }
