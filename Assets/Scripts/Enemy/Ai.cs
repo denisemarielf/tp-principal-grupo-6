@@ -27,6 +27,28 @@ public class Ai : NetworkBehaviour
 
     public Transform CurrentPlayer => (aggroTimer > 0f && aggroTarget != null) ? aggroTarget : player;
 
+    // El jugador camina a 7. El normal va un poco mas lento, el fragil lo alcanza y el duro se queda atras.
+    public void Configure(EnemyVariant variant)
+    {
+        if (navMeshAgent == null)
+            navMeshAgent = GetComponent<NavMeshAgent>();
+        if (navMeshAgent != null)
+            navMeshAgent.speed = SpeedFor(variant);
+    }
+
+    public static float SpeedFor(EnemyVariant variant)
+    {
+        switch (variant)
+        {
+            case EnemyVariant.Fragil:
+                return 9f;
+            case EnemyVariant.Resistente:
+                return 4f;
+            default:
+                return 6.5f;
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         enemyCombat = GetComponent<EnemyCombat>();

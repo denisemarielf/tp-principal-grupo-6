@@ -62,16 +62,37 @@ public class EnemySceneSetup : MonoBehaviour
         }
 
         if (NavMesh.SamplePosition(position, out NavMeshHit hit, 8f, NavMesh.AllAreas))
-            position = hit.position + Vector3.up;
+            position = hit.position + Vector3.up * FeetLift(enemyPrefab);
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         EnemyHealth health = enemy.GetComponent<EnemyHealth>();
         if (health != null)
             health.Configure(variant);
 
+        EnemyAppearance appearance = enemy.GetComponent<EnemyAppearance>();
+        if (appearance != null)
+            appearance.Configure(variant);
+
+        Ai ai = enemy.GetComponent<Ai>();
+        if (ai != null)
+            ai.Configure(variant);
+
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
         if (netObj != null)
             netObj.Spawn(true);
+    }
+
+    // La capsula tiene el pivote en el centro. Con escala 2, hay que subir el doble
+    // para que los pies queden sobre el NavMesh.
+    private static float FeetLift(GameObject prefab)
+    {
+        CapsuleCollider body = prefab.GetComponent<CapsuleCollider>();
+        if (body == null)
+            return 1f;
+
+        float scaleY = Mathf.Abs(prefab.transform.localScale.y);
+        float bottom = (body.center.y - body.height * 0.5f) * scaleY;
+        return -bottom;
     }
 
     private void BuildNavMesh()
