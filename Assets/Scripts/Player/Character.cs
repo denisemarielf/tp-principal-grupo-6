@@ -12,7 +12,16 @@ public class Character : NetworkBehaviour
     [Header("Spawn")]
     [SerializeField] private float spawnSpacing = 2f;
 
+    [Header("HUD")]
+    [Tooltip("Canvas hijo con la barra de vida propia y la de los compañeros. Solo se activa en el personaje del jugador local.")]
+    [SerializeField] private GameObject localHud;
+
     private PMovement movement;
+    private PlayerHealth health;
+    private WeaponSwitcher weaponSwitcher;
+    [SerializeField] private float interactRange = 2f;
+    [SerializeField] private LayerMask pickupLayer;
+
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
 
@@ -20,7 +29,9 @@ public class Character : NetworkBehaviour
     private void Awake()
     {
         movement = GetComponent<PMovement>();
+        health = GetComponent<PlayerHealth>();
 
+        weaponSwitcher = GetComponentInChildren<WeaponSwitcher>();
     }
 
     public override void OnNetworkSpawn()
@@ -51,19 +62,99 @@ public class Character : NetworkBehaviour
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || IsDead()) return;
 
         movement.SetMoveInput(context.ReadValue<Vector2>());
+    }
+    public void OnSprint(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+        
+            movement.SetSprint(true);
+        }
+        else if (context.canceled)
+        {
+            
+            movement.SetSprint(false);
+        }
+        
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || IsDead()) return;
 
 
         if (context.performed)
         {
             movement.TryJump();
+        }
+    }
+
+    private bool IsDead()
+    {
+        return health != null && health.IsDead;
+    }
+    
+    public void OnSelectWeapon1(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.SelectWeapon(-1);
+    }
+
+    public void OnSelectWeapon2(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.SelectWeapon(0);
+    }
+
+    public void OnSelectWeapon3(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.SelectWeapon(1);
+    }
+
+    public void OnShoot(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.Shoot(context);
+    }
+
+    public void OnReload(InputAction.CallbackContext context)
+    {
+        if (IsOwner && context.performed)
+            weaponSwitcher.Reload(context);
+    }
+
+    public void OnInteraction(InputAction.CallbackContext context)
+    {
+        if (!IsOwner) return;
+        if (!context.performed) return;
+
+        Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, pickupLayer);
+        WeaponPickup nearest = null;
+        float nearestDist = float.MaxValue;
+
+        foreach (var hit in hits)
+        {
+            WeaponPickup pickup = hit.GetComponent<WeaponPickup>();
+            if (pickup == null) continue;
+
+            float dist = Vector3.Distance(transform.position, hit.transform.position);
+            if (dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = pickup;
+            }
+        }
+
+        if (nearest != null)
+        {
+            weaponSwitcher?.RequestPickupWeaponServerRpc(
+                (int)nearest.weaponType,
+                nearest.GetComponent<NetworkObject>().NetworkObjectId
+            );
         }
     }
 
@@ -85,6 +176,13 @@ public class Character : NetworkBehaviour
         foreach (AudioListener listener in GetComponentsInChildren<AudioListener>(true))
         {
             listener.enabled = isLocal;
+        }
+
+        // Cada jugador tiene su copia del HUD en el prefab; si no se apagaran las de los demas,
+        // las barras quedarian superpuestas en pantalla.
+        if (localHud != null)
+        {
+            localHud.SetActive(isLocal);
         }
     }
 
