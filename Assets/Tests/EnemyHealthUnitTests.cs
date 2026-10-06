@@ -32,16 +32,16 @@ public class EnemyHealthUnitTests
         float vida = EnemyHealth.HealthFor(EnemyVariant.Resistente);
 
         Assert.AreEqual(
-            200f,
+            250f,
             vida,
-            "La variante Resistente debería tener 200 de vida."
+            "La variante Resistente debería tener 250 de vida."
         );
     }
 
     [Test]
     public void LaVelocidadDelNormalEsUnPocoMenorQueLaDelJugador()
     {
-        Assert.AreEqual(6.5f, Ai.SpeedFor(EnemyVariant.Normal));
+        Assert.AreEqual(3.5f, Ai.SpeedFor(EnemyVariant.Normal));
         Assert.Less(Ai.SpeedFor(EnemyVariant.Normal), 7f);
     }
 

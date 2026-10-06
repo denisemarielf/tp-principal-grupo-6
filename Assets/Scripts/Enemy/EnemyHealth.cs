@@ -47,7 +47,7 @@ public class EnemyHealth : NetworkBehaviour
             case EnemyVariant.Fragil:
                 return 50f;
             case EnemyVariant.Resistente:
-                return 200f;
+                return 250f;
             default:
                 return 100f;
         }

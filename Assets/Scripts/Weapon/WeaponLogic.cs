@@ -134,28 +134,9 @@ public class WeaponLogic : NetworkBehaviour
 
     private void ApplyHitscanDamage(Collider hitCollider)
     {
-        //NOTA esto puede migrar a otro script si es necesario
-        /*
-        
         EnemyHealth enemyHealth = hitCollider.GetComponentInParent<EnemyHealth>();
         if (enemyHealth != null)
-        {
-            enemyHealth.TakeDamage(damageAmount);
-            return;
-        }
-
-        PlayerHealth playerHealth = hitCollider.GetComponentInParent<PlayerHealth>();
-        if (playerHealth != null)
-        {
-            playerHealth.TakeDamage(damageAmount);
-            return;
-        }
-
-        TowerHealth towerHealth = hitCollider.GetComponentInParent<TowerHealth>();
-        if (towerHealth != null)
-        {
-            towerHealth.TakeDamage(damageAmount);
-        }*/
+            enemyHealth.TakeDamage(damageAmount, transform.root);
     }
 
     [ClientRpc]

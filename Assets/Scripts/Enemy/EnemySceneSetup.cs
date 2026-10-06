@@ -82,8 +82,8 @@ public class EnemySceneSetup : MonoBehaviour
             netObj.Spawn(true);
     }
 
-    // La capsula tiene el pivote en el centro. Con escala 2, hay que subir el doble
-    // para que los pies queden sobre el NavMesh.
+    // La capsula tiene el pivote en el centro. Hay que subirla para que los pies
+    // queden sobre el NavMesh.
     private static float FeetLift(GameObject prefab)
     {
         CapsuleCollider body = prefab.GetComponent<CapsuleCollider>();

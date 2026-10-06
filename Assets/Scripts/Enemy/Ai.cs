@@ -9,8 +9,8 @@ public class Ai : NetworkBehaviour
 
     [Header("Follow")]
     [SerializeField] private bool followPlayer = true;
-    [SerializeField] private float distanceToFollowPlayer = 30f;
-    [SerializeField] private float distanceToLosePlayer = 40f;
+    [SerializeField] private float distanceToFollowPlayer = 100f;
+    [SerializeField] private float distanceToLosePlayer = 120f;
 
     [Header("Aggro")]
     [SerializeField] private float aggroDuration = 6f;
@@ -27,7 +27,7 @@ public class Ai : NetworkBehaviour
 
     public Transform CurrentPlayer => (aggroTimer > 0f && aggroTarget != null) ? aggroTarget : player;
 
-    // El jugador camina a 7. El normal va un poco mas lento, el fragil lo alcanza y el duro se queda atras.
+    // US 7.2: normal 3.5, fragil 6 y duro 1.5. El jugador camina a 7.
     public void Configure(EnemyVariant variant)
     {
         if (navMeshAgent == null)
@@ -41,11 +41,11 @@ public class Ai : NetworkBehaviour
         switch (variant)
         {
             case EnemyVariant.Fragil:
-                return 9f;
+                return 6f;
             case EnemyVariant.Resistente:
-                return 4f;
+                return 1.5f;
             default:
-                return 6.5f;
+                return 3.5f;
         }
     }
 
