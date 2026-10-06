@@ -41,17 +41,27 @@ public class EnemyHealthTests
     [UnityTearDown]
     public IEnumerator LimpiarEscena()
     {
-        NetworkManager networkManager = NetworkManager.Singleton;
+    NetworkManager networkManager = NetworkManager.Singleton;
 
-        if (networkManager != null && networkManager.IsListening)
+    if (networkManager != null)
+    {
+        if (networkManager.IsListening)
         {
             networkManager.Shutdown();
         }
 
         yield return null;
 
+        Object.Destroy(networkManager.gameObject);
+
+        yield return null;
+    }
+
+    if (SceneManager.GetSceneByName("TestMovimiento").isLoaded)
+    {
         yield return SceneManager.UnloadSceneAsync("TestMovimiento");
     }
+}
 
     [UnityTest]
     public IEnumerator LaVidaDelEnemigoDisminuyeAlRecibirDano()
