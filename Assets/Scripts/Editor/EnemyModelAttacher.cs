@@ -131,7 +131,7 @@ public class EnemyModelAttacher : AssetPostprocessor
         instance.name = childName;
         instance.transform.localPosition = new Vector3(0f, -1f, 0f);
         instance.transform.localRotation = Quaternion.identity;
-        instance.transform.localScale = Vector3.one;
+        instance.transform.localScale = childName == "Resistente" ? Vector3.one * 1.15f : Vector3.one;
         dirty = true;
         return instance;
     }
