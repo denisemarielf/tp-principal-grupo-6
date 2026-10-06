@@ -73,6 +73,19 @@ public class Character : NetworkBehaviour
         }
     }
 
+    // Tecla E (accion Player/Interact). Por ahora solo usa botiquines: no hay inventario,
+    // asi que se consumen en el momento (US 3.1).
+    public void OnInteract(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed) return;
+
+        MedkitPickup medkit = MedkitPickup.FindNearest(transform.position);
+        if (medkit != null)
+        {
+            medkit.RequestUse();
+        }
+    }
+
     private bool IsDead()
     {
         return health != null && health.IsDead;

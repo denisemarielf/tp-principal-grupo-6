@@ -2,11 +2,11 @@ using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-// Instancia los pickups en la red (US 1.2). Solo actua en el host: los clientes los reciben
+// Instancia los pickups en la red (US 1.2, US 3.1). Sirve para cualquier NetworkPickup (speed boost, botiquin). Solo actua en el host: los clientes los reciben
 // replicados por Netcode. Cuando alguien agarra uno, el host lo vuelve a crear despues de un rato.
 public class PickupSpawner : MonoBehaviour
 {
-    [SerializeField] private SpeedBoostPickup pickupPrefab;
+    [SerializeField] private NetworkPickup pickupPrefab;
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private float respawnSeconds = 8f;
 
@@ -61,7 +61,7 @@ public class PickupSpawner : MonoBehaviour
     {
         if (!networkManager.IsServer) return;
 
-        SpeedBoostPickup pickup = Instantiate(pickupPrefab, point.position, point.rotation);
+        NetworkPickup pickup = Instantiate(pickupPrefab, point.position, point.rotation);
         pickup.Collected += _ => StartCoroutine(RespawnAfterDelay(point));
         pickup.GetComponent<NetworkObject>().Spawn(true);
     }
