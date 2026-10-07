@@ -82,6 +82,18 @@ public class WeaponSwitcher : NetworkBehaviour
             return currentWeaponShoot.GetComponent<AmmoManager>();
         }
     }
+    public void GrantAmmoToCurrentWeapon(int amount)
+    {
+        if (!IsServer) return;
+        GrantAmmoToCurrentWeaponClientRpc(amount);
+    }
+
+    [ClientRpc]
+    private void GrantAmmoToCurrentWeaponClientRpc(int amount)
+    {
+        if (!IsOwner) return;
+        CurrentAmmoManager?.AddReserveAmmo(amount);
+    }
 
     // =========================================================
     // NETWORK SPAWN
