@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 100009}
   - component: {fileID: 100010}
   - component: {fileID: 100011}
+  - component: {fileID: 100012}
   - component: {fileID: 7521268938438895098}
   m_Layer: 0
   m_Name: Enemy
@@ -253,6 +254,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   variant: 1
   maxHealth: 100
+  deathClip: {fileID: -203655887218126122, guid: 6d4b8e2a1c9f4735a0e6b7d3c5f81920, type: 3}
 --- !u!114 &100011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -271,6 +273,20 @@ MonoBehaviour:
   attackCooldown: 0.8
   hitSlowMultiplier: 0.7
   hitSlowDuration: 1.25
+--- !u!114 &100012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf6b9d3a7c1e4f5d4b8a0c2e6f7d9105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::EnemyAnimation
+  ShowTopMostFoldoutHeaderGroup: 1
+  locomotion: {fileID: 9100000, guid: 5907893d885104949b74a88593f002ce, type: 2}
 --- !u!114 &7521268938438895098
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -363,6 +379,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 100002}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.15
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.15
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.15
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -401,18 +429,6 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1.15
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.15
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.15
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: a4c8e1b27d3f4a6091b5c6d7e8f90104, type: 3}
       propertyPath: m_Name
