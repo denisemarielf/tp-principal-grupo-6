@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -27,7 +28,7 @@ public class TestPlayerMovement1 : MonoBehaviour
         controller = GetComponent<CharacterController>();
 
         // Si no asignamos la cámara desde el Inspector,
-        // intenta encontrar una cámara hija del Player.
+        // busca automáticamente una cámara hija del Player.
         if (camara == null)
         {
             Camera cam = GetComponentInChildren<Camera>();
@@ -50,7 +51,7 @@ public class TestPlayerMovement1 : MonoBehaviour
         GravedadYSalto();
         MirarConMouse();
 
-        // ESC libera el mouse para poder salir de la prueba.
+        // ESC libera el mouse.
         if (Keyboard.current != null &&
             Keyboard.current.escapeKey.wasPressedThisFrame)
         {
@@ -87,7 +88,7 @@ public class TestPlayerMovement1 : MonoBehaviour
 
         float velocidadActual = velocidad;
 
-        // SHIFT = correr
+        // SHIFT = correr.
         if (Keyboard.current.leftShiftKey.isPressed)
             velocidadActual = velocidadSprint;
 
@@ -101,13 +102,14 @@ public class TestPlayerMovement1 : MonoBehaviour
 
     private void GravedadYSalto()
     {
+        // Comprobamos si el Character Controller está tocando el suelo.
         if (controller.isGrounded)
         {
             // Mantiene al personaje pegado al suelo.
             if (velocidadVertical.y < 0)
                 velocidadVertical.y = -2f;
 
-            // ESPACIO = salto
+            // ESPACIO = salto.
             if (Keyboard.current != null &&
                 Keyboard.current.spaceKey.wasPressedThisFrame)
             {
@@ -118,10 +120,11 @@ public class TestPlayerMovement1 : MonoBehaviour
             }
         }
 
-        // Gravedad
+        // Aplicamos gravedad.
         velocidadVertical.y +=
             gravedad * Time.deltaTime;
 
+        // Movemos al personaje verticalmente.
         controller.Move(
             velocidadVertical * Time.deltaTime
         );
@@ -135,7 +138,7 @@ public class TestPlayerMovement1 : MonoBehaviour
         Vector2 mouseDelta =
             Mouse.current.delta.ReadValue();
 
-        // Rotación horizontal del Player
+        // Rotación horizontal del Player.
         float rotacionHorizontal =
             mouseDelta.x * sensibilidadMouse;
 
@@ -143,7 +146,7 @@ public class TestPlayerMovement1 : MonoBehaviour
             Vector3.up * rotacionHorizontal
         );
 
-        // Rotación vertical de la cámara
+        // Rotación vertical de la cámara.
         rotacionVertical -=
             mouseDelta.y * sensibilidadMouse;
 
@@ -169,3 +172,4 @@ public class TestPlayerMovement1 : MonoBehaviour
         Cursor.visible = true;
     }
 }
+
