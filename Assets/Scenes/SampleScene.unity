@@ -39895,7 +39895,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::EnemySceneSetup
   enemyPrefab: {fileID: 100001, guid: c4e8a1b2d3f5476890abcdef12345005, type: 3}
   useSceneColliders: 1
-  navMeshSize: {x: 200, y: 60, z: 200}
+  navMeshSize: {x: 250, y: 60, z: 2100}
   spawns:
   - position: {x: 0, y: 0, z: 15}
     variant: 1

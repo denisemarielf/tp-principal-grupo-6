@@ -158,7 +158,7 @@ public class EnemySceneSetup : MonoBehaviour
             ~0,
             NavMeshCollectGeometry.PhysicsColliders,
             0,
-            new List<NavMeshBuildMarkup>(),
+            VehicleMarkups(),
             sources);
 
         // Los jugadores y enemigos ya spawneados se mueven: no son parte del piso.
@@ -166,5 +166,40 @@ public class EnemySceneSetup : MonoBehaviour
             && source.component.GetComponentInParent<NetworkObject>() != null);
 
         return sources;
+    }
+
+    // Los autos no son piso. Si entran al horneado, el taxi corta la calle.
+    private static List<NavMeshBuildMarkup> VehicleMarkups()
+    {
+        var markups = new List<NavMeshBuildMarkup>();
+        var ignored = new HashSet<Transform>();
+
+        foreach (Collider collider in FindObjectsByType<Collider>())
+        {
+            Transform vehicle = VehicleRoot(collider.transform);
+            if (vehicle == null || !ignored.Add(vehicle))
+                continue;
+
+            markups.Add(new NavMeshBuildMarkup
+            {
+                root = vehicle,
+                ignoreFromBuild = true
+            });
+        }
+
+        return markups;
+    }
+
+    private static Transform VehicleRoot(Transform current)
+    {
+        Transform found = null;
+        while (current != null)
+        {
+            if (current.name.Contains("Vehicle"))
+                found = current;
+            current = current.parent;
+        }
+
+        return found;
     }
 }
