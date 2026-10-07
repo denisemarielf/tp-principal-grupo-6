@@ -117,7 +117,7 @@ public class Character : NetworkBehaviour
 
     public void OnShoot(InputAction.CallbackContext context)
     {
-        if (IsOwner && context.performed)
+        if (IsOwner && context.performed && !PauseMenuUI.IsOpen)
             weaponSwitcher.Shoot(context);
     }
 
