@@ -236,8 +236,8 @@ MonoBehaviour:
   navMeshAgent: {fileID: 100006}
   destination1: {fileID: 0}
   followPlayer: 1
-  distanceToFollowPlayer: 100
-  distanceToLosePlayer: 120
+  distanceToFollowPlayer: 20
+  distanceToLosePlayer: 28
   aggroDuration: 6
 --- !u!114 &100010
 MonoBehaviour:

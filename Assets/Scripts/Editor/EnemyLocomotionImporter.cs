@@ -62,16 +62,17 @@ public static class EnemyLocomotionImporter
             for (int i = 0; i < clips.Length; i++)
             {
                 ModelImporterClipAnimation clip = clips[i];
-                if (clip.keepOriginalPositionY && clip.keepOriginalPositionXZ && clip.keepOriginalOrientation
-                    && clip.lockRootHeightY && clip.lockRootPositionXZ && clip.lockRootRotation
+                // El avance en XZ no se hornea en la pose: si queda adentro, el bucle teletransporta el cuerpo.
+                if (clip.keepOriginalPositionY && !clip.keepOriginalPositionXZ && clip.keepOriginalOrientation
+                    && clip.lockRootHeightY && !clip.lockRootPositionXZ && clip.lockRootRotation
                     && clip.loopTime && !clip.heightFromFeet)
                     continue;
 
                 clip.keepOriginalPositionY = true;
-                clip.keepOriginalPositionXZ = true;
+                clip.keepOriginalPositionXZ = false;
                 clip.keepOriginalOrientation = true;
                 clip.lockRootHeightY = true;
-                clip.lockRootPositionXZ = true;
+                clip.lockRootPositionXZ = false;
                 clip.lockRootRotation = true;
                 clip.loopTime = true;
                 clip.heightFromFeet = false;
