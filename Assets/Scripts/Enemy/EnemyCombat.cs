@@ -9,6 +9,10 @@ public class EnemyCombat : NetworkBehaviour
     public float attackRange = 2.5f;
     public float attackCooldown = 0.8f;
 
+    [Header("Frenado")]
+    public float hitSlowMultiplier = 0.7f;
+    public float hitSlowDuration = 1.25f;
+
     private float lastAttackTime;
     private NavMeshAgent navMeshAgent;
     private Ai ai;
@@ -62,8 +66,14 @@ public class EnemyCombat : NetworkBehaviour
         if (!IsServer || currentTarget == null) return;
 
         PlayerHealth playerHealth = currentTarget.GetComponent<PlayerHealth>();
-        if (playerHealth != null)
-            playerHealth.TakeDamage(attackDamage);
+        if (playerHealth == null || playerHealth.IsDead) return;
+
+        playerHealth.TakeDamage(attackDamage);
+        if (playerHealth.IsDead) return;
+
+        PMovement movement = currentTarget.GetComponent<PMovement>();
+        if (movement != null)
+            movement.ApplyHitSlow(hitSlowMultiplier, hitSlowDuration);
     }
 
     private void FaceTarget(Transform target)

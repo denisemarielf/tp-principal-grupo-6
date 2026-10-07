@@ -62,16 +62,37 @@ public class EnemySceneSetup : MonoBehaviour
         }
 
         if (NavMesh.SamplePosition(position, out NavMeshHit hit, 8f, NavMesh.AllAreas))
-            position = hit.position + Vector3.up;
+            position = hit.position + Vector3.up * FeetLift(enemyPrefab);
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         EnemyHealth health = enemy.GetComponent<EnemyHealth>();
         if (health != null)
             health.Configure(variant);
 
+        EnemyAppearance appearance = enemy.GetComponent<EnemyAppearance>();
+        if (appearance != null)
+            appearance.Configure(variant);
+
+        Ai ai = enemy.GetComponent<Ai>();
+        if (ai != null)
+            ai.Configure(variant);
+
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
         if (netObj != null)
             netObj.Spawn(true);
+    }
+
+    // La capsula tiene el pivote en el centro. Hay que subirla para que los pies
+    // queden sobre el NavMesh.
+    private static float FeetLift(GameObject prefab)
+    {
+        CapsuleCollider body = prefab.GetComponent<CapsuleCollider>();
+        if (body == null)
+            return 1f;
+
+        float scaleY = Mathf.Abs(prefab.transform.localScale.y);
+        float bottom = (body.center.y - body.height * 0.5f) * scaleY;
+        return -bottom;
     }
 
     private void BuildNavMesh()
@@ -137,7 +158,7 @@ public class EnemySceneSetup : MonoBehaviour
             ~0,
             NavMeshCollectGeometry.PhysicsColliders,
             0,
-            new List<NavMeshBuildMarkup>(),
+            VehicleMarkups(),
             sources);
 
         // Los jugadores y enemigos ya spawneados se mueven: no son parte del piso.
@@ -145,5 +166,40 @@ public class EnemySceneSetup : MonoBehaviour
             && source.component.GetComponentInParent<NetworkObject>() != null);
 
         return sources;
+    }
+
+    // Los autos no son piso. Si entran al horneado, el taxi corta la calle.
+    private static List<NavMeshBuildMarkup> VehicleMarkups()
+    {
+        var markups = new List<NavMeshBuildMarkup>();
+        var ignored = new HashSet<Transform>();
+
+        foreach (Collider collider in FindObjectsByType<Collider>())
+        {
+            Transform vehicle = VehicleRoot(collider.transform);
+            if (vehicle == null || !ignored.Add(vehicle))
+                continue;
+
+            markups.Add(new NavMeshBuildMarkup
+            {
+                root = vehicle,
+                ignoreFromBuild = true
+            });
+        }
+
+        return markups;
+    }
+
+    private static Transform VehicleRoot(Transform current)
+    {
+        Transform found = null;
+        while (current != null)
+        {
+            if (current.name.Contains("Vehicle"))
+                found = current;
+            current = current.parent;
+        }
+
+        return found;
     }
 }
