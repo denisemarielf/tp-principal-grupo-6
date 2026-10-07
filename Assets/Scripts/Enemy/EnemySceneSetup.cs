@@ -39,8 +39,7 @@ public class EnemySceneSetup : MonoBehaviour
             yield break;
 
 
-        BuildNavMesh();
-        yield return null;
+        yield return BuildNavMesh();
 
         if (spawns.Count == 0)
         {
@@ -95,41 +94,40 @@ public class EnemySceneSetup : MonoBehaviour
         return -bottom;
     }
 
-    private void BuildNavMesh()
+    private IEnumerator BuildNavMesh()
     {
         Bounds bounds = new Bounds(transform.position, navMeshSize);
         List<NavMeshBuildSource> sources = useSceneColliders ? CollectSceneSources(bounds) : CollectOwnMesh();
-        if (sources == null || sources.Count == 0)
+        if (sources == null)
+            sources = new List<NavMeshBuildSource>();
+
+        // Una malla sin lectura (por ejemplo Col_LF00top) no puede entrar al NavMesh.
+        // En el editor avisa; en el juego compilado el horneado falla.
+        int unreadables = sources.RemoveAll(source =>
+            source.shape == NavMeshBuildSourceShape.Mesh
+            && source.sourceObject is Mesh mesh
+            && !mesh.isReadable);
+
+        if (unreadables > 0)
+            Debug.LogWarning("EnemySceneSetup: se omitieron " + unreadables + " mallas sin lectura.", this);
+
+        if (sources.Count == 0)
         {
-            Debug.LogError("EnemySceneSetup: no hay geometria para armar el NavMesh.", this);
-            return;
+            Debug.LogError("EnemySceneSetup: no hay geometria legible para armar el NavMesh.", this);
+            yield break;
         }
 
-        
-        foreach (var source in sources)
-        {
-            if (source.sourceObject is Mesh mesh)
-            {
-                Debug.Log(
-                $"Mesh: {mesh.name} | Readable: {mesh.isReadable}");
-
-                if (mesh.name == "COL")
-                {
-                    Debug.LogError(
-                    $"Encontrada mesh COL en objeto: {source.component?.gameObject.name}");
-                }
-            }
-        }
-
-        NavMeshData data = NavMeshBuilder.BuildNavMeshData(
+        NavMeshData data = new NavMeshData();
+        AsyncOperation bake = NavMeshBuilder.UpdateNavMeshDataAsync(
+            data,
             NavMesh.GetSettingsByIndex(0),
             sources,
-            bounds,
-            Vector3.zero,
-            Quaternion.identity);
+            bounds);
 
-        if (data != null)
-            NavMesh.AddNavMeshData(data);
+        while (!bake.isDone)
+            yield return null;
+
+        NavMesh.AddNavMeshData(data);
     }
 
     private List<NavMeshBuildSource> CollectOwnMesh()
