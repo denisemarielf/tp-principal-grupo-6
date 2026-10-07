@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class DoorAction : MonoBehaviour {
 
@@ -11,7 +12,8 @@ public class DoorAction : MonoBehaviour {
 
     void Update ()
     {
-        if (Input.GetKeyDown(KeyCode.E))
+        //if (Input.GetKeyDown(KeyCode.E))
+          if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
         {
           
             RaycastHit hit;

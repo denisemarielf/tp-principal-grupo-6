@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 445265302}
   - component: {fileID: 445265301}
   - component: {fileID: 445265300}
+  - component: {fileID: 445265303}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -256,6 +257,18 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &445265303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 445265298}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91c6af13e15ffb34080c24119b7f76d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoorAction
 --- !u!1 &501857715 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1995824089454608, guid: e2e6970f9dbe45743858950d9b85475f, type: 3}
@@ -407,6 +420,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1120782887}
   - component: {fileID: 1120782886}
+  - component: {fileID: 1120782888}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -494,6 +508,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!114 &1120782888
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1120782885}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &1442162527
 GameObject:
   m_ObjectHideFlags: 0
@@ -616,7 +659,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4007291449629790, guid: e2e6970f9dbe45743858950d9b85475f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 22
+      value: 13.8
       objectReference: {fileID: 0}
     - target: {fileID: 4007291449629790, guid: e2e6970f9dbe45743858950d9b85475f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -649,6 +692,14 @@ PrefabInstance:
     - target: {fileID: 4007291449629790, guid: e2e6970f9dbe45743858950d9b85475f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114789423198144856, guid: e2e6970f9dbe45743858950d9b85475f, type: 3}
+      propertyPath: UseDoors.Array.data[0].OpenValue
+      value: 88
+      objectReference: {fileID: 0}
+    - target: {fileID: 114944336420594386, guid: e2e6970f9dbe45743858950d9b85475f, type: 3}
+      propertyPath: UseDoors.Array.data[0].OpenValue
+      value: 88
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -844,7 +895,7 @@ Transform:
   m_GameObject: {fileID: 2108673241}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -140.41539, y: 13, z: 82}
+  m_LocalPosition: {x: -140.41539, y: 11, z: 82}
   m_LocalScale: {x: 53.248196, y: 13.903649, z: 84.84978}
   m_ConstrainProportionsScale: 0
   m_Children: []
