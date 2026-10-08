@@ -26,6 +26,7 @@ public class EnemyCombat : NetworkBehaviour
     {
         if (!IsServer) return;
         if (enemyHealth != null && enemyHealth.IsDead()) return;
+        if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
         if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
 
         Transform player = ai != null ? ai.CurrentPlayer : null;
