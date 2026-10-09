@@ -97,35 +97,6 @@ public class Character : NetworkBehaviour
         return health != null && health.IsDead;
     }
 
-    public void OnSelectWeapon1(InputAction.CallbackContext context)
-    {
-        if (IsOwner && context.performed)
-            weaponSwitcher.SelectWeapon(-1);
-    }
-
-    public void OnSelectWeapon2(InputAction.CallbackContext context)
-    {
-        if (IsOwner && context.performed)
-            weaponSwitcher.SelectWeapon(0);
-    }
-
-    public void OnSelectWeapon3(InputAction.CallbackContext context)
-    {
-        if (IsOwner && context.performed)
-            weaponSwitcher.SelectWeapon(1);
-    }
-
-    public void OnShoot(InputAction.CallbackContext context)
-    {
-        if (IsOwner && context.performed && !PauseMenuUI.IsOpen)
-            weaponSwitcher.Shoot(context);
-    }
-
-    public void OnReload(InputAction.CallbackContext context)
-    {
-        if (IsOwner && context.performed)
-            weaponSwitcher.Reload(context);
-    }
 
     // Tecla E (accion Player/Interact). Atiende botiquines (US 3.1, sin
     // inventario: se consumen en el momento) y pickups de armas tiradas en
