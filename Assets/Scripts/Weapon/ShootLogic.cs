@@ -38,7 +38,7 @@ public class ShootLogic : NetworkBehaviour
         // frame; TryShoot respeta el cooldown solo. isEquipped evita que un
         // arma guardada (no equipada) siga disparando porque el botón físico
         // es el mismo para todas.
-        if (!IsOwner || !isEquipped) return;
+        if (!IsOwner || !isEquipped || PauseMenuUI.IsOpen) return;
        
         if (isAutomatic && shootAction != null && shootAction.IsPressed())
         {

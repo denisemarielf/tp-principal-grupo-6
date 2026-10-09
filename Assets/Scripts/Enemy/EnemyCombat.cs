@@ -17,6 +17,7 @@ public class EnemyCombat : NetworkBehaviour
     private NavMeshAgent navMeshAgent;
     private Ai ai;
     private EnemyHealth enemyHealth;
+    private EnemyAnimation enemyAnimation;
     private Transform currentTarget;
 
     private void Awake()
@@ -24,6 +25,7 @@ public class EnemyCombat : NetworkBehaviour
         navMeshAgent = GetComponent<NavMeshAgent>();
         ai = GetComponent<Ai>();
         enemyHealth = GetComponent<EnemyHealth>();
+        enemyAnimation = GetComponent<EnemyAnimation>();
     }
 
     private void Update()
@@ -44,6 +46,8 @@ public class EnemyCombat : NetworkBehaviour
             currentTarget = player;
             navMeshAgent.isStopped = true;
             FaceTarget(player);
+            if (enemyAnimation != null)
+                enemyAnimation.SetAttacking(true);
 
             if (Time.time >= lastAttackTime + attackCooldown)
                 Attack();
@@ -52,6 +56,8 @@ public class EnemyCombat : NetworkBehaviour
         {
             currentTarget = null;
             navMeshAgent.isStopped = false;
+            if (enemyAnimation != null)
+                enemyAnimation.SetAttacking(false);
         }
     }
 

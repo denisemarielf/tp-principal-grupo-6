@@ -33,7 +33,8 @@ public class Bullet : NetworkBehaviour
         rb.isKinematic = true;
         ContactPoint contact = collision.GetContact(0);
 
-        PlayImpactEffectClientRpc(contact.point, contact.normal);
+        bool hitEnemy = collision.collider.GetComponentInParent<EnemyHealth>() != null;
+        PlayImpactEffectClientRpc(contact.point, contact.normal, hitEnemy);
 
         if (IsServer)
         {
@@ -46,8 +47,14 @@ public class Bullet : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void PlayImpactEffectClientRpc(Vector3 point, Vector3 normal)
+    private void PlayImpactEffectClientRpc(Vector3 point, Vector3 normal, bool hitEnemy)
     {
+        if (hitEnemy)
+        {
+            BloodSplatter.Play(point, normal);
+            return;
+        }
+
         if (sparksImpact != null)
         {
             ParticleSystem sparks = Instantiate(

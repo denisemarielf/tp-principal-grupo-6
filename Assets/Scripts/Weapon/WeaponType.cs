@@ -5,7 +5,8 @@ public enum WeaponType
     PistolKrosH,
     RequiemH,
     ShotgunH,
-    rifleAKH
+    rifleAKH,
+    P90H
     
 
 }

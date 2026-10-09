@@ -114,12 +114,13 @@ public class WeaponLogic : NetworkBehaviour
     {
         Vector3 hitPoint;
         Vector3 hitNormal;
+        bool hitEnemy = false;
 
         if (Physics.Raycast(origin, direction, out RaycastHit hit, hitscanRange, hitscanLayers))
         {
             hitPoint = hit.point;
             hitNormal = hit.normal;
-            ApplyHitscanDamage(hit.collider);
+            hitEnemy = ApplyHitscanDamage(hit.collider);
         }
         else
         {
@@ -128,21 +129,28 @@ public class WeaponLogic : NetworkBehaviour
             hitNormal = -direction;
         }
 
-        PlayHitscanEffectsClientRpc(hitPoint, hitNormal);
+        PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy);
         PlayShootEffectsClientRpc(); 
     }
 
-    private void ApplyHitscanDamage(Collider hitCollider)
+    private bool ApplyHitscanDamage(Collider hitCollider)
     {
         EnemyHealth enemyHealth = hitCollider.GetComponentInParent<EnemyHealth>();
-        if (enemyHealth != null)
-            enemyHealth.TakeDamage(damageAmount, transform.root);
+        if (enemyHealth == null)
+            return false;
+
+        enemyHealth.TakeDamage(damageAmount, transform.root);
+        return true;
     }
 
     [ClientRpc]
-    private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal)
+    private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy)
     {
-        if (hitscanImpactEffect != null)
+        if (hitEnemy)
+        {
+            BloodSplatter.Play(hitPoint, hitNormal);
+        }
+        else if (hitscanImpactEffect != null)
         {
             ParticleSystem sparks = Instantiate(
                 hitscanImpactEffect,
