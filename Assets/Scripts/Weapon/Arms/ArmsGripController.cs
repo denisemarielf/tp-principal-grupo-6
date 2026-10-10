@@ -15,13 +15,12 @@ public class ArmsGripController : MonoBehaviour
     [Header("Rig Builder (para forzar reconstrucción tras retargetear)")]
     public RigBuilder rigBuilder; // NUEVO: arrastrá el que está en ArmsSoldier
     public Transform leftHandRestPosition;
+    [Header("Punto de descanso propio del arma (opcional, para armas a una mano)")]
+    public string leftRestPointChildName = "LeftHandRestPoint";
 
     public void SetGripsForWeapon(GameObject weapon)
     {
-        if (weapon == null)
-        {
-            return;
-        }
+        if (weapon == null) return;
 
         Transform rightGrip = FindDeepChild(weapon.transform, rightGripChildName);
         SetTarget(rightHandConstraint, rightGrip, null);
@@ -29,7 +28,16 @@ public class ArmsGripController : MonoBehaviour
         if (leftHandConstraint != null)
         {
             Transform leftGrip = FindDeepChild(weapon.transform, leftGripChildName);
-            SetTarget(leftHandConstraint, leftGrip, leftHandRestPosition); // NUEVO: pasa el fallback
+
+            // Si el arma no tiene grip de mano izquierda (es a una mano), buscamos
+            // primero si ESE arma tiene su propio punto de descanso (así hereda
+            // el bob/sway/recoil del arma). Si tampoco tiene eso, caemos al
+            // genérico externo como último recurso.
+            Transform restFallback = leftGrip == null
+                ? FindDeepChild(weapon.transform, leftRestPointChildName) ?? leftHandRestPosition
+                : null;
+
+            SetTarget(leftHandConstraint, leftGrip, restFallback);
         }
 
         if (rigBuilder != null)

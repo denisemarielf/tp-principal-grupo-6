@@ -14,7 +14,7 @@ public class WeaponLogic : NetworkBehaviour
 
     [Header("Hitscan")]
     public float hitscanRange = 100f;
-    public LayerMask hitscanLayers = ~0; // qué puede golpear el rayo (configurable por arma)
+    public LayerMask hitscanLayers = ~0; // quÃ© puede golpear el rayo (configurable por arma)
     public ParticleSystem hitscanImpactEffect;
 
     [Header("Tracer")]
@@ -26,7 +26,7 @@ public class WeaponLogic : NetworkBehaviour
     public ParticleSystem muzzleFlash;
     public WeaponSway weaponSway;
 
-    [Header("Camera Recoil (solo afecta al dueño del arma)")]
+    [Header("Camera Recoil (solo afecta al dueÃ±o del arma)")]
     public CameraRecoil cameraRecoil;
     [SerializeField] private CrosshairController crosshairController;
 
@@ -62,7 +62,7 @@ public class WeaponLogic : NetworkBehaviour
         cameraRecoil?.AddRecoil(isAiming);
     }
 
-    /// <summary>Pide al servidor que dispare de verdad. Llamado por ShootLogic cuando ya validó cooldown/munición.</summary>
+    /// <summary>Pide al servidor que dispare de verdad. Llamado por ShootLogic cuando ya validÃ³ cooldown/municiÃ³n.</summary>
     public void RequestFire()
     {
         if (projectileType == ProjectileType.Hitscan)
@@ -78,7 +78,7 @@ public class WeaponLogic : NetworkBehaviour
         }
     }
 
-    // ---------- Proyectil físico (Bullet.cs) ----------
+    // ---------- Proyectil fÃ­sico (Bullet.cs) ----------
 
     [ServerRpc]
     private void ShootServerRpc(Vector3 position, Quaternion rotation)
@@ -114,12 +114,13 @@ public class WeaponLogic : NetworkBehaviour
     {
         Vector3 hitPoint;
         Vector3 hitNormal;
+        bool hitEnemy = false;
 
         if (Physics.Raycast(origin, direction, out RaycastHit hit, hitscanRange, hitscanLayers))
         {
             hitPoint = hit.point;
             hitNormal = hit.normal;
-            ApplyHitscanDamage(hit.collider);
+            hitEnemy = ApplyHitscanDamage(hit.collider);
         }
         else
         {
@@ -128,40 +129,28 @@ public class WeaponLogic : NetworkBehaviour
             hitNormal = -direction;
         }
 
-        PlayHitscanEffectsClientRpc(hitPoint, hitNormal);
+        PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy);
         PlayShootEffectsClientRpc(); 
     }
 
-    private void ApplyHitscanDamage(Collider hitCollider)
+    private bool ApplyHitscanDamage(Collider hitCollider)
     {
-        //NOTA esto puede migrar a otro script si es necesario
-        /*
-        
         EnemyHealth enemyHealth = hitCollider.GetComponentInParent<EnemyHealth>();
-        if (enemyHealth != null)
-        {
-            enemyHealth.TakeDamage(damageAmount);
-            return;
-        }
+        if (enemyHealth == null)
+            return false;
 
-        PlayerHealth playerHealth = hitCollider.GetComponentInParent<PlayerHealth>();
-        if (playerHealth != null)
-        {
-            playerHealth.TakeDamage(damageAmount);
-            return;
-        }
-
-        TowerHealth towerHealth = hitCollider.GetComponentInParent<TowerHealth>();
-        if (towerHealth != null)
-        {
-            towerHealth.TakeDamage(damageAmount);
-        }*/
+        enemyHealth.TakeDamage(damageAmount, transform.root);
+        return true;
     }
 
     [ClientRpc]
-    private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal)
+    private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy)
     {
-        if (hitscanImpactEffect != null)
+        if (hitEnemy)
+        {
+            BloodSplatter.Play(hitPoint, hitNormal);
+        }
+        else if (hitscanImpactEffect != null)
         {
             ParticleSystem sparks = Instantiate(
                 hitscanImpactEffect,
