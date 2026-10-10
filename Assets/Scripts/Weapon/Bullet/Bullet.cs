@@ -33,36 +33,28 @@ public class Bullet : NetworkBehaviour
         rb.isKinematic = true;
         ContactPoint contact = collision.GetContact(0);
 
-        PlayImpactEffectClientRpc(contact.point, contact.normal);
+        bool hitEnemy = collision.collider.GetComponentInParent<EnemyHealth>() != null;
+        PlayImpactEffectClientRpc(contact.point, contact.normal, hitEnemy);
 
         if (IsServer)
         {
-            //ColisionForTag(collision);
+            EnemyHealth enemyHealth = collision.collider.GetComponentInParent<EnemyHealth>();
+            if (enemyHealth != null)
+                enemyHealth.TakeDamage(damageAmount, shooter);
+
             DespawnBullet();
         }
     }
 
-    private void ColisionForTag(Collision collision)
-    {
-        /*if (collision.gameObject.CompareTag("Enemy"))
-           {
-               EnemyHealth enemyHealth = collision.gameObject.GetComponent<EnemyHealth>();
-               if (enemyHealth != null)
-               {
-                   enemyHealth.TakeDamage(damageAmount);
-               }
-           }
-           if (collision.gameObject.CompareTag("Player"))
-           {
-               // collision.gameObject.GetComponent<PlayerHealth>()?.TakeDamage(damageAmount);
-
-           }
-       */
-    }
-
     [ClientRpc]
-    private void PlayImpactEffectClientRpc(Vector3 point, Vector3 normal)
+    private void PlayImpactEffectClientRpc(Vector3 point, Vector3 normal, bool hitEnemy)
     {
+        if (hitEnemy)
+        {
+            BloodSplatter.Play(point, normal);
+            return;
+        }
+
         if (sparksImpact != null)
         {
             ParticleSystem sparks = Instantiate(

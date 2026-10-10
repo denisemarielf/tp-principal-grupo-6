@@ -39,6 +39,18 @@ public class PMovement : NetworkBehaviour
     NetworkVariableWritePermission.Server
     );
 
+    private NetworkVariable<float> slowMultiplier = new(
+    1f,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+    );
+
+    // Por debajo de esto el golpe dejaria al jugador casi quieto.
+    public const float MinHitSlow = 0.4f;
+
+    private Coroutine hitSlowRoutine;
+    private int hitSlowToken;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -89,7 +101,8 @@ public class PMovement : NetworkBehaviour
 
         if (animator != null)
         {
-            animator.SetFloat("speed", 0f);
+            animator.SetFloat("velX", 0f);
+            animator.SetFloat("velZ", 0f);
         }
     }
 
@@ -103,7 +116,7 @@ public class PMovement : NetworkBehaviour
         transform.forward * moveInput.y).normalized;
 
         float wishSpeed =
-        moveSpeed * speedMultiplier.Value;
+        moveSpeed * CombineSpeed(speedMultiplier.Value, slowMultiplier.Value);
 
 
         if (isSprinting)
@@ -178,10 +191,10 @@ public class PMovement : NetworkBehaviour
         if (animator == null)
             return;
 
-        float speedValue = moveInput.magnitude;
-
-
-        animator.SetFloat("speed", speedValue);
+        animator.SetFloat("velX", moveInput.x, 0.1f, Time.deltaTime);
+        animator.SetFloat("velZ", moveInput.y, 0.1f, Time.deltaTime);
+        bool isActuallySprinting = isSprinting && moveInput.magnitude > 0.1f;
+        animator.SetBool("isSprinting", isActuallySprinting);
     }
 
     public void ApplySpeedBoost(
@@ -208,5 +221,42 @@ public class PMovement : NetworkBehaviour
         yield return new WaitForSeconds(duration);
 
         speedMultiplier.Value = 1f;
+    }
+
+    // El host aplica el frenado del golpe. Un golpe nuevo renueva la duracion
+    // y la corrutina anterior no puede devolver la velocidad a 1 antes de tiempo.
+    public void ApplyHitSlow(float multiplier, float duration)
+    {
+        if (!IsServer)
+            return;
+
+        if (hitSlowRoutine != null)
+            StopCoroutine(hitSlowRoutine);
+
+        int token = ++hitSlowToken;
+        hitSlowRoutine = StartCoroutine(HitSlowRoutine(ClampHitSlow(multiplier), duration, token));
+    }
+
+    public static float ClampHitSlow(float multiplier)
+    {
+        return Mathf.Clamp(multiplier, MinHitSlow, 1f);
+    }
+
+    public static float CombineSpeed(float boost, float slow)
+    {
+        return boost * slow;
+    }
+
+    private IEnumerator HitSlowRoutine(float multiplier, float duration, int token)
+    {
+        slowMultiplier.Value = multiplier;
+
+        yield return new WaitForSeconds(duration);
+
+        if (token != hitSlowToken)
+            yield break;
+
+        slowMultiplier.Value = 1f;
+        hitSlowRoutine = null;
     }
 }
