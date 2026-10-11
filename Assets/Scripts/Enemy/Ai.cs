@@ -9,8 +9,8 @@ public class Ai : NetworkBehaviour
 
     [Header("Follow")]
     [SerializeField] private bool followPlayer = true;
-    [SerializeField] private float distanceToFollowPlayer = 20f;
-    [SerializeField] private float distanceToLosePlayer = 28f;
+    [SerializeField] private float distanceToFollowPlayer = 60f;
+    [SerializeField] private float distanceToLosePlayer = 80f;
 
     [Header("Aggro")]
     [SerializeField] private float aggroDuration = 6f;

@@ -24,8 +24,14 @@ public class EnemySceneSetup : MonoBehaviour
     [SerializeField] private float activateDistance = 80f;
     [Tooltip("Si quedan más lejos que esto de todos los jugadores, se guardan hasta que alguien vuelva.")]
     [SerializeField] private float despawnDistance = 120f;
+    [Tooltip("Los enemigos solo se planifican sobre este objeto, la calzada.")]
+    [SerializeField] private string roadObjectName = "road_0001";
+    [Tooltip("Metros hacia adentro del borde de la calle, para no aparecer en el cordón.")]
+    [SerializeField] private float roadEdgeMargin = 1.5f;
 
     private readonly List<PlannedEnemy> planned = new List<PlannedEnemy>();
+    private Bounds roadBounds;
+    private bool hasRoad;
     private float streamTimer;
     private bool streaming;
 
@@ -79,23 +85,32 @@ public class EnemySceneSetup : MonoBehaviour
 
     private void PlanAcrossMap()
     {
-        Bounds bounds = MapBounds();
+        if (!TryGetRoadBounds(out roadBounds))
+        {
+            Debug.LogWarning("EnemySceneSetup: no está la calle, no hay puntos de enemigos.", this);
+            return;
+        }
+
+        hasRoad = true;
+        float margin = RoadMargin(roadBounds);
         Vector3 playerSpawn = PlayerSpawnPosition();
         var chosen = new List<Vector3>(enemyCount);
         int attempts = Mathf.Max(enemyCount * 100, 1);
 
         for (int i = 0; i < attempts && chosen.Count < enemyCount; i++)
         {
-            // Radio chico: si el XZ no cae cerca del piso, se descarta en vez de pegarse al borde.
+            // Solo sobre el asfalto. Si el punto cae en un auto, el NavMesh lo corre y se descarta si sale de la calle.
             Vector3 candidate = new Vector3(
-                Random.Range(bounds.min.x, bounds.max.x),
+                Random.Range(roadBounds.min.x + margin, roadBounds.max.x - margin),
                 1f,
-                Random.Range(bounds.min.z, bounds.max.z));
+                Random.Range(roadBounds.min.z + margin, roadBounds.max.z - margin));
 
-            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 8f, NavMesh.AllAreas))
+            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2f, NavMesh.AllAreas))
                 continue;
 
             Vector3 point = hit.position;
+            if (!InsideRoad(point, roadBounds, 0.4f))
+                continue;
             if (FlatDistance(point, playerSpawn) < minDistanceFromSpawn)
                 continue;
             if (TooCloseToAnother(point, chosen))
@@ -159,8 +174,16 @@ public class EnemySceneSetup : MonoBehaviour
             return null;
         }
 
-        if (NavMesh.SamplePosition(position, out NavMeshHit hit, 8f, NavMesh.AllAreas))
+        float sampleRadius = hasRoad ? 2f : 8f;
+        if (NavMesh.SamplePosition(position, out NavMeshHit hit, sampleRadius, NavMesh.AllAreas)
+            && (!hasRoad || InsideRoad(hit.position, roadBounds, 0.4f)))
+        {
             position = hit.position + Vector3.up * FeetLift(enemyPrefab);
+        }
+        else if (hasRoad)
+        {
+            position += Vector3.up * FeetLift(enemyPrefab);
+        }
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         EnemyHealth health = enemy.GetComponent<EnemyHealth>();
@@ -505,6 +528,48 @@ public class EnemySceneSetup : MonoBehaviour
         }
 
         return false;
+    }
+
+    private bool TryGetRoadBounds(out Bounds road)
+    {
+        road = default;
+        if (string.IsNullOrEmpty(roadObjectName))
+            return false;
+
+        GameObject roadObject = GameObject.Find(roadObjectName);
+        if (roadObject == null)
+            return false;
+
+        Renderer renderer = roadObject.GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            road = renderer.bounds;
+            return road.size.x > 0.1f && road.size.z > 0.1f;
+        }
+
+        Collider collider = roadObject.GetComponent<Collider>();
+        if (collider == null)
+            return false;
+
+        road = collider.bounds;
+        return road.size.x > 0.1f && road.size.z > 0.1f;
+    }
+
+    private float RoadMargin(Bounds road)
+    {
+        float margin = Mathf.Max(0f, roadEdgeMargin);
+        if (road.size.x <= margin * 2f || road.size.z <= margin * 2f)
+            return 0f;
+
+        return margin;
+    }
+
+    private static bool InsideRoad(Vector3 point, Bounds road, float margin)
+    {
+        return point.x >= road.min.x + margin
+            && point.x <= road.max.x - margin
+            && point.z >= road.min.z + margin
+            && point.z <= road.max.z - margin;
     }
 
     private static float FlatDistance(Vector3 a, Vector3 b)
