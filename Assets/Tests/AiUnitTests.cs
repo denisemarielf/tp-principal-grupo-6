@@ -12,9 +12,9 @@ public class AiUnitTests
         float velocidad = Ai.SpeedFor(EnemyVariant.Fragil);
 
         Assert.AreEqual(
-            6f,
+            7f,
             velocidad,
-            "La variante Frágil debería tener una velocidad de 6."
+            "La variante Frágil debería tener una velocidad de 7."
         );
     }
 
@@ -24,9 +24,9 @@ public class AiUnitTests
         float velocidad = Ai.SpeedFor(EnemyVariant.Normal);
 
         Assert.AreEqual(
-            3.5f,
+            4f,
             velocidad,
-            "La variante Normal debería tener una velocidad de 3.5."
+            "La variante Normal debería tener una velocidad de 4."
         );
     }
 
@@ -36,9 +36,9 @@ public class AiUnitTests
         float velocidad = Ai.SpeedFor(EnemyVariant.Resistente);
 
         Assert.AreEqual(
-            1.5f,
+            3f,
             velocidad,
-            "La variante Resistente debería tener una velocidad de 1.5."
+            "La variante Resistente debería tener una velocidad de 3."
         );
     }
 
