@@ -89,6 +89,7 @@ public class ShootLogic : NetworkBehaviour
     public void AddReserveAmmo(int amount) => ammoManager.AddReserveAmmo(amount);
     public int CurrentAmmo => ammoManager.CurrentAmmo;
     public int ReserveAmmo => ammoManager.ReserveAmmo;
+    public int MagazineSize => ammoManager.MagazineSize; //nueva
     public bool IsReloading => ammoManager.IsReloading;
 
     public int DamageAmount

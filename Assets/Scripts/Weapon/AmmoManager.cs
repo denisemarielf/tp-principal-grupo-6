@@ -22,6 +22,7 @@ public class AmmoManager : MonoBehaviour
 
     public int CurrentAmmo => currentAmmo;
     public int ReserveAmmo => reserveAmmo;
+    public int MagazineSize => magazineSize; //nueva
     public bool IsReloading => isReloading;
     public bool HasAmmo => currentAmmo > 0;
 

@@ -31,7 +31,8 @@ public class AmmoUI : MonoBehaviour
             return;
         }
 
-        clipSize.text = currentShoot.CurrentAmmo.ToString();
+        //clipSize.text = currentShoot.CurrentAmmo.ToString();
+        clipSize.text = $"{currentShoot.CurrentAmmo} / {currentShoot.MagazineSize}"; //nueva
         ammoRemaining.text = currentShoot.ReserveAmmo.ToString();
     }
 }
