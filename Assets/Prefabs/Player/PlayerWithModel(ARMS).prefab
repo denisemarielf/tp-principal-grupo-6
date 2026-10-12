@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: dd2188ac3a016bc419bea724836d3d82, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1570,7 +1570,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -208, y: 34.6}
+  m_AnchoredPosition: {x: -200.8, y: 30}
   m_SizeDelta: {x: 24, y: 24}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7411532135242173268
@@ -2358,8 +2358,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 221, y: -57}
-  m_SizeDelta: {x: 440, y: 105}
+  m_AnchoredPosition: {x: 220, y: -47.4}
+  m_SizeDelta: {x: 430, y: 85}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7253521569127487168
 CanvasRenderer:
@@ -2496,7 +2496,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 100.6, y: 31.8}
+  m_AnchoredPosition: {x: 81.5, y: 31.8}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8815684575531365847
@@ -3015,7 +3015,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 20.7, y: -34.5}
+  m_AnchoredPosition: {x: 20.7, y: -29.8}
   m_SizeDelta: {x: 400, y: 18}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &9040750047320507691
@@ -4208,7 +4208,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -190, y: 42.5}
+  m_AnchoredPosition: {x: -186.2, y: 37.3}
   m_SizeDelta: {x: 400, y: 25}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &5012982120910460201
@@ -4266,8 +4266,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 15
-  m_fontSizeBase: 15
+  m_fontSize: 14
+  m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -4305,7 +4305,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 0, y: 0, z: 20.483032, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -4769,6 +4769,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AmmoUI
   clipSize: {fileID: 6350661723577705070}
   ammoRemaining: {fileID: 980292814533931099}
+  weaponIcon: {fileID: 4068879628033941810}
 --- !u!114 &2246184905416632183
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5761,6 +5762,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 29664896406910336}
     m_Modifications:
+    - target: {fileID: -4630130612025601021, guid: a55bcf0fb3949514ca24994cc3b68e4f, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3243079438
+      objectReference: {fileID: 0}
     - target: {fileID: 3709999367501286935, guid: a55bcf0fb3949514ca24994cc3b68e4f, type: 3}
       propertyPath: m_Name
       value: DesertH

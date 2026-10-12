@@ -1,20 +1,20 @@
+
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class AmmoUI : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     private ShootLogic currentShoot;
+
     [SerializeField] private TMP_Text clipSize;
     [SerializeField] private TMP_Text ammoRemaining;
-
+    [SerializeField] private Image weaponIcon;
 
     void Update()
     {
         UpdateAmmoUI();
-
     }
-
 
     public void SetWeapon(ShootLogic weapon)
     {
@@ -28,11 +28,26 @@ public class AmmoUI : MonoBehaviour
         {
             clipSize.text = " ";
             ammoRemaining.text = " ";
+
+            if (weaponIcon != null)
+            {
+                weaponIcon.sprite = null;
+                weaponIcon.enabled = false;
+            }
+
             return;
         }
 
-        //clipSize.text = currentShoot.CurrentAmmo.ToString();
-        clipSize.text = $"{currentShoot.CurrentAmmo} / {currentShoot.MagazineSize}"; //nueva
-        ammoRemaining.text = currentShoot.ReserveAmmo.ToString();
+        clipSize.text =
+            $"{currentShoot.CurrentAmmo} / {currentShoot.MagazineSize}";
+
+        ammoRemaining.text =
+            currentShoot.ReserveAmmo.ToString();
+
+        if (weaponIcon != null)
+        {
+            weaponIcon.sprite = currentShoot.HudIcon;
+            weaponIcon.enabled = currentShoot.HudIcon != null;
+        }
     }
 }

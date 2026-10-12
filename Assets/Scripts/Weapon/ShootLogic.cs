@@ -92,9 +92,17 @@ public class ShootLogic : NetworkBehaviour
     public int MagazineSize => ammoManager.MagazineSize; //nueva
     public bool IsReloading => ammoManager.IsReloading;
 
+    [Header("Icono del HUD")]
+    [SerializeField] private Sprite hudIcon;
+
+    public Sprite HudIcon => hudIcon;
     public int DamageAmount
     {
         get => weaponLogic.damageAmount;
         set => weaponLogic.damageAmount = value;
     }
+
+
+
+
 }
