@@ -31,7 +31,7 @@ public class CameraControllerFPS : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        if (IsOwner)
+        if (IsOwner && !PauseMenuUI.IsOpen)
         {
             SetCursorLocked(true);
         }
@@ -39,7 +39,7 @@ public class CameraControllerFPS : NetworkBehaviour
 
     void Start()
     {
-        if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsListening || IsOwner)
+        if ((!NetworkManager.Singleton || !NetworkManager.Singleton.IsListening || IsOwner) && !PauseMenuUI.IsOpen)
         {
             SetCursorLocked(true);
         }
@@ -47,14 +47,13 @@ public class CameraControllerFPS : NetworkBehaviour
 
     private void OnApplicationFocus(bool hasFocus)
     {
-        if (hasFocus && (!IsSpawned || IsOwner))
+        if (hasFocus && (!IsSpawned || IsOwner) && !PauseMenuUI.IsOpen)
         {
             SetCursorLocked(true);
         }
     }
 
-    // Esc libera el cursor para poder usar la UI (por ejemplo "Salir de la partida") y lo vuelve a bloquear.
-    // Mientras esta libre, el mouse no mueve la camara.
+    // El cursor lo abre y lo cierra PauseMenuUI. Mientras esta libre, el mouse no mueve la camara.
     private void SetCursorLocked(bool locked)
     {
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
@@ -69,7 +68,7 @@ public class CameraControllerFPS : NetworkBehaviour
         {
             weaponPivot.localRotation = Quaternion.identity;
         }
-        if (!IsSpawned || IsOwner)
+        if ((!IsSpawned || IsOwner) && !PauseMenuUI.IsOpen)
         {
             SetCursorLocked(true);
         }
@@ -82,11 +81,10 @@ public class CameraControllerFPS : NetworkBehaviour
 
         if (isLocal)
         {
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                SetCursorLocked(Cursor.lockState != CursorLockMode.Locked);
-            }
-            else if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
+            if (!PauseMenuUI.IsOpen
+                && Mouse.current != null
+                && Mouse.current.leftButton.wasPressedThisFrame
+                && Cursor.lockState != CursorLockMode.Locked)
             {
                 if (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject())
                 {
@@ -94,7 +92,7 @@ public class CameraControllerFPS : NetworkBehaviour
                 }
             }
 
-            if (Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
+            if (!PauseMenuUI.IsOpen && Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
             {
                 Vector2 mouseDelta = Mouse.current.delta.ReadValue();
                 float mouseX = mouseDelta.x * sensitivity * Time.deltaTime;

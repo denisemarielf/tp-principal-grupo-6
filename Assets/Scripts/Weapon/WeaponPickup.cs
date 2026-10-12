@@ -14,13 +14,13 @@ public class WeaponPickup : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // Solo el servidor simula la caída real. Los demás clientes reciben
-        // la posición ya resuelta vía NetworkTransform, sin física propia
-        // (evita que cada uno vea el arma caer/rebotar distinto).
-        if (rb != null)
-        {
-            rb.isKinematic = !IsOwner;
-        }
+        if (rb == null)
+            return;
+
+        // Las armas de la escena se quedan donde estÃ¡n. Si caen, atraviesan la calle.
+        bool placedInScene = NetworkObject != null && NetworkObject.InScenePlaced;
+        rb.useGravity = !placedInScene && IsOwner;
+        rb.isKinematic = placedInScene || !IsOwner;
     }
 
     public void Consume()
@@ -37,7 +37,7 @@ public class WeaponPickup : NetworkBehaviour
             }
             else
             {
-                // Objetos creados dinámicamente
+                // Objetos creados dinÃ¡micamente
                 netObj.Despawn(true);
             }
         }

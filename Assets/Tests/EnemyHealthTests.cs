@@ -129,9 +129,19 @@ public IEnumerator LaVidaDisminuyeExactamenteLaCantidadDeDanoRecibida()
 
         yield return null;
 
+        Assert.IsTrue(
+            enemigo.IsDead(),
+            "El enemigo debería quedar muerto cuando su vida llega a 0."
+        );
+
+        float espera = enemigo.DeathDuration + 1f;
+        float limite = Time.realtimeSinceStartup + espera;
+        while (objetoRed != null && objetoRed.IsSpawned && Time.realtimeSinceStartup < limite)
+            yield return null;
+
         Assert.IsFalse(
-            objetoRed.IsSpawned,
-            "El enemigo debería dejar de estar spawneado cuando su vida llega a 0."
+            objetoRed != null && objetoRed.IsSpawned,
+            "El enemigo debería desaparecer después de la animación de muerte."
         );
     }
 }

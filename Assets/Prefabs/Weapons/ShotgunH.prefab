@@ -5701,6 +5701,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   shootRate: 0.3
   isAutomatic: 1
+  hudIcon: {fileID: 21300000, guid: 1e761e32c0f5ce14f89d995268a3262c, type: 3}
 --- !u!114 &-4462564055191692491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25609,6 +25610,7 @@ MonoBehaviour:
   recoilKick: 15
   recoilRecoverySpeed: 6
   reloadDipAmount: 0.08
+  reloadTiltAmount: 35
 --- !u!1001 &3721640658363170010
 PrefabInstance:
   m_ObjectHideFlags: 0

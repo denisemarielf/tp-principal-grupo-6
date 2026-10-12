@@ -9,10 +9,15 @@ public class EnemyCombat : NetworkBehaviour
     public float attackRange = 2.5f;
     public float attackCooldown = 0.8f;
 
+    [Header("Frenado")]
+    public float hitSlowMultiplier = 0.7f;
+    public float hitSlowDuration = 1.25f;
+
     private float lastAttackTime;
     private NavMeshAgent navMeshAgent;
     private Ai ai;
     private EnemyHealth enemyHealth;
+    private EnemyAnimation enemyAnimation;
     private Transform currentTarget;
 
     private void Awake()
@@ -20,6 +25,7 @@ public class EnemyCombat : NetworkBehaviour
         navMeshAgent = GetComponent<NavMeshAgent>();
         ai = GetComponent<Ai>();
         enemyHealth = GetComponent<EnemyHealth>();
+        enemyAnimation = GetComponent<EnemyAnimation>();
     }
 
     private void Update()
@@ -43,6 +49,8 @@ public class EnemyCombat : NetworkBehaviour
             currentTarget = player;
             navMeshAgent.isStopped = true;
             FaceTarget(player);
+            if (enemyAnimation != null)
+                enemyAnimation.SetAttacking(true);
 
             if (Time.time >= lastAttackTime + attackCooldown)
                 Attack();
@@ -51,6 +59,8 @@ public class EnemyCombat : NetworkBehaviour
         {
             currentTarget = null;
             navMeshAgent.isStopped = false;
+            if (enemyAnimation != null)
+                enemyAnimation.SetAttacking(false);
         }
     }
 
@@ -67,7 +77,14 @@ public class EnemyCombat : NetworkBehaviour
         PlayerHealth playerHealth = currentTarget.GetComponent<PlayerHealth>();
         if (playerHealth != null)
         {
+            if (playerHealth.IsDead) return;
+
             playerHealth.TakeDamage(attackDamage);
+            if (playerHealth.IsDead) return;
+
+            PMovement movement = currentTarget.GetComponent<PMovement>();
+            if (movement != null)
+                movement.ApplyHitSlow(hitSlowMultiplier, hitSlowDuration);
             return;
         }
 

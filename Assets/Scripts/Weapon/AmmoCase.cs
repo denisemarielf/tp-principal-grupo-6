@@ -26,7 +26,7 @@ public class AmmoCase : NetworkBehaviour
 
         if (pickupCollider == null)
         {
-            Debug.LogError("AmmoCase: No se asignó el Pickup Collider.");
+            Debug.LogError("AmmoCase: No se asignÃ³ el Pickup Collider.");
         }
         else
         {

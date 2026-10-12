@@ -38,7 +38,7 @@ public class ShootLogic : NetworkBehaviour
         // frame; TryShoot respeta el cooldown solo. isEquipped evita que un
         // arma guardada (no equipada) siga disparando porque el botón físico
         // es el mismo para todas.
-        if (!IsOwner || !isEquipped) return;
+        if (!IsOwner || !isEquipped || PauseMenuUI.IsOpen) return;
        
         if (isAutomatic && shootAction != null && shootAction.IsPressed())
         {
@@ -89,11 +89,20 @@ public class ShootLogic : NetworkBehaviour
     public void AddReserveAmmo(int amount) => ammoManager.AddReserveAmmo(amount);
     public int CurrentAmmo => ammoManager.CurrentAmmo;
     public int ReserveAmmo => ammoManager.ReserveAmmo;
+    public int MagazineSize => ammoManager.MagazineSize; //nueva
     public bool IsReloading => ammoManager.IsReloading;
 
+    [Header("Icono del HUD")]
+    [SerializeField] private Sprite hudIcon;
+
+    public Sprite HudIcon => hudIcon;
     public int DamageAmount
     {
         get => weaponLogic.damageAmount;
         set => weaponLogic.damageAmount = value;
     }
+
+
+
+
 }
