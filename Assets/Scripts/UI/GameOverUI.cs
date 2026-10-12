@@ -28,7 +28,7 @@ public class GameOverUI : MonoBehaviour
     private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name == GameSessionManager.MainMenuSceneName) return;
-        if (FindFirstObjectByType<GameOverUI>() != null) return;
+        if (FindAnyObjectByType<GameOverUI>() != null) return;
 
         new GameObject("GameOverUI").AddComponent<GameOverUI>();
     }
@@ -41,7 +41,7 @@ public class GameOverUI : MonoBehaviour
         if (checkTimer > 0f) return;
         checkTimer = CheckInterval;
 
-        PlayerHealth[] players = FindObjectsByType<PlayerHealth>(FindObjectsSortMode.None);
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
         bool nivelCompletado = SafeZone.Current != null && SafeZone.Current.IsCompleted;
 
         if (AllDead(players) && !nivelCompletado)
@@ -75,7 +75,7 @@ public class GameOverUI : MonoBehaviour
 
     private static void EnsureEventSystem()
     {
-        if (FindFirstObjectByType<EventSystem>() != null) return;
+        if (FindAnyObjectByType<EventSystem>() != null) return;
 
         GameObject go = new GameObject("EventSystem");
         go.AddComponent<EventSystem>();
@@ -151,7 +151,7 @@ public class GameOverUI : MonoBehaviour
 
     private void ReturnToMainMenu()
     {
-        DisconnectionHandler handler = FindFirstObjectByType<DisconnectionHandler>();
+        DisconnectionHandler handler = FindAnyObjectByType<DisconnectionHandler>();
         if (handler != null)
             handler.LeaveSession();
         else
