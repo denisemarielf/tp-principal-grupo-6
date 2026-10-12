@@ -3725,6 +3725,7 @@ GameObject:
   - component: {fileID: 5495149458674931108}
   - component: {fileID: 6873789770908098296}
   - component: {fileID: 7683486103493579747}
+  - component: {fileID: 4230249101391057447}
   m_Layer: 6
   m_Name: AmmoPanel
   m_TagString: Untagged
@@ -3793,6 +3794,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!225 &4230249101391057447
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6570031485880395266}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &6842251997325910206
 GameObject:
   m_ObjectHideFlags: 0
@@ -4767,6 +4780,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d95e8674f8132874baa704fc9d039361, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AmmoUI
+  panelGroup: {fileID: 4230249101391057447}
   clipSize: {fileID: 6350661723577705070}
   ammoRemaining: {fileID: 980292814533931099}
   weaponIcon: {fileID: 4068879628033941810}

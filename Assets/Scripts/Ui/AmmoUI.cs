@@ -7,9 +7,18 @@ public class AmmoUI : MonoBehaviour
 {
     private ShootLogic currentShoot;
 
+    [SerializeField] private CanvasGroup panelGroup;
     [SerializeField] private TMP_Text clipSize;
     [SerializeField] private TMP_Text ammoRemaining;
     [SerializeField] private Image weaponIcon;
+
+    private void Awake()
+    {
+        if (panelGroup == null)
+            panelGroup = GetComponent<CanvasGroup>();
+
+        SetPanelVisible(false);
+    }
 
     void Update()
     {
@@ -19,7 +28,14 @@ public class AmmoUI : MonoBehaviour
     public void SetWeapon(ShootLogic weapon)
     {
         currentShoot = weapon;
+        SetPanelVisible(weapon != null);
         UpdateAmmoUI();
+    }
+
+    private void SetPanelVisible(bool visible)
+    {
+        if (panelGroup != null)
+            panelGroup.alpha = visible ? 1f : 0f;
     }
 
     private void UpdateAmmoUI()
@@ -38,11 +54,8 @@ public class AmmoUI : MonoBehaviour
             return;
         }
 
-        clipSize.text =
-            $"{currentShoot.CurrentAmmo} / {currentShoot.MagazineSize}";
-
-        ammoRemaining.text =
-            currentShoot.ReserveAmmo.ToString();
+        clipSize.text = $"{currentShoot.CurrentAmmo} / {currentShoot.MagazineSize}";
+        ammoRemaining.text = currentShoot.ReserveAmmo.ToString();
 
         if (weaponIcon != null)
         {
