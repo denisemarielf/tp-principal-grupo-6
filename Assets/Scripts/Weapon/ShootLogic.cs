@@ -89,11 +89,20 @@ public class ShootLogic : NetworkBehaviour
     public void AddReserveAmmo(int amount) => ammoManager.AddReserveAmmo(amount);
     public int CurrentAmmo => ammoManager.CurrentAmmo;
     public int ReserveAmmo => ammoManager.ReserveAmmo;
+    public int MagazineSize => ammoManager.MagazineSize; //nueva
     public bool IsReloading => ammoManager.IsReloading;
 
+    [Header("Icono del HUD")]
+    [SerializeField] private Sprite hudIcon;
+
+    public Sprite HudIcon => hudIcon;
     public int DamageAmount
     {
         get => weaponLogic.damageAmount;
         set => weaponLogic.damageAmount = value;
     }
+
+
+
+
 }
