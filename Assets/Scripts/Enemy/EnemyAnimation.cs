@@ -11,6 +11,16 @@ public class EnemyAnimation : NetworkBehaviour
     private const int Attack = 3;
     private const float MoveThreshold = 0.2f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip[] stepClips;
+    [SerializeField] private AudioClip[] attackClips;
+    [SerializeField] private float stepInterval = 0.5f;      
+    [SerializeField] private float runStepInterval = 0.3f;
+    [SerializeField] private Vector2 pitchRange = new Vector2(0.92f, 1.08f);
+    private float nextStepTime;
+    private bool wasAttacking;
+
     [SerializeField] private RuntimeAnimatorController locomotion;
 
     private readonly NetworkVariable<bool> isAttacking = new NetworkVariable<bool>(
@@ -21,6 +31,15 @@ public class EnemyAnimation : NetworkBehaviour
     private EnemyHealth health;
     private Vector3 lastPosition;
 
+    private void PlayRandom(AudioClip[] clips)
+    {
+        if (audioSource == null || clips == null || clips.Length == 0)
+            return;
+
+        AudioClip clip = clips[Random.Range(0, clips.Length)];
+        audioSource.pitch = Random.Range(pitchRange.x, pitchRange.y);
+        audioSource.PlayOneShot(clip);
+    }
     public void SetAttacking(bool attacking)
     {
         if (!IsSpawned || !IsServer || isAttacking.Value == attacking)
@@ -58,6 +77,19 @@ public class EnemyAnimation : NetworkBehaviour
             state = Attack;
         else if (HorizontalSpeed() > MoveThreshold)
             state = ActiveModelIsFragil() ? Run : Walk;
+        bool attackingNow = state == Attack;
+        if (attackingNow && !wasAttacking)
+            PlayRandom(attackClips);
+        wasAttacking = attackingNow;
+
+        if (state == Walk || state == Run)
+        {
+            if (Time.time >= nextStepTime)
+            {
+                PlayRandom(stepClips);
+                nextStepTime = Time.time + (state == Run ? runStepInterval : stepInterval);
+            }
+        }
 
         animator.SetInteger(StateHash, state);
         lastPosition = transform.position;

@@ -41,7 +41,7 @@ public class EnemyHealthUnitTests
     [Test]
     public void LaVelocidadDelNormalEsUnPocoMenorQueLaDelJugador()
     {
-        Assert.AreEqual(3.5f, Ai.SpeedFor(EnemyVariant.Normal));
+        Assert.AreEqual(4f, Ai.SpeedFor(EnemyVariant.Normal));
         Assert.Less(Ai.SpeedFor(EnemyVariant.Normal), 7f);
     }
 
