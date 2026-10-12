@@ -99,9 +99,9 @@ public class Character : NetworkBehaviour
 
 
     // Tecla E (accion Player/Interact). Atiende botiquines (US 3.1, sin
-    // inventario: se consumen en el momento) y pickups de armas tiradas en
-    // el mapa. Si hay un botiquín y un arma cerca a la vez, se usa el que
-    // esté más cerca.
+    // inventario: se consumen en el momento), pickups de armas tiradas en
+    // el mapa y civiles que esperan ser rescatados. Si hay varios cerca a la
+    // vez, se usa el que esté más cerca.
     public void OnInteraction(InputAction.CallbackContext context)
     {
         if (!IsOwner || IsDead() || !context.performed) return;
@@ -128,7 +128,16 @@ public class Character : NetworkBehaviour
             }
         }
 
-        if (medkit != null && medkitDist <= nearestWeaponDist)
+        RescuableNpc npc = RescuableNpc.FindNearestWaiting(transform.position);
+        float npcDist = npc != null
+            ? Vector3.Distance(transform.position, npc.transform.position)
+            : float.MaxValue;
+
+        if (npc != null && npcDist <= medkitDist && npcDist <= nearestWeaponDist)
+        {
+            npc.RequestRescue();
+        }
+        else if (medkit != null && medkitDist <= nearestWeaponDist)
         {
             medkit.RequestUse();
         }
