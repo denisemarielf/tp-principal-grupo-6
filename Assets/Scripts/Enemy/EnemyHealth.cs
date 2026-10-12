@@ -13,6 +13,8 @@ public class EnemyHealth : NetworkBehaviour
 
     [Header("Muerte")]
     [SerializeField] private AnimationClip deathClip;
+    [SerializeField] private AudioClip[] deathSounds;
+    [SerializeField, Range(0f, 1f)] private float deathVolume = 1f;
 
     private NetworkVariable<float> currentHealth = new NetworkVariable<float>(
         0f,
@@ -39,6 +41,15 @@ public class EnemyHealth : NetworkBehaviour
     public EnemyVariant Variant => variant;
     public float DeathDuration => deathClip != null ? deathClip.length : 0f;
 
+    private void PlayDeathSound()
+    {
+        if (deathSounds == null || deathSounds.Length == 0)
+            return;
+
+        AudioClip clip = deathSounds[Random.Range(0, deathSounds.Length)];
+        if (clip != null)
+            AudioSource.PlayClipAtPoint(clip, transform.position, deathVolume);
+    }
     public override void OnNetworkSpawn()
     {
         ai = GetComponent<Ai>();
@@ -168,6 +179,7 @@ public class EnemyHealth : NetworkBehaviour
         output.SetSourcePlayable(deathPlayable);
         deathGraph.Play();
         deathStarted = true;
+        PlayDeathSound();
     }
 
     // Mantiene el último frame y apoya el hueso más bajo en el piso donde estaba parado.
