@@ -732,7 +732,7 @@ Transform:
   m_GameObject: {fileID: 1338943456637610382}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 78.67622, y: 2, z: -16.77076}
+  m_LocalPosition: {x: 84, y: 20, z: -16.77076}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -888,7 +888,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: 351f2ccd-1f9f-44bf-9bec-d62ac5c5f408
-    m_ActionName: Player/Move[/Keyboard/w,/Keyboard/s,/Keyboard/d,/Keyboard/a]
+    m_ActionName: 'Player/Move[/Keyboard/w,/Keyboard/s,/Keyboard/d,/Keyboard/a]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 3614970389573475868}
@@ -904,39 +904,39 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: 19cba9d5-5d8f-4d87-9e0d-0738aa9002e0
-    m_ActionName: Player/Jump[/Keyboard/space]
+    m_ActionName: 'Player/Jump[/Keyboard/space]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: c95b2375-e6d9-4b88-9c4c-c5e76515df4b
-    m_ActionName: UI/Navigate[/Keyboard/w,/Keyboard/upArrow,/Keyboard/s,/Keyboard/downArrow,/Keyboard/a,/Keyboard/leftArrow,/Keyboard/d,/Keyboard/rightArrow]
+    m_ActionName: 'UI/Navigate[/Keyboard/w,/Keyboard/upArrow,/Keyboard/s,/Keyboard/downArrow,/Keyboard/a,/Keyboard/leftArrow,/Keyboard/d,/Keyboard/rightArrow]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 7607c7b6-cd76-4816-beef-bd0341cfe950
-    m_ActionName: UI/Submit[/Keyboard/enter]
+    m_ActionName: 'UI/Submit[/Keyboard/enter]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 15cef263-9014-4fd5-94d9-4e4a6234a6ef
-    m_ActionName: UI/Cancel[/Keyboard/escape]
+    m_ActionName: 'UI/Cancel[/Keyboard/escape]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 32b35790-4ed0-4e9a-aa41-69ac6d629449
-    m_ActionName: UI/Point[/Mouse/position,/Touchscreen/touch0/position,/Touchscreen/touch1/position,/Touchscreen/touch2/position,/Touchscreen/touch3/position,/Touchscreen/touch4/position,/Touchscreen/touch5/position,/Touchscreen/touch6/position,/Touchscreen/touch7/position,/Touchscreen/touch8/position,/Touchscreen/touch9/position]
+    m_ActionName: 'UI/Point[/Mouse/position,/Touchscreen/touch0/position,/Touchscreen/touch1/position,/Touchscreen/touch2/position,/Touchscreen/touch3/position,/Touchscreen/touch4/position,/Touchscreen/touch5/position,/Touchscreen/touch6/position,/Touchscreen/touch7/position,/Touchscreen/touch8/position,/Touchscreen/touch9/position]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 3c7022bf-7922-4f7c-a998-c437916075ad
-    m_ActionName: UI/Click[/Mouse/leftButton,/Touchscreen/touch0/press,/Touchscreen/touch1/press,/Touchscreen/touch2/press,/Touchscreen/touch3/press,/Touchscreen/touch4/press,/Touchscreen/touch5/press,/Touchscreen/touch6/press,/Touchscreen/touch7/press,/Touchscreen/touch8/press,/Touchscreen/touch9/press]
+    m_ActionName: 'UI/Click[/Mouse/leftButton,/Touchscreen/touch0/press,/Touchscreen/touch1/press,/Touchscreen/touch2/press,/Touchscreen/touch3/press,/Touchscreen/touch4/press,/Touchscreen/touch5/press,/Touchscreen/touch6/press,/Touchscreen/touch7/press,/Touchscreen/touch8/press,/Touchscreen/touch9/press]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 44b200b1-1557-4083-816c-b22cbdf77ddf
-    m_ActionName: UI/RightClick[/Mouse/rightButton]
+    m_ActionName: 'UI/RightClick[/Mouse/rightButton]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: dad70c86-b58c-4b17-88ad-f5e53adf419e
-    m_ActionName: UI/MiddleClick[/Mouse/middleButton]
+    m_ActionName: 'UI/MiddleClick[/Mouse/middleButton]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 0489e84a-4833-4c40-bfae-cea84b696689
-    m_ActionName: UI/ScrollWheel[/Mouse/scroll]
+    m_ActionName: 'UI/ScrollWheel[/Mouse/scroll]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 24908448-c609-4bc3-a128-ea258674378a
@@ -960,7 +960,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: a9cc9fed-ca76-4a67-864a-29e4548a6b27
-    m_ActionName: Player/Shoot[/Mouse/leftButton]
+    m_ActionName: 'Player/Shoot[/Mouse/leftButton]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 8228984822914081291}
@@ -976,7 +976,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: 23f2d63c-a3c8-4275-958f-7b45f99dc12a
-    m_ActionName: Player/Weapon1[/Keyboard/1]
+    m_ActionName: 'Player/Weapon1[/Keyboard/1]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 8228984822914081291}
@@ -992,7 +992,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: 787f7b5e-7de9-4561-b226-b1b29cadcadc
-    m_ActionName: Player/Weapon2[/Keyboard/2]
+    m_ActionName: 'Player/Weapon2[/Keyboard/2]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 8228984822914081291}
@@ -1008,7 +1008,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: 9fe27ed6-a420-4cd5-9b9c-b415fe1765ea
-    m_ActionName: Player/Weapon3[/Keyboard/3]
+    m_ActionName: 'Player/Weapon3[/Keyboard/3]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 8228984822914081291}
@@ -1024,7 +1024,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: b54660ff-ac4e-4c25-b4a9-6dcdc1970859
-    m_ActionName: Player/Reload[/Keyboard/3]
+    m_ActionName: 'Player/Reload[/Keyboard/3]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 3614970389573475868}
@@ -1040,7 +1040,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: aef047ab-4258-464d-8248-ba652ad9161d
-    m_ActionName: Player/Sprint[/Keyboard/shift]
+    m_ActionName: 'Player/Sprint[/Keyboard/shift]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 3614970389573475868}
@@ -1056,11 +1056,11 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
     m_ActionId: 8da3b7b8-a9b9-44bc-8d79-83b854ff0ee3
-    m_ActionName: Player/Interaction[/Keyboard/e]
+    m_ActionName: 'Player/Interaction[/Keyboard/e]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: 4c3484a0-8d56-4e80-9555-08eaf0932f24
-    m_ActionName: Player/Crouch[/Keyboard/ctrl]
+    m_ActionName: 'Player/Crouch[/Keyboard/ctrl]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
@@ -5319,6 +5319,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::SafeZoneUI
   statusText: {fileID: 5107940265634346506}
+  rescueText: {fileID: 0}
   levelCompletePanel: {fileID: 6232852666024054752}
 --- !u!1 &7894765905218626273
 GameObject:
