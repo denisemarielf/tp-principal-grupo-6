@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -20,6 +21,9 @@ public class EnemyHealth : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    // Enemigos spawneados en este equipo (los civiles la usan para detectar peligro cerca).
+    public static readonly List<EnemyHealth> All = new List<EnemyHealth>();
+
     private Ai ai;
 
     public float MaxHealth => maxHealth;
@@ -28,10 +32,22 @@ public class EnemyHealth : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         ai = GetComponent<Ai>();
+        All.Add(this);
         if (!IsServer) return;
 
         maxHealth = HealthFor(variant);
         currentHealth.Value = maxHealth;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        All.Remove(this);
+    }
+
+    public override void OnDestroy()
+    {
+        All.Remove(this);
+        base.OnDestroy();
     }
 
     public void Configure(EnemyVariant newVariant)

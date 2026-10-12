@@ -6,8 +6,10 @@ using UnityEngine;
 // Zona segura del nivel (US Zona Segura). Va colocada en la escena, con un NetworkObject y un Collider marcado como Trigger.
 // - El trigger detecta que jugadores entran y salen (solo lo procesa el server).
 // - Cada cierto tiempo el server cuenta los jugadores vivos y cuantos estan adentro, y lo sincroniza para la UI.
-// - Si todos los jugadores vivos estan adentro durante 'completeDelay' segundos seguidos, se completa el nivel.
-// Los NPCs rescatados se suman en la proxima US.
+// - Los civiles escoltados (RescuableNpc) se detectan por posicion, porque no tienen Rigidbody y el trigger no los avisaria.
+//   Al entrar quedan a salvo y suman puntos al equipo.
+// - Si todos los jugadores vivos estan adentro durante 'completeDelay' segundos seguidos y se rescato al menos
+//   'minRescued' civiles, se completa el nivel.
 [RequireComponent(typeof(Collider))]
 public class SafeZone : NetworkBehaviour
 {
@@ -21,6 +23,10 @@ public class SafeZone : NetworkBehaviour
     [SerializeField] private float completeDelay = 2f;
     [Tooltip("Cada cuantos segundos el server revisa quienes estan adentro.")]
     [SerializeField] private float checkInterval = 0.2f;
+    [Tooltip("Civiles que hay que rescatar como minimo para poder completar el nivel (si en la escena hay menos, alcanza con todos).")]
+    [SerializeField] private int minRescued = 1;
+    [Tooltip("Puntos del equipo por cada civil rescatado.")]
+    [SerializeField] private int pointsPerNpc = 100;
 
     private NetworkVariable<int> playersInside = new NetworkVariable<int>(
         0,
@@ -29,6 +35,19 @@ public class SafeZone : NetworkBehaviour
     );
 
     private NetworkVariable<int> alivePlayers = new NetworkVariable<int>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private NetworkVariable<int> rescuedNpcs = new NetworkVariable<int>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    // Cantidad de civiles que hubo en el nivel (los que murieron siguen contando).
+    private NetworkVariable<int> totalNpcs = new NetworkVariable<int>(
         0,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
@@ -47,6 +66,9 @@ public class SafeZone : NetworkBehaviour
 
     public int PlayersInside => playersInside.Value;
     public int AlivePlayers => alivePlayers.Value;
+    public int RescuedNpcs => rescuedNpcs.Value;
+    public int TotalNpcs => totalNpcs.Value;
+    public int TeamScore => rescuedNpcs.Value * pointsPerNpc;
     public bool IsCompleted => completed.Value;
     public bool AllAlivePlayersInside => alivePlayers.Value > 0 && playersInside.Value >= alivePlayers.Value;
 
@@ -124,7 +146,10 @@ public class SafeZone : NetworkBehaviour
         if (alivePlayers.Value != alive) alivePlayers.Value = alive;
         if (playersInside.Value != aliveInside) playersInside.Value = aliveInside;
 
-        if (CountsAsAllInside(alive, aliveInside))
+        int rescued = CheckNpcs();
+        int required = Mathf.Min(minRescued, totalNpcs.Value);
+
+        if (RequirementsMet(alive, aliveInside, rescued, required))
         {
             allInsideTimer += elapsed;
             if (allInsideTimer >= completeDelay)
@@ -134,6 +159,40 @@ public class SafeZone : NetworkBehaviour
         {
             allInsideTimer = 0f;
         }
+    }
+
+    // Marca a salvo a los civiles escoltados que entraron a la zona y devuelve cuantos hay a salvo en total.
+    private int CheckNpcs()
+    {
+        Collider zone = GetComponent<Collider>();
+        int rescued = 0;
+
+        foreach (RescuableNpc npc in RescuableNpc.All)
+        {
+            if (npc == null || npc.IsDead) continue;
+
+            if (npc.State == NpcState.Following && IsInsideZone(zone, npc.transform.position + Vector3.up * 0.9f))
+                npc.MarkSafe();
+
+            if (npc.State == NpcState.Safe)
+                rescued++;
+        }
+
+        if (RescuableNpc.All.Count > totalNpcs.Value) totalNpcs.Value = RescuableNpc.All.Count;
+        if (rescuedNpcs.Value != rescued) rescuedNpcs.Value = rescued;
+
+        return rescued;
+    }
+
+    private static bool IsInsideZone(Collider zone, Vector3 point)
+    {
+        return (zone.ClosestPoint(point) - point).sqrMagnitude < 0.0001f;
+    }
+
+    // Regla para completar el nivel: todos los jugadores vivos adentro y los civiles minimos rescatados.
+    public static bool RequirementsMet(int alive, int aliveInside, int rescued, int required)
+    {
+        return CountsAsAllInside(alive, aliveInside) && rescued >= required;
     }
 
     // Todos los jugadores vivos adentro. Si no queda nadie vivo, el nivel no se completa.
@@ -146,7 +205,7 @@ public class SafeZone : NetworkBehaviour
     {
         if (!IsServer || completed.Value) return;
 
-        Debug.Log("SafeZone: todos los jugadores vivos llegaron a la zona segura. Nivel completado.");
+        Debug.Log($"SafeZone: todos los jugadores vivos llegaron a la zona segura con {rescuedNpcs.Value} civiles rescatados. Nivel completado.");
         completed.Value = true;
     }
 

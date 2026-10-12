@@ -124,6 +124,18 @@ public class Ai : NetworkBehaviour
             }
         }
 
+        // Los civiles que esperan o son escoltados tambien son blancos.
+        foreach (RescuableNpc npc in RescuableNpc.All)
+        {
+            if (npc == null || !npc.IsTargetable) continue;
+            float dist = Vector3.Distance(transform.position, npc.transform.position);
+            if (dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = npc.transform;
+            }
+        }
+
         player = nearest;
     }
 

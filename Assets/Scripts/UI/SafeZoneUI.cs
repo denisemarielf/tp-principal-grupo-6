@@ -10,6 +10,8 @@ public class SafeZoneUI : MonoBehaviour
 {
     [Tooltip("Texto tipo 'Zona segura: 1/2 jugadores'. Se oculta cuando no hay nadie adentro.")]
     [SerializeField] private TMP_Text statusText;
+    [Tooltip("Opcional: texto tipo 'Civiles rescatados: 1/3 - Puntos: 100'. Se muestra mientras haya civiles en el nivel.")]
+    [SerializeField] private TMP_Text rescueText;
     [Tooltip("Panel que se muestra al completar el nivel. Puede tener un boton que llame a ReturnToMainMenu().")]
     [SerializeField] private GameObject levelCompletePanel;
 
@@ -40,6 +42,8 @@ public class SafeZoneUI : MonoBehaviour
 
     private void Update()
     {
+        UpdateRescueText();
+
         if (statusText == null) return;
 
         SafeZone zone = SafeZone.Current;
@@ -50,6 +54,18 @@ public class SafeZoneUI : MonoBehaviour
         statusText.text = zone.AllAlivePlayersInside
             ? "¡Todos a salvo!"
             : $"Zona segura: {zone.PlayersInside}/{zone.AlivePlayers} jugadores";
+    }
+
+    private void UpdateRescueText()
+    {
+        if (rescueText == null) return;
+
+        SafeZone zone = SafeZone.Current;
+        bool show = zone != null && zone.TotalNpcs > 0;
+        rescueText.gameObject.SetActive(show);
+        if (!show) return;
+
+        rescueText.text = $"Civiles rescatados: {zone.RescuedNpcs}/{zone.TotalNpcs}  -  Puntos: {zone.TeamScore}";
     }
 
     private void OnLevelCompleted()

@@ -32,6 +32,8 @@ public class EnemyCombat : NetworkBehaviour
         Transform player = ai != null ? ai.CurrentPlayer : null;
         if (player != null && player.TryGetComponent(out PlayerHealth targetHealth) && targetHealth.IsDead)
             player = null;
+        if (player != null && player.TryGetComponent(out RescuableNpc targetNpc) && !targetNpc.IsTargetable)
+            player = null;
         float distanceToPlayer = player != null
             ? Vector3.Distance(transform.position, player.position)
             : Mathf.Infinity;
@@ -64,7 +66,14 @@ public class EnemyCombat : NetworkBehaviour
 
         PlayerHealth playerHealth = currentTarget.GetComponent<PlayerHealth>();
         if (playerHealth != null)
+        {
             playerHealth.TakeDamage(attackDamage);
+            return;
+        }
+
+        RescuableNpc npc = currentTarget.GetComponent<RescuableNpc>();
+        if (npc != null)
+            npc.TakeDamage(attackDamage);
     }
 
     private void FaceTarget(Transform target)
