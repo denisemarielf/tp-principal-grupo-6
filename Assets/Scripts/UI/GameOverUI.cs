@@ -13,8 +13,12 @@ public class GameOverUI : MonoBehaviour
 {
     private const float CheckInterval = 0.25f;
 
+    // true mientras se muestra el panel de partida terminada (para que la camara no vuelva a trabar el cursor).
+    public static bool IsShown { get; private set; }
+
     private float checkTimer;
     private bool shown;
+    private GameObject panelCanvas;
 
     // Se engancha una sola vez al arrancar y crea el chequeo en cada escena de juego que se carga.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -33,13 +37,27 @@ public class GameOverUI : MonoBehaviour
         new GameObject("GameOverUI").AddComponent<GameOverUI>();
     }
 
+    private void OnDestroy()
+    {
+        IsShown = false;
+    }
+
     private void Update()
     {
-        if (shown) return;
+        if (shown)
+        {
+            // Si se corta la sesion (el host se fue), el aviso de DisconnectionHandler tiene que quedar a la vista y clickeable.
+            if (panelCanvas != null && !SessionActive())
+                HideForDisconnect();
+            return;
+        }
 
         checkTimer -= Time.unscaledDeltaTime;
         if (checkTimer > 0f) return;
         checkTimer = CheckInterval;
+
+        // Sin sesion de red activa (host que corto, cliente desconectado) no hay partida que dar por perdida.
+        if (!SessionActive()) return;
 
         PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
         bool nivelCompletado = SafeZone.Current != null && SafeZone.Current.IsCompleted;
@@ -48,22 +66,41 @@ public class GameOverUI : MonoBehaviour
             Show();
     }
 
-    // Todos los jugadores muertos. Sin jugadores creados todavia no es derrota.
+    private static bool SessionActive()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        return networkManager != null && networkManager.IsListening && !networkManager.ShutdownInProgress;
+    }
+
+    // Todos los jugadores muertos. Solo cuentan los jugadores spawneados: sin ninguno todavia no es derrota,
+    // y los que se estan despawneando por una desconexion no cuentan como muertos.
     private static bool AllDead(PlayerHealth[] players)
     {
-        if (players == null || players.Length == 0) return false;
+        if (players == null) return false;
 
+        int spawned = 0;
         foreach (PlayerHealth player in players)
         {
-            if (player != null && player.IsSpawned && !player.IsDead)
+            if (player == null || !player.IsSpawned) continue;
+
+            spawned++;
+            if (!player.IsDead)
                 return false;
         }
-        return true;
+        return spawned > 0;
+    }
+
+    private void HideForDisconnect()
+    {
+        Destroy(panelCanvas);
+        panelCanvas = null;
+        IsShown = false;
     }
 
     private void Show()
     {
         shown = true;
+        IsShown = true;
         Debug.Log("GameOverUI: todos los jugadores murieron. Partida terminada.");
 
         EnsureEventSystem();
@@ -86,6 +123,7 @@ public class GameOverUI : MonoBehaviour
     {
         GameObject canvasGo = new GameObject("GameOverCanvas");
         canvasGo.transform.SetParent(transform, false);
+        panelCanvas = canvasGo;
         Canvas canvas = canvasGo.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 1000;
