@@ -23,8 +23,8 @@ public class SafeZone : NetworkBehaviour
     [SerializeField] private float completeDelay = 2f;
     [Tooltip("Cada cuantos segundos el server revisa quienes estan adentro.")]
     [SerializeField] private float checkInterval = 0.2f;
-    [Tooltip("Civiles que hay que rescatar como minimo para poder completar el nivel (si en la escena hay menos, alcanza con todos).")]
-    [SerializeField] private int minRescued = 1;
+    [Tooltip("Civiles que hay que rescatar como minimo para poder completar el nivel (0 = rescatar civiles es opcional; si en la escena hay menos, alcanza con todos).")]
+    [SerializeField] private int minRescued = 0;
     [Tooltip("Puntos del equipo por cada civil rescatado.")]
     [SerializeField] private int pointsPerNpc = 100;
 
