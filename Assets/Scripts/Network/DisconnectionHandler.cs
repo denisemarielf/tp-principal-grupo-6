@@ -60,7 +60,14 @@ public class DisconnectionHandler : MonoBehaviour
     // Para un boton "Salir de la partida".
     public void LeaveSession()
     {
-        if (!sessionActive) return;
+        // La sesion ya termino (por ejemplo el host se fue): igual hay que poder volver al menu.
+        if (!sessionActive)
+        {
+            HideNotice();
+            returnToMenuOnDismiss = false;
+            GameSessionManager.ReturnToMainMenu();
+            return;
+        }
 
         sessionActive = false;
         ShutdownNetwork();

@@ -286,6 +286,7 @@ public class RescuableNpc : NetworkBehaviour
 
     private void UpdateFollow()
     {
+        Debug.Log($"{name}: agent.enabled={agent.enabled}, onNavMesh={(agent.enabled && agent.isOnNavMesh)}, fleeing={fleeing}");
         Transform leader = ResolveLeader();
         if (leader == null)
         {
@@ -400,6 +401,7 @@ public class RescuableNpc : NetworkBehaviour
 
     public void RequestRescue()
     {
+        Debug.Log($"RequestRescue: spawned={IsSpawned}, dead={isDead.Value}, state={state.Value}");
         if (!IsSpawned || isDead.Value || state.Value != NpcState.Waiting) return;
         RequestRescueRpc();
     }
@@ -456,9 +458,18 @@ public class RescuableNpc : NetworkBehaviour
         Debug.Log($"RescuableNpc: {name} murio.");
 
         if (NetworkObject != null && NetworkObject.IsSpawned)
-            NetworkObject.Despawn(true);
+        {
+            // Los objetos puestos en la escena no se destruyen: se despawnean y se ocultan.
+            bool inScene = NetworkObject.IsSceneObject == true;
+            NetworkObject.Despawn(!inScene);
+
+            if (inScene)
+                gameObject.SetActive(false);
+        }
         else
+        {
             Destroy(gameObject);
+        }
     }
 
     // ---------- Visual (todos los equipos) ----------

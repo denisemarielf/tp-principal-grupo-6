@@ -65,7 +65,7 @@ public class SafeZoneUI : MonoBehaviour
         rescueText.gameObject.SetActive(show);
         if (!show) return;
 
-        rescueText.text = $"Civiles rescatados: {zone.RescuedNpcs}/{zone.TotalNpcs}  -  Puntos: {zone.TeamScore}";
+        rescueText.text = $"CIVILES  {zone.RescuedNpcs}/{zone.TotalNpcs}\nPUNTOS  {zone.TeamScore}";
     }
 
     private void OnLevelCompleted()

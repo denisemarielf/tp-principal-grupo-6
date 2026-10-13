@@ -56,9 +56,15 @@ public class CameraControllerFPS : NetworkBehaviour
     // El cursor lo abre y lo cierra PauseMenuUI. Mientras esta libre, el mouse no mueve la camara.
     private void SetCursorLocked(bool locked)
     {
+        // Con la pantalla de nivel completado o de partida terminada el cursor tiene que quedar libre para los botones.
+        if (locked && EndScreenShown) return;
+
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !locked;
     }
+
+    private static bool EndScreenShown =>
+        GameOverUI.IsShown || (SafeZone.Current != null && SafeZone.Current.IsCompleted);
 
     public void ResetCamera()
     {
