@@ -458,9 +458,18 @@ public class RescuableNpc : NetworkBehaviour
         Debug.Log($"RescuableNpc: {name} murio.");
 
         if (NetworkObject != null && NetworkObject.IsSpawned)
-            NetworkObject.Despawn(true);
+        {
+            // Los objetos puestos en la escena no se destruyen: se despawnean y se ocultan.
+            bool inScene = NetworkObject.IsSceneObject == true;
+            NetworkObject.Despawn(!inScene);
+
+            if (inScene)
+                gameObject.SetActive(false);
+        }
         else
+        {
             Destroy(gameObject);
+        }
     }
 
     // ---------- Visual (todos los equipos) ----------

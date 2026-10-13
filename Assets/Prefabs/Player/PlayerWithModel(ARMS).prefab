@@ -1218,7 +1218,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 375657675
+  GlobalObjectIdHash: 2480460361
   InScenePlacedSourceGlobalObjectIdHash: 649605470
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -6728,7 +6728,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -4630130612025601021, guid: a55bcf0fb3949514ca24994cc3b68e4f, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

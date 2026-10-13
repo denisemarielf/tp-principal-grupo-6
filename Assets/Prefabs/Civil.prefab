@@ -306,11 +306,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::RescuableNpc
   ShowTopMostFoldoutHeaderGroup: 1
-  maxHealth: 120
-  rescueRadius: 2.5
+  maxHealth: 1000
+  rescueRadius: 3
   serverTolerance: 1
-  followDistance: 3
-  walkSpeed: 4
+  followDistance: 4
+  walkSpeed: 5
   catchUpDistance: 8
   catchUpSpeed: 6
   teleportDistance: 35
