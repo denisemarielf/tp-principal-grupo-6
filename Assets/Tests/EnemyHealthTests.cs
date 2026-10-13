@@ -1,4 +1,6 @@
+
 using System.Collections;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,141 +9,257 @@ using UnityEngine.TestTools;
 
 public class EnemyHealthTests
 {
+    private NetworkManager networkManager;
+
     [UnitySetUp]
-    public IEnumerator PrepararEscena()
+    public IEnumerator SetUp()
     {
-        yield return SceneManager.LoadSceneAsync("TestMovimiento");
+        SceneManager.LoadScene("MainMenu");
 
-        NetworkManager networkManager = NetworkManager.Singleton;
-
-        Assert.IsNotNull(
-            networkManager,
-            "No se encontró un NetworkManager en la escena."
+        yield return new WaitUntil(
+            () => SceneManager.GetActiveScene().name == "MainMenu"
         );
 
-        if (!networkManager.IsListening)
+        yield return new WaitUntil(
+            () => NetworkManager.Singleton != null
+        );
+
+        networkManager = NetworkManager.Singleton;
+
+        Task hostTask = StartHost();
+
+        yield return new WaitUntil(
+            () => hostTask.IsCompleted
+        );
+
+        if (hostTask.IsFaulted)
         {
-            Assert.IsTrue(
-                networkManager.StartHost(),
-                "No se pudo iniciar el Host."
-            );
+            throw hostTask.Exception;
         }
 
-        yield return new WaitUntil(() =>
-            networkManager.IsServer
+        Assert.IsTrue(
+            networkManager.IsServer,
+            "El Host debería estar iniciado."
         );
 
-        yield return new WaitUntil(() =>
-            Object.FindObjectsByType<EnemyHealth>(
-                FindObjectsSortMode.None
-            ).Length > 0
+        LogAssert.ignoreFailingMessages = true;
+
+        bool partidaIniciada =
+            GameSessionManager.StartGame("SampleScene");
+
+        Assert.That(partidaIniciada, Is.True);
+
+        yield return new WaitUntil(
+            () => SceneManager.GetActiveScene().name == "SampleScene"
         );
+
+        yield return new WaitUntil(
+            () =>
+            {
+                EnemyHealth[] enemigos =
+                    Object.FindObjectsByType<EnemyHealth>(
+                        FindObjectsSortMode.None
+                    );
+
+                foreach (EnemyHealth enemigo in enemigos)
+                {
+                    NetworkObject objetoRed =
+                        enemigo.GetComponent<NetworkObject>();
+
+                    if (objetoRed != null && objetoRed.IsSpawned)
+                        return true;
+                }
+
+                return false;
+            }
+        );
+
+        LogAssert.ignoreFailingMessages = false;
     }
 
-    [UnityTearDown]
-    public IEnumerator LimpiarEscena()
+    [UnityTest]
+    public IEnumerator LaVidaInicialCoincideConLaVarianteDelEnemigo()
     {
-    NetworkManager networkManager = NetworkManager.Singleton;
+        EnemyHealth enemigo = ObtenerEnemigoSpawneado();
 
-    if (networkManager != null)
-    {
-        if (networkManager.IsListening)
-        {
-            networkManager.Shutdown();
-        }
+        Assert.AreEqual(
+            EnemyHealth.HealthFor(enemigo.Variant),
+            enemigo.GetCurrentHealth(),
+            0.01f,
+            "La vida inicial debería coincidir con la variante del enemigo."
+        );
+
+        Assert.AreEqual(
+            enemigo.MaxHealth,
+            enemigo.GetCurrentHealth(),
+            0.01f,
+            "La vida actual debería coincidir con la vida máxima."
+        );
 
         yield return null;
-
-        Object.Destroy(networkManager.gameObject);
-
-        yield return null;
     }
-
-    if (SceneManager.GetSceneByName("TestMovimiento").isLoaded)
-    {
-        yield return SceneManager.UnloadSceneAsync("TestMovimiento");
-    }
-}
 
     [UnityTest]
     public IEnumerator LaVidaDelEnemigoDisminuyeAlRecibirDano()
     {
-        EnemyHealth enemigo = Object.FindObjectsByType<EnemyHealth>(
-            FindObjectsSortMode.None
-        )[0];
+        EnemyHealth enemigo = ObtenerEnemigoSpawneado();
 
         float vidaInicial = enemigo.GetCurrentHealth();
+
+        Assert.Greater(
+            vidaInicial,
+            25f,
+            "El enemigo debe tener vida suficiente para recibir el daño."
+        );
 
         enemigo.TakeDamage(25f);
 
         yield return null;
 
-        float vidaFinal = enemigo.GetCurrentHealth();
-
         Assert.Less(
-            vidaFinal,
+            enemigo.GetCurrentHealth(),
             vidaInicial,
             "La vida del enemigo debería disminuir al recibir daño."
         );
     }
 
     [UnityTest]
-public IEnumerator LaVidaDisminuyeExactamenteLaCantidadDeDanoRecibida()
-{
-    EnemyHealth enemigo = Object.FindObjectsByType<EnemyHealth>(
-        FindObjectsSortMode.None
-    )[0];
+    public IEnumerator LaVidaDisminuyeExactamenteLaCantidadDeDanoRecibida()
+    {
+        EnemyHealth enemigo = ObtenerEnemigoSpawneado();
 
-    float vidaInicial = enemigo.GetCurrentHealth();
-    float dano = 25f;
+        float vidaInicial = enemigo.GetCurrentHealth();
+        float dano = 25f;
 
-    enemigo.TakeDamage(dano);
+        Assert.Greater(
+            vidaInicial,
+            dano,
+            "El enemigo debe tener vida suficiente para sobrevivir al daño."
+        );
 
-    yield return null;
+        enemigo.TakeDamage(dano);
 
-    float vidaFinal = enemigo.GetCurrentHealth();
+        yield return null;
 
-    Assert.AreEqual(
-        vidaInicial - dano,
-        vidaFinal,
-        "La vida debería disminuir exactamente la cantidad de daño recibida."
-    );
-}
+        Assert.AreEqual(
+            vidaInicial - dano,
+            enemigo.GetCurrentHealth(),
+            0.01f,
+            "La vida debería disminuir exactamente la cantidad de daño recibida."
+        );
+    }
 
-[UnityTest]
+    [UnityTest]
     public IEnumerator ElEnemigoMuereCuandoSuVidaLlegaACero()
     {
-        EnemyHealth enemigo = Object.FindObjectsByType<EnemyHealth>(
-            FindObjectsSortMode.None
-        )[0];
+        EnemyHealth enemigo = ObtenerEnemigoSpawneado();
 
-        NetworkObject objetoRed = enemigo.GetComponent<NetworkObject>();
+        NetworkObject objetoRed =
+            enemigo.GetComponent<NetworkObject>();
+
+        Assert.IsNotNull(
+            objetoRed,
+            "El enemigo debe tener un NetworkObject."
+        );
+
+        Assert.IsTrue(
+            objetoRed.IsSpawned,
+            "El enemigo debe estar spawneado en la red."
+        );
 
         float vidaActual = enemigo.GetCurrentHealth();
+        float duracionMuerte = enemigo.DeathDuration;
 
         Assert.Greater(
             vidaActual,
             0f,
-            "El enemigo debería comenzar con vida mayor que 0."
+            "El enemigo debería comenzar con vida mayor que cero."
         );
 
         enemigo.TakeDamage(vidaActual);
 
-        yield return null;
-
         Assert.IsTrue(
             enemigo.IsDead(),
-            "El enemigo debería quedar muerto cuando su vida llega a 0."
+            "El enemigo debería quedar muerto cuando su vida llega a cero."
         );
 
-        float espera = enemigo.DeathDuration + 1f;
-        float limite = Time.realtimeSinceStartup + espera;
-        while (objetoRed != null && objetoRed.IsSpawned && Time.realtimeSinceStartup < limite)
+        float limite =
+            Time.realtimeSinceStartup + duracionMuerte + 3f;
+
+        while (
+            objetoRed != null &&
+            objetoRed.IsSpawned &&
+            Time.realtimeSinceStartup < limite
+        )
+        {
             yield return null;
+        }
 
         Assert.IsFalse(
             objetoRed != null && objetoRed.IsSpawned,
-            "El enemigo debería desaparecer después de la animación de muerte."
+            "El enemigo debería dejar de estar spawneado después de morir."
         );
+    }
+
+    [UnityTearDown]
+    public IEnumerator TearDown()
+    {
+        LogAssert.ignoreFailingMessages = false;
+
+        if (SceneManager.GetActiveScene().name == "SampleScene")
+        {
+            SceneManager.LoadScene("MainMenu");
+
+            yield return new WaitUntil(
+                () => SceneManager.GetActiveScene().name == "MainMenu"
+            );
+        }
+
+        if (
+            networkManager != null &&
+            networkManager.IsListening &&
+            !networkManager.ShutdownInProgress
+        )
+        {
+            networkManager.Shutdown();
+
+            yield return new WaitUntil(
+                () =>
+                    !networkManager.ShutdownInProgress &&
+                    !networkManager.IsListening
+            );
+        }
+    }
+
+    private async Task StartHost()
+    {
+        await GameSessionManager.PrepareHostAsync();
+
+        await RelayConnectionManager.StartHostAsync(
+            GameSessionManager.MaxPlayers - 1
+        );
+    }
+
+    private EnemyHealth ObtenerEnemigoSpawneado()
+    {
+        EnemyHealth[] enemigos =
+            Object.FindObjectsByType<EnemyHealth>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (EnemyHealth enemigo in enemigos)
+        {
+            NetworkObject objetoRed =
+                enemigo.GetComponent<NetworkObject>();
+
+            if (objetoRed != null && objetoRed.IsSpawned)
+                return enemigo;
+        }
+
+        Assert.Fail(
+            "No se encontró ningún enemigo spawneado en la red."
+        );
+
+        return null;
     }
 }
