@@ -286,6 +286,7 @@ public class RescuableNpc : NetworkBehaviour
 
     private void UpdateFollow()
     {
+        Debug.Log($"{name}: agent.enabled={agent.enabled}, onNavMesh={(agent.enabled && agent.isOnNavMesh)}, fleeing={fleeing}");
         Transform leader = ResolveLeader();
         if (leader == null)
         {
@@ -400,6 +401,7 @@ public class RescuableNpc : NetworkBehaviour
 
     public void RequestRescue()
     {
+        Debug.Log($"RequestRescue: spawned={IsSpawned}, dead={isDead.Value}, state={state.Value}");
         if (!IsSpawned || isDead.Value || state.Value != NpcState.Waiting) return;
         RequestRescueRpc();
     }

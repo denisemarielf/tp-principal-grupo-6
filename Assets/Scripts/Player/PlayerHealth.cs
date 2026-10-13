@@ -14,6 +14,18 @@ public class PlayerHealth : NetworkBehaviour
     [Header("Vida")]
     [SerializeField] private float maxHealth = 100f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip[] hurtSounds;
+    [SerializeField] private AudioClip[] deathSounds;
+    [SerializeField, Range(0f, 1f)] private float deathVolume = 1f;
+    [SerializeField] private float hurtCooldown = 0.25f;
+    [SerializeField] private Vector2 pitchRange = new Vector2(0.95f, 1.05f);
+    [SerializeField] private AudioClip[] healSounds;
+    [SerializeField, Range(0f, 1f)] private float healVolume = 0.8f;
+
+    private float nextHurtTime;
+
     private NetworkVariable<float> currentHealth = new NetworkVariable<float>(
         0f,
         NetworkVariableReadPermission.Everyone,
@@ -89,11 +101,16 @@ public class PlayerHealth : NetworkBehaviour
     private void OnHealthValueChanged(float previous, float current)
     {
         HealthChanged?.Invoke(current, maxHealth);
+        if (current < previous && current > 0f)
+            PlayHurtSound();
+        else if (current > previous && previous > 0f)
+            PlayHealSound();
     }
 
     private void OnDeadValueChanged(bool previous, bool current)
     {
         if (!current) return;
+        PlayDeathSound();
 
         // El dueño deja de controlar al personaje; la gravedad de PMovement sigue aplicandose.
         if (IsOwner)
@@ -121,5 +138,42 @@ public class PlayerHealth : NetworkBehaviour
     private void DebugHeal()
     {
         Heal(25f);
+    }
+
+    private void PlayHurtSound()
+    {
+        if (!IsOwner) return;
+        if (audioSource == null || hurtSounds == null || hurtSounds.Length == 0)
+            return;
+
+        if (Time.time < nextHurtTime)
+            return;
+
+        nextHurtTime = Time.time + hurtCooldown;
+
+        AudioClip clip = hurtSounds[UnityEngine.Random.Range(0, hurtSounds.Length)];
+        audioSource.pitch = UnityEngine.Random.Range(pitchRange.x, pitchRange.y);
+        audioSource.PlayOneShot(clip);
+    }
+
+    private void PlayDeathSound()
+    {
+        if (!IsOwner) return;
+        if (deathSounds == null || deathSounds.Length == 0)
+            return;
+
+        AudioClip clip = deathSounds[UnityEngine.Random.Range(0, deathSounds.Length)];
+        if (clip != null)
+            AudioSource.PlayClipAtPoint(clip, transform.position, deathVolume);
+    }
+    private void PlayHealSound()
+    {
+        if (!IsOwner) return;
+        if (audioSource == null || healSounds == null || healSounds.Length == 0)
+            return;
+
+        AudioClip clip = healSounds[UnityEngine.Random.Range(0, healSounds.Length)];
+        audioSource.pitch = 1f;
+        audioSource.PlayOneShot(clip, healVolume);
     }
 }

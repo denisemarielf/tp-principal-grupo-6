@@ -135,8 +135,10 @@ public class Character : NetworkBehaviour
 
         if (npc != null && npcDist <= medkitDist && npcDist <= nearestWeaponDist)
         {
+            Debug.Log($"E apretada. npc={(npc != null ? npc.name : "null")}, medkit={(medkit != null)}, weapon={(nearestWeapon != null)}");
             npc.RequestRescue();
         }
+
         else if (medkit != null && medkitDist <= nearestWeaponDist)
         {
             medkit.RequestUse();
