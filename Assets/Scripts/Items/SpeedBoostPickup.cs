@@ -1,4 +1,3 @@
-using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -6,11 +5,8 @@ using UnityEngine;
 // 1. El jugador local detecta que esta cerca y le pide el pickup al host.
 // 2. El host valida que el pickup siga disponible y que el jugador este realmente cerca.
 // 3. Si es valido, aplica el boost y despawnea el pickup, que desaparece en todas las pantallas.
-public class SpeedBoostPickup : NetworkBehaviour
+public class SpeedBoostPickup : NetworkPickup
 {
-    // Solo se dispara en el host, cuando el pickup se entrega.
-    public event Action<SpeedBoostPickup> Collected;
-
     [SerializeField] private float speedMultiplier = 2f;
     [SerializeField] private float boostDuration = 5f;
     [SerializeField] private float pickupRadius = 1.5f;
@@ -66,7 +62,7 @@ public class SpeedBoostPickup : NetworkBehaviour
         }
 
         Debug.Log($"SpeedBoostPickup: el cliente {senderId} agarro el boost.");
-        Collected?.Invoke(this);
+        NotifyCollected();
         NetworkObject.Despawn(true);
     }
 

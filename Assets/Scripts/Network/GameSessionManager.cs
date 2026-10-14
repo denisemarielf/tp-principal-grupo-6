@@ -113,7 +113,7 @@ public static class GameSessionManager
         }
 
         // Sin PlayerSpawnPoint en la escena se usa la posicion del prefab.
-        PlayerSpawnPoint spawnPoint = Object.FindFirstObjectByType<PlayerSpawnPoint>();
+        PlayerSpawnPoint spawnPoint = Object.FindAnyObjectByType<PlayerSpawnPoint>();
         Vector3 spawnPosition = spawnPoint != null ? spawnPoint.transform.position : playerPrefab.transform.position;
         Quaternion spawnRotation = spawnPoint != null ? spawnPoint.transform.rotation : playerPrefab.transform.rotation;
 
