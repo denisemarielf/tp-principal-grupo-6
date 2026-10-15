@@ -7,7 +7,7 @@ using UnityEngine;
 public static class EnemyDeathImporter
 {
     public const string ClipPath = "Assets/Models/Enemy/Zombie Death.fbx";
-    private const string PrefabPath = "Assets/Prefabs/Enemy.prefab";
+    private const string PrefabPath = "Assets/Prefabs/Enemy/Enemy.prefab";
 
     static EnemyDeathImporter()
     {

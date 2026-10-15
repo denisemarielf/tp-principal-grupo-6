@@ -8,7 +8,7 @@ using UnityEngine;
 [InitializeOnLoad]
 public static class EnemyLocomotionImporter
 {
-    private const string PrefabPath = "Assets/Prefabs/Enemy.prefab";
+    private const string PrefabPath = "Assets/Prefabs/Enemy/Enemy.prefab";
     private const string ControllerPath = "Assets/Models/Enemy/EnemyLocomotion.controller";
 
     private static readonly string[] ClipPaths =
