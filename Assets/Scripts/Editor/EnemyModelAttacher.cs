@@ -5,7 +5,7 @@ using UnityEngine;
 [InitializeOnLoad]
 public class EnemyModelAttacher : AssetPostprocessor
 {
-    private const string EnemyPrefabPath = "Assets/Prefabs/Enemy.prefab";
+    private const string EnemyPrefabPath = "Assets/Prefabs/Enemy/Enemy.prefab";
     private const string FragilPath = "Assets/Models/Enemy/Zombiefragil.fbx";
     private const string NormalPath = "Assets/Models/Enemy/Zombiegirl.fbx";
     private const string DuroPath = "Assets/Models/Enemy/Zombieduro.fbx";
