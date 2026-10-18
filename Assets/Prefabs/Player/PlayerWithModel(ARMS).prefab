@@ -6581,6 +6581,11 @@ MonoBehaviour:
   sensitivity: 7
   weaponPivot: {fileID: 29664896406910336}
   weaponSwitcher: {fileID: 3088416575911931480}
+  networkPitch:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
 --- !u!114 &974894107629243557
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7599,6 +7604,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 61d95e213e7a5cb4b88e5f29e1ca48b5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2080999021247970610}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 61d95e213e7a5cb4b88e5f29e1ca48b5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8069434325389654389}
     - targetCorrespondingSourceObject: {fileID: 1082271958561512970, guid: 61d95e213e7a5cb4b88e5f29e1ca48b5, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3561090546294560270}
@@ -8075,6 +8083,31 @@ MonoBehaviour:
   - m_Rig: {fileID: 363357147171933312}
     m_Active: 1
   m_Effectors: []
+--- !u!114 &8069434325389654389
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8745309705827249163}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f806938e48221e9418ade234ab06f538, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::NetworkSpineAim
+  cameraController: {fileID: 1690441814624466559}
+  spineBones:
+  - bone: {fileID: 4192551502926030262}
+    weight: 0.15
+  - bone: {fileID: 7292263563936280926}
+    weight: 0.25
+  - bone: {fileID: 8108756856664129845}
+    weight: 0.35
+  - bone: {fileID: 3454411211257285960}
+    weight: 0.15
+  maxSpineAngle: 60
+  smoothSpeed: 10
+  pitchMultiplier: -1
 --- !u!4 &8774697323434735044 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8333627713332763490, guid: 61d95e213e7a5cb4b88e5f29e1ca48b5, type: 3}
