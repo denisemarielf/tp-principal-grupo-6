@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 5017393478225106810}
   - component: {fileID: 4965513232107435630}
-  - component: {fileID: 2903609353052823782}
   - component: {fileID: 5085910456001486149}
+  - component: {fileID: -8292757925809115777}
   m_Layer: 0
   m_Name: Medkit
   m_TagString: Untagged
@@ -64,25 +64,6 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &2903609353052823782
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1991718953057930486}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6969cf39fc42cae46aa138197f02c07b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Game::MedkitPickup
-  ShowTopMostFoldoutHeaderGroup: 1
-  healAmount: 25
-  useRadius: 2
-  serverTolerance: 1
-  usePrompt: {fileID: 4296640163778792938}
-  spinTarget: {fileID: -8679921383154817045, guid: 687f9559644557d4ba5b955087ff2032, type: 3}
-  spinSpeed: 45
 --- !u!114 &5085910456001486149
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99,6 +80,25 @@ MonoBehaviour:
   pulseSpeed: 2
   minIntensity: 1
   maxIntensity: 2.5
+--- !u!114 &-8292757925809115777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991718953057930486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1be37f531beb1d548b8df471041dc8d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::ItemPickup
+  ShowTopMostFoldoutHeaderGroup: 1
+  itemId: 1
+  initialQuantity: 1
+  useRadius: 2
+  usePrompt: {fileID: 4296640163778792938}
+  spinTarget: {fileID: 2651339347319535926}
+  spinSpeed: 45
 --- !u!1 &4296640163778792938
 GameObject:
   m_ObjectHideFlags: 0
@@ -267,7 +267,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "E - Usar botiqu\xEDn"
+  m_text: E - Recoger
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -294,7 +294,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26.55
+  m_fontSize: 37.35
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

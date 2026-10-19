@@ -24,13 +24,17 @@ public class Character : NetworkBehaviour
 
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
+    private PlayerInventory inventory;
+
+    [Header("Inventario")]
+    [SerializeField] private ItemDefinition medkitItem;
 
 
     private void Awake()
     {
         movement = GetComponent<PMovement>();
         health = GetComponent<PlayerHealth>();
-
+        inventory = GetComponent<PlayerInventory>();
         weaponSwitcher = GetComponentInChildren<WeaponSwitcher>();
     }
 
@@ -91,7 +95,14 @@ public class Character : NetworkBehaviour
             movement.TryJump();
         }
     }
+    public void OnUseMedkit(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed) return;
+        if (inventory == null || medkitItem == null) return;
+        if (!inventory.Has(medkitItem.id) || health.IsFull) return;
 
+        inventory.RequestUseItemServerRpc(medkitItem.id);
+    }
     private bool IsDead()
     {
         return health != null && health.IsDead;
@@ -106,9 +117,9 @@ public class Character : NetworkBehaviour
     {
         if (!IsOwner || IsDead() || !context.performed) return;
 
-        MedkitPickup medkit = MedkitPickup.FindNearest(transform.position);
-        float medkitDist = medkit != null
-            ? Vector3.Distance(transform.position, medkit.transform.position)
+        ItemPickup item = ItemPickup.FindNearest(transform.position);
+        float itemDist = item != null
+            ? Vector3.Distance(transform.position, item.transform.position)
             : float.MaxValue;
 
         Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, pickupLayer);
@@ -133,22 +144,19 @@ public class Character : NetworkBehaviour
             ? Vector3.Distance(transform.position, npc.transform.position)
             : float.MaxValue;
 
-        if (npc != null && npcDist <= medkitDist && npcDist <= nearestWeaponDist)
+        if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
         {
-            Debug.Log($"E apretada. npc={(npc != null ? npc.name : "null")}, medkit={(medkit != null)}, weapon={(nearestWeapon != null)}");
             npc.RequestRescue();
         }
-
-        else if (medkit != null && medkitDist <= nearestWeaponDist)
+        else if (item != null && itemDist <= nearestWeaponDist)
         {
-            medkit.RequestUse();
+            inventory?.RequestPickupItemServerRpc(item.NetworkObjectId);
         }
         else if (nearestWeapon != null)
         {
             weaponSwitcher?.RequestPickupWeaponServerRpc(
                 (int)nearestWeapon.weaponType,
-                nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
-            );
+                nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId);
         }
     }
 

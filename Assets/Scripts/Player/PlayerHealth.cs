@@ -42,6 +42,8 @@ public class PlayerHealth : NetworkBehaviour
     public float CurrentHealth => currentHealth.Value;
     public bool IsDead => isDead.Value;
 
+    public bool IsFull => currentHealth.Value >= maxHealth;
+
     public override void OnNetworkSpawn()
     {
         currentHealth.OnValueChanged += OnHealthValueChanged;

@@ -105,6 +105,16 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "UseMedkit",
+                    "type": "Button",
+                    "id": "41c245ca-7930-4c12-9b67-06f91238b9c1",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -259,6 +269,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Crouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7de2db09-c3f1-4787-ad5f-226419b2c364",
+                    "path": "<Keyboard>/h",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "UseMedkit",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

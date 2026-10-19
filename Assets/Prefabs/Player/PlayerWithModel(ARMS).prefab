@@ -856,6 +856,7 @@ GameObject:
   - component: {fileID: 7270523736752849327}
   - component: {fileID: 8875508707705697205}
   - component: {fileID: 3910103281167729676}
+  - component: {fileID: 3185707815294336632}
   m_Layer: 6
   m_Name: PlayerWithModel(ARMS)
   m_TagString: Untagged
@@ -1201,6 +1202,22 @@ MonoBehaviour:
       m_Calls: []
     m_ActionId: 4c3484a0-8d56-4e80-9555-08eaf0932f24
     m_ActionName: 'Player/Crouch[/Keyboard/ctrl]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 3614970389573475868}
+        m_TargetAssemblyTypeName: Character, Game
+        m_MethodName: OnUseMedkit
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 41c245ca-7930-4c12-9b67-06f91238b9c1
+    m_ActionName: 'Player/UseMedkit[/Keyboard/h]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
@@ -1274,6 +1291,7 @@ MonoBehaviour:
   pickupLayer:
     serializedVersion: 2
     m_Bits: 256
+  medkitItem: {fileID: 11400000, guid: b86f7a9b461c4704a9ccf6e402405767, type: 2}
 --- !u!114 &7712562877563550526
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1458,6 +1476,22 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &3185707815294336632
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1338943456637610382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14b5efc36e960934e9af2949a05dca6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::PlayerInventory
+  ShowTopMostFoldoutHeaderGroup: 1
+  catalog: {fileID: 11400000, guid: 7c2ab2b026c1d2242af2745938825ec7, type: 2}
+  slotCount: 4
+  pickupTolerance: 1
 --- !u!1 &1390964396608293640
 GameObject:
   m_ObjectHideFlags: 0

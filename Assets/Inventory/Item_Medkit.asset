@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bfad83e2df08dc4f8615d565079542f, type: 3}
+  m_Name: Item_Medkit
+  m_EditorClassIdentifier: Game::ItemDefinition
+  id: 1
+  displayName: Medikit
+  icon: {fileID: 0}
+  maxStack: 1
+  maxCarried: 1
+  worldPrefab: {fileID: 1991718953057930486, guid: 97f8a51d05b22ec40a2e63c8de87f14e, type: 3}
+  useEffect: {fileID: 11400000, guid: b24923ebf7ad7574280ea3aacfa238b8, type: 2}
+  consumeOnUse: 1
