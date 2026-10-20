@@ -73,13 +73,19 @@ public class PlayerInventory : NetworkBehaviour
         if (slotCount <= 0) return;
         selectedSlot = (selectedSlot + direction + slotCount) % slotCount;
         SelectedSlotChanged?.Invoke(selectedSlot);
+
+        if (slotCount > 1 && inventoryAudio != null)
+            inventoryAudio.Play(InventorySound.Navigate, null);
     }
 
     public void SelectSlot(int index)
     {
-        if (index < 0 || index >= slotCount) return;
+        if (index < 0 || index >= slotCount || index == selectedSlot) return;
         selectedSlot = index;
         SelectedSlotChanged?.Invoke(selectedSlot);
+
+        if (inventoryAudio != null)
+            inventoryAudio.Play(InventorySound.Navigate, null);
     }
 
     // ---------- Consultas ----------

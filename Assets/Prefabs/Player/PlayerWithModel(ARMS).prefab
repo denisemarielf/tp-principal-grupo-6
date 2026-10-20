@@ -1512,7 +1512,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2480460361
+  GlobalObjectIdHash: 375657675
   InScenePlacedSourceGlobalObjectIdHash: 649605470
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -7700,10 +7700,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::InventoryAudio
   source: {fileID: 4543568184290879909}
   volume: 0.8
+  navigateVolume: 0.4
   defaultPickup: {fileID: 8300000, guid: 889135b9cf959b540a4620ff9d80b7ba, type: 3}
-  defaultUse: {fileID: 0}
+  defaultUse: {fileID: 8300000, guid: 889135b9cf959b540a4620ff9d80b7ba, type: 3}
   failSound: {fileID: 8300000, guid: 95672ef67497e0a4aa07b0ee24ad3644, type: 3}
   dropSound: {fileID: 8300000, guid: 8130bb70dd02f644a9a71b74ee7824af, type: 3}
+  navigateSound: {fileID: 8300000, guid: 8e93ba991a8122e44ac7ea9ba4bc4e54, type: 3}
 --- !u!1 &8256501858160433462
 GameObject:
   m_ObjectHideFlags: 0
