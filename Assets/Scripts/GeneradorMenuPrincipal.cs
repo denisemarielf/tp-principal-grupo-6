@@ -1614,34 +1614,6 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         }
     }
 
-    /*
-        private void MostrarRanurasJugadores(int cantidadConectados)
-        {
-            for (int i = 0; i < listaRanurasJugadores.Length; i++)
-            {
-                if (i < cantidadConectados)
-                {
-                    listaRanurasJugadores[i].text =
-                        (i == 0)
-                        ? "1. Jugador 1 (LÍDER)"
-                        : $"{i + 1}. Jugador {i + 1}";
-
-                    listaRanurasJugadores[i].color =
-                        colorVerdeZombie;
-                }
-                else
-                {
-                    listaRanurasJugadores[i].text =
-                        $"{i + 1}. [ Esperando Jugador... ]";
-
-                    listaRanurasJugadores[i].color =
-                        Color.gray;
-                }
-            }
-        }
-
-        */
-
     private void MostrarRanurasJugadores(int cantidadConectados)
     {
         for (int i = 0; i < listaRanurasJugadores.Length; i++)
@@ -1694,44 +1666,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             $"DIFICULTAD: {nombresDifs[dificultadSeleccionada].ToUpper()}";
     }
 
-    /*
-        private void OnEventoConexion(
-            NetworkManager networkManager,
-            ConnectionEventData data
-        )
-        {
-            switch (data.EventType)
-            {
-                case ConnectionEvent.ClientConnected:
-                case ConnectionEvent.PeerConnected:
-                    ActualizarLobbyRed();
-                    break;
-
-                case ConnectionEvent.PeerDisconnected:
-                    ActualizarLobbyRed(data.ClientId);
-                    break;
-
-                case ConnectionEvent.ClientDisconnected:
-                    if (networkManager.IsServer)
-                    {
-                        if (data.ClientId != NetworkManager.ServerClientId)
-                            ActualizarLobbyRed(data.ClientId);
-                    }
-                    else
-                    {
-                        // Rechazado (partida iniciada / sala llena) o el host cerró la sala.
-                        string motivo =
-                            string.IsNullOrEmpty(networkManager.DisconnectReason)
-                            ? "EL LÍDER CERRÓ LA SALA O SE PERDIÓ LA CONEXIÓN."
-                            : networkManager.DisconnectReason.ToUpper();
-
-                        TerminarLobbyConMensaje(motivo);
-                    }
-                    break;
-            }
-        }
-        */
-
+    
     private void OnEventoConexion(
     NetworkManager networkManager,
     ConnectionEventData data
