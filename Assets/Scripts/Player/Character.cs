@@ -25,7 +25,7 @@ public class Character : NetworkBehaviour
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
     private PlayerInventory inventory;
-    [SerializeField] private ItemDefinition medkitItem;
+    
 
 
     private void Awake()
@@ -93,20 +93,33 @@ public class Character : NetworkBehaviour
             movement.TryJump();
         }
     }
-    public void OnUseMedkit(InputAction.CallbackContext context)
+   
+    public void OnUseItem(InputAction.CallbackContext context)
     {
-        if (!IsOwner || IsDead() || !context.performed) return;
-        if (inventory == null || medkitItem == null) return;
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
 
-        inventory.RequestUseItemServerRpc(medkitItem.id);
+        inventory.RequestUseSlotServerRpc(inventory.SelectedSlot);
+    }
+
+    public void OnInventoryNext(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+        inventory.CycleSelection(1);
+    }
+
+    public void OnInventoryPrev(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+        inventory.CycleSelection(-1);
     }
     public void OnDropItem(InputAction.CallbackContext context)
     {
         if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
 
-        // Por ahora suelta el primer ítem que haya. Cuando tengas hotbar, pasá el slot seleccionado.
-        inventory.RequestDropSlotServerRpc(inventory.FirstOccupiedSlot());
+        // El servidor valida el slot; si está vacío suena el sonido de error.
+        inventory.RequestDropSlotServerRpc(inventory.SelectedSlot);
     }
+
 
     private bool IsDead()
     {

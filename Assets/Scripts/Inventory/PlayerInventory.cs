@@ -10,7 +10,6 @@ public struct InventorySlot : INetworkSerializable, IEquatable<InventorySlot>
     public bool IsEmpty => itemId < 0 || quantity <= 0;
     public static InventorySlot Empty => new InventorySlot { itemId = -1, quantity = 0 };
 
-
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref itemId);
@@ -24,6 +23,7 @@ public class PlayerInventory : NetworkBehaviour
 {
     [SerializeField] private ItemCatalog catalog;
     [SerializeField] private int slotCount = 4;
+
     [Tooltip("Margen extra que acepta el host, porque ve la posición del cliente con un poco de retraso.")]
     [SerializeField] private float pickupTolerance = 1f;
 
@@ -32,20 +32,24 @@ public class PlayerInventory : NetworkBehaviour
 
     [Header("Soltar")]
     [SerializeField] private float dropDistance = 1.5f;
-    [Tooltip("Altura sobre el suelo a la que queda el pickup (tu botiquín en la escena está a ~0.4).")]
+    [Tooltip("Altura sobre el suelo a la que queda el pickup.")]
     [SerializeField] private float dropGroundOffset = 0.4f;
 
     private NetworkList<InventorySlot> slots;
+    private int selectedSlot; // solo local, no se sincroniza
 
     public event Action InventoryChanged;
+    public event Action<int> SelectedSlotChanged; // solo local, lo usa el HUD
 
-    public int LoadedSlotCount => slots.Count;
     public int SlotCount => slotCount;
+    public int LoadedSlotCount => slots.Count;
+    public int SelectedSlot => selectedSlot;
     public InventorySlot GetSlot(int i) => slots[i];
     public ItemDefinition GetDefinition(int itemId) => catalog.Get(itemId);
 
     private void Awake()
     {
+        // NetworkList debe crearse acá, no en OnNetworkSpawn
         slots = new NetworkList<InventorySlot>(
             null, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     }
@@ -62,6 +66,33 @@ public class PlayerInventory : NetworkBehaviour
     public override void OnNetworkDespawn() => slots.OnListChanged -= OnListChanged;
 
     private void OnListChanged(NetworkListEvent<InventorySlot> _) => InventoryChanged?.Invoke();
+
+    // ---------- Selección de slot (local) ----------
+    public void CycleSelection(int direction)
+    {
+        if (slotCount <= 0) return;
+        selectedSlot = (selectedSlot + direction + slotCount) % slotCount;
+        SelectedSlotChanged?.Invoke(selectedSlot);
+    }
+
+    public void SelectSlot(int index)
+    {
+        if (index < 0 || index >= slotCount) return;
+        selectedSlot = index;
+        SelectedSlotChanged?.Invoke(selectedSlot);
+    }
+
+    // ---------- Consultas ----------
+    public int CountOf(int itemId)
+    {
+        int total = 0;
+        for (int i = 0; i < slots.Count; i++)
+            if (slots[i].itemId == itemId) total += slots[i].quantity;
+        return total;
+    }
+
+    public bool Has(int itemId) => CountOf(itemId) > 0;
+
     /// <summary>True si se puede agregar al menos 1 unidad.</summary>
     public bool CanAdd(int itemId)
     {
@@ -77,22 +108,13 @@ public class PlayerInventory : NetworkBehaviour
         }
         return false;
     }
-    public int CountOf(int itemId)
-    {
-        int total = 0;
-        for (int i = 0; i < slots.Count; i++)
-            if (slots[i].itemId == itemId) total += slots[i].quantity;
-        return total;
-    }
 
-    public bool Has(int itemId) => CountOf(itemId) > 0;
-
-    /// <summary>Solo servidor. Devuelve cuántas unidades se agregaron realmente.</summary>
+    // ---------- Modificación (SOLO SERVIDOR) ----------
+    /// <summary>Devuelve cuántas unidades se agregaron realmente.</summary>
     public int TryAdd(int itemId, int quantity)
     {
         if (!IsServer) return 0;
         var def = catalog.Get(itemId);
-        if (def == null) Debug.LogWarning($"[Inv] El catálogo no tiene el ítem con id {itemId}");
         if (def == null || quantity <= 0) return 0;
 
         if (def.maxCarried > 0)
@@ -101,6 +123,7 @@ public class PlayerInventory : NetworkBehaviour
 
         int remaining = quantity;
 
+        // 1) completar stacks existentes
         for (int i = 0; i < slots.Count && remaining > 0; i++)
         {
             var s = slots[i];
@@ -111,6 +134,7 @@ public class PlayerInventory : NetworkBehaviour
             remaining -= add;
         }
 
+        // 2) usar slots vacíos
         for (int i = 0; i < slots.Count && remaining > 0; i++)
         {
             if (!slots[i].IsEmpty) continue;
@@ -121,7 +145,6 @@ public class PlayerInventory : NetworkBehaviour
 
         return quantity - remaining;
     }
-
 
     public bool TryRemove(int itemId, int quantity)
     {
@@ -139,6 +162,7 @@ public class PlayerInventory : NetworkBehaviour
         return true;
     }
 
+    // ---------- Feedback (sonidos solo para el dueño) ----------
     [Rpc(SendTo.Owner)]
     private void PlayFeedbackRpc(InventorySound kind, int itemId)
     {
@@ -146,31 +170,35 @@ public class PlayerInventory : NetworkBehaviour
         inventoryAudio.Play(kind, catalog.Get(itemId));
     }
 
-    public int FirstOccupiedSlot()
-    {
-        for (int i = 0; i < slots.Count; i++)
-            if (!slots[i].IsEmpty) return i;
-        return -1;
-    }
+    // ---------- Entrada de red ----------
     [ServerRpc]
-    public void RequestUseItemServerRpc(int itemId)
+    public void RequestUseSlotServerRpc(int slotIndex)
     {
-        var def = catalog.Get(itemId);
-        if (def == null || def.useEffect == null || !Has(itemId))
+        if (slotIndex < 0 || slotIndex >= slots.Count || slots[slotIndex].IsEmpty)
         {
-            PlayFeedbackRpc(InventorySound.Fail, itemId);
+            PlayFeedbackRpc(InventorySound.Fail, -1);
             return;
         }
 
-        if (!def.useEffect.Apply(gameObject))
+        InventorySlot slot = slots[slotIndex];
+        var def = catalog.Get(slot.itemId);
+
+        // Sin efecto (ej: una llave) o el efecto no se pudo aplicar (ej: vida llena)
+        if (def == null || def.useEffect == null || !def.useEffect.Apply(gameObject))
         {
-            PlayFeedbackRpc(InventorySound.Fail, itemId); // ej: vida llena
+            PlayFeedbackRpc(InventorySound.Fail, slot.itemId);
             return;
         }
 
-        if (def.consumeOnUse) TryRemove(itemId, 1);
-        PlayFeedbackRpc(InventorySound.Use, itemId);
+        if (def.consumeOnUse)
+        {
+            slot.quantity -= 1;
+            slots[slotIndex] = slot.quantity <= 0 ? InventorySlot.Empty : slot;
+        }
+
+        PlayFeedbackRpc(InventorySound.Use, slot.itemId);
     }
+
     [ServerRpc]
     public void RequestPickupItemServerRpc(ulong pickupNetworkObjectId)
     {
@@ -185,6 +213,7 @@ public class PlayerInventory : NetworkBehaviour
         bool ok = pickup.ServerTryPickup(this);
         PlayFeedbackRpc(ok ? InventorySound.Pickup : InventorySound.Fail, itemId); // Fail = inventario lleno
     }
+
     [ServerRpc]
     public void RequestDropSlotServerRpc(int slotIndex)
     {

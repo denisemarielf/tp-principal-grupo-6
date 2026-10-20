@@ -10,6 +10,7 @@ public class InventoryUI : MonoBehaviour
     {
         public Image icon;           // se muestra solo si el slot tiene un ítem
         public TMP_Text quantityText; // se muestra solo si la cantidad es mayor a 1
+        public GameObject selectionFrame;
     }
 
     [Tooltip("Si queda vacío, lo busca en el prefab del Player (padre).")]
@@ -23,15 +24,27 @@ public class InventoryUI : MonoBehaviour
         if (inventory == null) return;
 
         inventory.InventoryChanged += Refresh;
+        inventory.SelectedSlotChanged += OnSelectedChanged;
         Refresh();
     }
 
     private void OnDisable()
     {
+        inventory.InventoryChanged -= Refresh;
+        inventory.SelectedSlotChanged -= OnSelectedChanged;
         if (inventory != null)
             inventory.InventoryChanged -= Refresh;
     }
 
+    private void OnSelectedChanged(int _) => UpdateSelection();
+
+    private void UpdateSelection()
+    {
+        if (inventory == null) return;
+        for (int i = 0; i < slotViews.Length; i++)
+            if (slotViews[i].selectionFrame != null)
+                slotViews[i].selectionFrame.SetActive(i == inventory.SelectedSlot);
+    }
     private void Refresh()
     {
         if (inventory == null) return;
@@ -64,5 +77,7 @@ public class InventoryUI : MonoBehaviour
                 view.quantityText.text = quantity.ToString();
             }
         }
+        UpdateSelection();
     }
+    
 }
