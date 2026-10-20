@@ -74,24 +74,7 @@ public class ItemPickup : NetworkPickup
     }
 
     // Solo servidor.
-    public void ServerTryPickup(PlayerInventory inv)
-    {
-        if (!IsServer || consumed) return;
-
-        int added = inv.TryAdd(itemId, quantity.Value);
-        if (added <= 0) return;
-
-        if (added >= quantity.Value)
-        {
-            consumed = true;
-            NotifyCollected();
-            NetworkObject.Despawn(true);
-        }
-        else
-        {
-            quantity.Value -= added;
-        }
-    }
+   
 
     private bool LocalPlayerCanPickup()
     {
@@ -105,5 +88,31 @@ public class ItemPickup : NetworkPickup
         if (inv == null || !inv.CanAdd(itemId)) return false;
 
         return Vector3.Distance(localPlayer.transform.position, transform.position) <= useRadius;
+    }
+    // Solo servidor. Devuelve true si se agregó al menos 1 unidad.
+    public bool ServerTryPickup(PlayerInventory inv)
+    {
+        if (!IsServer || consumed) return false;
+
+        int added = inv.TryAdd(itemId, quantity.Value);
+        if (added <= 0) return false;
+
+        if (added >= quantity.Value)
+        {
+            consumed = true;
+            NotifyCollected();
+            NetworkObject.Despawn(true);
+        }
+        else
+        {
+            quantity.Value -= added;
+        }
+        return true;
+    }
+
+    // Solo servidor. Lo usa el inventario al soltar un ítem.
+    public void ServerSetQuantity(int amount)
+    {
+        if (IsServer) quantity.Value = amount;
     }
 }

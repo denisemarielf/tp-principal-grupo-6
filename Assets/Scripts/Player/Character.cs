@@ -97,9 +97,15 @@ public class Character : NetworkBehaviour
     {
         if (!IsOwner || IsDead() || !context.performed) return;
         if (inventory == null || medkitItem == null) return;
-        if (!inventory.Has(medkitItem.id) || health.IsFull) return;
 
         inventory.RequestUseItemServerRpc(medkitItem.id);
+    }
+    public void OnDropItem(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+
+        // Por ahora suelta el primer ítem que haya. Cuando tengas hotbar, pasá el slot seleccionado.
+        inventory.RequestDropSlotServerRpc(inventory.FirstOccupiedSlot());
     }
 
     private bool IsDead()
