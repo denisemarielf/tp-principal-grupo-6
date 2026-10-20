@@ -25,8 +25,6 @@ public class Character : NetworkBehaviour
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
     private PlayerInventory inventory;
-
-    [Header("Inventario")]
     [SerializeField] private ItemDefinition medkitItem;
 
 
@@ -103,6 +101,7 @@ public class Character : NetworkBehaviour
 
         inventory.RequestUseItemServerRpc(medkitItem.id);
     }
+
     private bool IsDead()
     {
         return health != null && health.IsDead;
@@ -156,7 +155,8 @@ public class Character : NetworkBehaviour
         {
             weaponSwitcher?.RequestPickupWeaponServerRpc(
                 (int)nearestWeapon.weaponType,
-                nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId);
+                nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
+            );
         }
     }
 

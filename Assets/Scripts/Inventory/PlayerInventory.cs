@@ -31,6 +31,7 @@ public class PlayerInventory : NetworkBehaviour
 
     public event Action InventoryChanged;
 
+    public int LoadedSlotCount => slots.Count;
     public int SlotCount => slotCount;
     public InventorySlot GetSlot(int i) => slots[i];
     public ItemDefinition GetDefinition(int itemId) => catalog.Get(itemId);
