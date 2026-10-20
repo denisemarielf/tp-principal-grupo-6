@@ -1411,8 +1411,34 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // CREAR SALA (HOST)
     // ============================================================
 
+    // Valida y guarda el nombre del jugador. Devuelve false si está vacío.
+    private bool GuardarNombreJugador(TMP_InputField campo)
+    {
+        string nombre = campo.text.Trim();
+
+        if (string.IsNullOrEmpty(nombre))
+        {
+            if (campo.placeholder is TMP_Text placeholder)
+                placeholder.text = "¡Ingresá tu nombre!";
+
+            return false;
+        }
+
+        if (nombre.Length > 16)
+            nombre = nombre.Substring(0, 16);
+
+        NombrePlayer.NombreJugador = nombre;
+        Debug.Log("Nombre guardado: " + nombre);
+
+        return true;
+    } //nuevo
+
+
+
     public async void ConfirmarCrearSala()
     {
+        if (!GuardarNombreJugador(inputNombreHost))
+            return;
         int intento =
             PrepararLobbyRed("CREANDO SALA...");
 
@@ -1420,7 +1446,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         {
             await GameSessionManager.PrepareHostAsync();
 
-            if (intento != intentoConexion)
+            if (intento != intentoConexion) //nuevo
                 return;
 
             // Antes de arrancar, para recibir también la conexión del propio host.
@@ -1475,6 +1501,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
             return;
         }
+        if (!GuardarNombreJugador(inputNombreCliente))
+            return; //nuevo
 
         int intento =
             PrepararLobbyRed($"CONECTANDO A LA SALA {codigo}...");

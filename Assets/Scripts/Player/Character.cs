@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro;
 
 [RequireComponent(typeof(PMovement))]
 public class Character : NetworkBehaviour
@@ -27,6 +28,12 @@ public class Character : NetworkBehaviour
     private PlayerInventory inventory;
     
 
+    [Header("Nombre del jugador")] //nuevo
+    [SerializeField] private TextMeshPro playerNameText;
+
+    // Último nombre recibido (el servidor lo usa para responder a los demás)
+    private string nombreJugador = ""; //nuevo
+
 
     private void Awake()
     {
@@ -36,17 +43,38 @@ public class Character : NetworkBehaviour
         weaponSwitcher = GetComponentInChildren<WeaponSwitcher>();
     }
 
+    //Para que el texto se vea bien desde todos los angulos
+    private void LateUpdate()
+    {
+        if (playerNameText == null) return;
+
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        playerNameText.transform.rotation = cam.transform.rotation;
+    }
+
     public override void OnNetworkSpawn()
     {
-        // Solo el dueño lee input y renderiza con la camara de su personaje.
-        // Si los personajes remotos tuvieran PlayerInput y Camera activos, le robarian el teclado
-        // y la pantalla al jugador local.
         SetLocalOnlyComponents(IsOwner);
 
         if (IsOwner)
         {
+            string nombre = NombrePlayer.NombreJugador;
+
+            if (string.IsNullOrWhiteSpace(nombre))
+                nombre = "Jugador " + (OwnerClientId + 1);
+
+            EnviarNombreAlServidorRpc(nombre);
+
             DisableSceneCameras();
             StartCoroutine(MoveToSpawnPoint());
+        }
+        else if (!IsServer)
+        {
+            // Personaje de otro jugador visto desde un cliente:
+            // pedimos su nombre por si el servidor ya lo tenía.
+            PedirNombreRpc();
         }
     }
 
@@ -60,6 +88,43 @@ public class Character : NetworkBehaviour
         RestoreSceneCameras();
         base.OnDestroy();
     }
+
+    //metodos nuevos 
+    // El dueño manda su nombre al servidor.
+    [Rpc(SendTo.Server, RequireOwnership = true)]
+    private void EnviarNombreAlServidorRpc(string nombre)
+    {
+        string limpio = (nombre ?? "").Trim();
+
+        if (limpio.Length > 16)
+            limpio = limpio.Substring(0, 16);
+
+        // Nunca queda vacío
+        if (string.IsNullOrWhiteSpace(limpio))
+            limpio = "Jugador " + (OwnerClientId + 1);
+
+        nombreJugador = limpio;
+        AplicarNombreRpc(nombreJugador);
+    }
+
+    // Un cliente que ve este personaje por primera vez pide el nombre.
+    [Rpc(SendTo.Server, RequireOwnership = false)]
+    private void PedirNombreRpc()
+    {
+        if (!string.IsNullOrEmpty(nombreJugador))
+            AplicarNombreRpc(nombreJugador);
+    }
+
+    // El servidor le avisa a todos el nombre de este personaje.
+    [Rpc(SendTo.Everyone)]
+    private void AplicarNombreRpc(string nombre)
+    {
+        nombreJugador = nombre;
+
+        if (playerNameText != null)
+            playerNameText.text = nombre;
+    }
+    //aca termina
 
 
     public void OnMove(InputAction.CallbackContext context)
