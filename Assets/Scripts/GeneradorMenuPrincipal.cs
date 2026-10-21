@@ -1628,8 +1628,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         string[] nombresMapas =
         {
             "Suburbio Zombie",
-            "Centro Urbano",
-            "Bosque Oscuro"
+            "Complejo de Oficinas",
+            "Zona de Extraccion"
         };
 
         string[] nombresDifs =

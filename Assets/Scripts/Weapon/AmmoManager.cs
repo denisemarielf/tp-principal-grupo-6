@@ -83,9 +83,13 @@ public class AmmoManager : MonoBehaviour
 
     public void AddReserveAmmo(int amount)
     {
-
-
         reserveAmmo += amount;
+    }
 
+    public void SetAmmoState(int current, int reserve)
+    {
+        currentAmmo = Mathf.Clamp(current, 0, magazineSize);
+        reserveAmmo = Mathf.Max(0, reserve);
+        isReloading = false;
     }
 }
