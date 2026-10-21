@@ -26,6 +26,7 @@ public class ItemPickup : NetworkPickup
     public override void OnNetworkSpawn()
     {
         active.Add(this);
+        PickupGroundSnap.SnapToGround(transform);
         if (IsServer) quantity.Value = initialQuantity;
         if (usePrompt != null) usePrompt.SetActive(false);
     }

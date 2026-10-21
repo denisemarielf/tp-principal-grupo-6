@@ -14,10 +14,13 @@ public class WeaponPickup : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        // Las de escena quedan kinematicas; primero las bajamos al piso.
+        PickupGroundSnap.SnapToGround(transform);
+
         if (rb == null)
             return;
 
-        // Las armas de la escena se quedan donde están. Si caen, atraviesan la calle.
+        // Las armas de la escena se quedan donde estan. Si caen, atraviesan la calle.
         bool placedInScene = NetworkObject != null && NetworkObject.InScenePlaced;
         rb.useGravity = !placedInScene && IsOwner;
         rb.isKinematic = placedInScene || !IsOwner;

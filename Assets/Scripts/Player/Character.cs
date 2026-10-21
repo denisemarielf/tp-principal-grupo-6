@@ -69,6 +69,7 @@ public class Character : NetworkBehaviour
 
             DisableSceneCameras();
             StartCoroutine(MoveToSpawnPoint());
+            StartCoroutine(ApplyCarryOverWhenReady());
         }
         else if (!IsServer)
         {
@@ -331,6 +332,22 @@ public class Character : NetworkBehaviour
         if (placedByServer) yield break;
 
         TeleportTo(transform.position + Vector3.right * spawnSpacing * OwnerClientId, transform.rotation);
+    }
+
+    // Espera a que el loadout de red se reconstruya tras ApplyServerState (US 4.10).
+    private IEnumerator ApplyCarryOverWhenReady()
+    {
+        if (!PlayerCarryOver.HasLocalOwnerPending)
+            yield break;
+
+        float timeout = Time.realtimeSinceStartup + 3f;
+        while (!PlayerCarryOver.IsLocalLoadoutReady(gameObject)
+               && Time.realtimeSinceStartup < timeout)
+            yield return null;
+
+        // Un frame extra para que RebuildSlot termine tras el cambio de NetworkVariable.
+        yield return null;
+        PlayerCarryOver.TryApplyLocalOwner(gameObject);
     }
 
     private IEnumerator TeleportNextFrame(Vector3 position, Quaternion rotation)

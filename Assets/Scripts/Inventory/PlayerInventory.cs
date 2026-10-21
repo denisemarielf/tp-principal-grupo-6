@@ -67,6 +67,19 @@ public class PlayerInventory : NetworkBehaviour
 
     private void OnListChanged(NetworkListEvent<InventorySlot> _) => InventoryChanged?.Invoke();
 
+    // Solo server. Reemplaza el contenido de los slots tras un cambio de escena encadenado (US 4.10).
+    public void ApplyCarryOverSlots(InventorySlot[] carried)
+    {
+        if (!IsServer || carried == null) return;
+
+        int count = Mathf.Min(slots.Count, carried.Length);
+        for (int i = 0; i < count; i++)
+            slots[i] = carried[i];
+
+        for (int i = count; i < slots.Count; i++)
+            slots[i] = InventorySlot.Empty;
+    }
+
     // ---------- Selección de slot (local) ----------
     public void CycleSelection(int direction)
     {
