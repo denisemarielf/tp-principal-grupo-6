@@ -78,9 +78,51 @@ public class EnemySceneSetup : MonoBehaviour
             yield break;
         }
 
-        PlanAcrossMap();
+        if (!PlanFromSpawnPoints())
+            PlanAcrossMap();
+
         streaming = true;
         UpdateStreaming();
+    }
+
+    // Si la escena tiene EnemySpawnPoint, usa esos (oficinas). Si no, false y sigue el plan de calle (suburbio).
+    private bool PlanFromSpawnPoints()
+    {
+        EnemySpawnPoint[] points = FindObjectsByType<EnemySpawnPoint>(FindObjectsInactive.Exclude);
+        if (points == null || points.Length == 0)
+            return false;
+
+        hasRoad = false;
+        Vector3 playerSpawn = PlayerSpawnPosition();
+        int added = 0;
+
+        foreach (EnemySpawnPoint marker in points)
+        {
+            if (marker == null)
+                continue;
+
+            Vector3 position = marker.transform.position;
+            if (NavMesh.SamplePosition(position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+                position = hit.position;
+
+            if (FlatDistance(position, playerSpawn) < minDistanceFromSpawn)
+                continue;
+
+            planned.Add(new PlannedEnemy
+            {
+                position = position,
+                variant = (EnemyVariant)Random.Range(0, 3)
+            });
+            added++;
+        }
+
+        if (added == 0)
+        {
+            Debug.LogWarning("EnemySceneSetup: hay EnemySpawnPoint pero ninguno quedo usable (muy cerca del spawn?).", this);
+            return false;
+        }
+
+        return true;
     }
 
     private void PlanAcrossMap()
