@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(50)]
 public class WorldWeaponSway : MonoBehaviour
 {
     [SerializeField] private WeaponSway source;          // WeaponSway del viewmodel de esta arma

@@ -1,4 +1,5 @@
 
+using UnityEditor;
 using UnityEngine;
 
 public class NetworkSpineAim : MonoBehaviour
@@ -22,48 +23,71 @@ public class NetworkSpineAim : MonoBehaviour
     [SerializeField] private float maxSpineAngle = 60f;
     [SerializeField] private float smoothSpeed = 10f;
     [SerializeField] private float pitchMultiplier = 1f;
+    private float[] appliedAngles;
+    private bool pitchApplied;
+    private bool undone;
 
     private float currentPitch;
+    private void Awake() // NUEVO
+    {
+        appliedAngles = new float[spineBones != null ? spineBones.Length : 0];
+    }
 
     private void LateUpdate()
     {
         if (cameraController == null)
             return;
 
-        // Pitch sincronizado por Netcode.
         float targetPitch = -cameraController.networkPitch.Value;
-
-        // Limitar cuanto puede inclinarse el torso.
-        targetPitch = Mathf.Clamp(
-            targetPitch,
-            -maxSpineAngle,
-            maxSpineAngle
-        );
-
+        targetPitch = Mathf.Clamp(targetPitch, -maxSpineAngle, maxSpineAngle);
         targetPitch *= pitchMultiplier;
 
-        // Suavizar el movimiento de los jugadores remotos.
-        currentPitch = Mathf.Lerp(
-            currentPitch,
-            targetPitch,
-            Time.deltaTime * smoothSpeed
-        );
+        currentPitch = Mathf.Lerp(currentPitch, targetPitch, Time.deltaTime * smoothSpeed);
 
         if (spineBones == null)
             return;
 
-        foreach (SpineBone entry in spineBones)
+        for (int i = 0; i < spineBones.Length; i++)
         {
+            SpineBone entry = spineBones[i];
             if (entry == null || entry.bone == null)
                 continue;
 
-            // Sumar la inclinacion a la pose de la animacion.
             float angle = currentPitch * entry.weight;
+            appliedAngles[i] = angle; // NUEVO
 
-            entry.bone.localRotation *= Quaternion.AngleAxis(
-                angle,
-                Vector3.right
-            );
+            entry.bone.localRotation *= Quaternion.AngleAxis(angle, Vector3.right);
+        }
+
+        pitchApplied = true; // NUEVO
+    }
+
+    // NUEVO: quita temporalmente la inclinación aplicada en el LateUpdate anterior
+    public void UndoPitch()
+    {
+        if (!pitchApplied || undone) return;
+        ApplyAngles(-1f);
+        undone = true;
+    }
+
+    // NUEVO: la devuelve
+    public void RedoPitch()
+    {
+        if (!undone) return;
+        ApplyAngles(1f);
+        undone = false;
+    }
+
+    private void ApplyAngles(float sign)
+    {
+        if (spineBones == null || appliedAngles == null) return;
+
+        for (int i = 0; i < spineBones.Length && i < appliedAngles.Length; i++)
+        {
+            if (spineBones[i] == null || spineBones[i].bone == null) continue;
+
+            spineBones[i].bone.localRotation *=
+                Quaternion.AngleAxis(sign * appliedAngles[i], Vector3.right);
         }
     }
 }

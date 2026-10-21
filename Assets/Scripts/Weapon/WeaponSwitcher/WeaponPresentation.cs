@@ -20,6 +20,7 @@ public class WeaponPresentation : MonoBehaviour
 
     private ShootLogic currentShoot;
     private bool ownerUiActive;
+    public WorldGripProxy worldGripProxy;
 
     // ---------- Ciclo de vida (lo llama WeaponSwitcher) ----------
 
@@ -80,17 +81,27 @@ public class WeaponPresentation : MonoBehaviour
     {
         if (weaponObject == null) return;
 
+        // Brazos FPS -> grips del viewmodel (el arma original)
         if (armsGripController != null)
             armsGripController.SetGripsForWeapon(weaponObject);
+        else
+            Debug.LogWarning("[IK] WeaponPresentation: armsGripController NO asignado.", this);
 
+        // Personaje -> grips del worldmodel, vía el proxy fuera del Animator
         if (characterModelGripController != null)
         {
             var link = weaponObject.GetComponent<WeaponWorldLink>();
-            GameObject target = (link != null && link.worldModel != null)
-                ? link.worldModel
-                : weaponObject;
+            GameObject world = (link != null && link.worldModel != null) ? link.worldModel : weaponObject;
 
-            characterModelGripController.SetGripsForWeapon(target);
+            if (worldGripProxy != null)
+            {
+                worldGripProxy.SetSources(world);
+                characterModelGripController.SetGripsForWeapon(worldGripProxy.gameObject);
+            }
+            else
+            {
+                characterModelGripController.SetGripsForWeapon(world);
+            }
         }
     }
 
