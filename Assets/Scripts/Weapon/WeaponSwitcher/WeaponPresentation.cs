@@ -25,6 +25,8 @@ public class WeaponPresentation : MonoBehaviour
 
     public void HideArmsForRemotePlayer()
     {
+        isOwner = false; // NUEVO
+
         if (armsModel != null)
             armsModel.SetActive(false);
     }
@@ -49,15 +51,23 @@ public class WeaponPresentation : MonoBehaviour
     // ---------- API ----------
 
     /// <summary>Refleja el arma actual (shoot == null significa "enfundado").</summary>
+    private bool isOwner = true; // NUEVO
+
+
     public void ShowWeapon(ShootLogic shoot, GameObject weaponObject)
     {
         currentShoot = shoot;
 
+        // CAMBIO: los brazos FPS solo existen para el dueño
         if (armsModel != null)
-            armsModel.SetActive(shoot != null);
+            armsModel.SetActive(isOwner && shoot != null);
 
+        // El IK del personaje sí tiene que actualizarse en todos los clientes
         if (shoot != null)
             ApplyGripsForWeapon(weaponObject);
+
+        // NUEVO: crosshair y HUD de munición solo del dueño
+        if (!isOwner) return;
 
         if (crosshairController != null)
             crosshairController.SetVisible(shoot != null);
@@ -74,7 +84,14 @@ public class WeaponPresentation : MonoBehaviour
             armsGripController.SetGripsForWeapon(weaponObject);
 
         if (characterModelGripController != null)
-            characterModelGripController.SetGripsForWeapon(weaponObject);
+        {
+            var link = weaponObject.GetComponent<WeaponWorldLink>();
+            GameObject target = (link != null && link.worldModel != null)
+                ? link.worldModel
+                : weaponObject;
+
+            characterModelGripController.SetGripsForWeapon(target);
+        }
     }
 
     public void PlaySwitchSound()

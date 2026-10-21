@@ -29,6 +29,7 @@ public class WeaponLogic : NetworkBehaviour
     [Header("Camera Recoil (solo afecta al dueño del arma)")]
     public CameraRecoil cameraRecoil;
     [SerializeField] private CrosshairController crosshairController;
+    private WeaponWorldLink worldLink;
 
     private void Start()
     {
@@ -36,9 +37,23 @@ public class WeaponLogic : NetworkBehaviour
     }
     private void Awake()
     {
-        
+        worldLink = GetComponent<WeaponWorldLink>();
+
         if (crosshairController == null)
             crosshairController = transform.root.GetComponentInChildren<CrosshairController>();
+    }
+    private Vector3 VisualMuzzlePosition =>
+    (!IsOwner && worldLink != null && worldLink.worldMuzzle != null)
+        ? worldLink.worldMuzzle.position
+        : spawnPoint.position;
+
+    private void PlayRemoteShootEffects()
+    {
+        if (audioSource != null && shootSound != null)
+            audioSource.PlayOneShot(shootSound);
+
+        if (worldLink != null)
+            worldLink.PlayWorldMuzzle();
     }
 
     public void PlayShootEffectsLocal()
@@ -161,7 +176,7 @@ public class WeaponLogic : NetworkBehaviour
             Destroy(sparks.gameObject, sparks.main.duration + sparks.main.startLifetime.constantMax);
         }
 
-        bulletTracer?.PlayTracer(spawnPoint.position, hitPoint);
+        bulletTracer?.PlayTracer(VisualMuzzlePosition, hitPoint);
     }
 
     // ---------- Efectos compartidos ----------
@@ -170,6 +185,6 @@ public class WeaponLogic : NetworkBehaviour
     private void PlayShootEffectsClientRpc()
     {
         if (IsOwner) return;
-        PlayShootEffectsLocal();
+        PlayRemoteShootEffects();
     }
 }
