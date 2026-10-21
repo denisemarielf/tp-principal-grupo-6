@@ -61,7 +61,9 @@ public class PickupSpawner : MonoBehaviour
     {
         if (!networkManager.IsServer) return;
 
-        NetworkPickup pickup = Instantiate(pickupPrefab, point.position, point.rotation);
+        Vector3 spawnPos = PickupGroundSnap.SnapPosition(point.position);
+        NetworkPickup pickup = Instantiate(pickupPrefab, spawnPos, point.rotation);
+        PickupGroundSnap.SnapToGround(pickup.transform);
         pickup.Collected += _ => StartCoroutine(RespawnAfterDelay(point));
         pickup.GetComponent<NetworkObject>().Spawn(true);
     }

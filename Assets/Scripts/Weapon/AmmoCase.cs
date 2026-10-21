@@ -36,6 +36,8 @@ public class AmmoCase : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        PickupGroundSnap.SnapToGround(transform);
+
         isAvailable.OnValueChanged += OnAvailabilityChanged;
 
         UpdateVisuals(isAvailable.Value);
