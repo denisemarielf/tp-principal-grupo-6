@@ -72,6 +72,12 @@ public class SafeZone : NetworkBehaviour
     public bool IsCompleted => completed.Value;
     public bool AllAlivePlayersInside => alivePlayers.Value > 0 && playersInside.Value >= alivePlayers.Value;
 
+    // Solo el server. Lo usa el guardado de partida (US 3.6) para saber si el host esta en la zona.
+    public bool IsPlayerInside(PlayerHealth player)
+    {
+        return IsServer && player != null && inside.Contains(player);
+    }
+
     private void Reset()
     {
         GetComponent<Collider>().isTrigger = true;

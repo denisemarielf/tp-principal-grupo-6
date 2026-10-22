@@ -34,6 +34,9 @@ public class Character : NetworkBehaviour
     // Último nombre recibido (el servidor lo usa para responder a los demás)
     private string nombreJugador = ""; //nuevo
 
+    // Nombre con el que se identifica al jugador (ej. en el guardado de partida, US 3.6).
+    public string PlayerName => string.IsNullOrEmpty(nombreJugador) ? "Jugador " + (OwnerClientId + 1) : nombreJugador;
+
 
     private void Awake()
     {
