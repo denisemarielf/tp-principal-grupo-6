@@ -20,11 +20,14 @@ public class WeaponPresentation : MonoBehaviour
 
     private ShootLogic currentShoot;
     private bool ownerUiActive;
+    public WorldGripProxy worldGripProxy;
 
     // ---------- Ciclo de vida (lo llama WeaponSwitcher) ----------
 
     public void HideArmsForRemotePlayer()
     {
+        isOwner = false; // NUEVO
+
         if (armsModel != null)
             armsModel.SetActive(false);
     }
@@ -49,15 +52,23 @@ public class WeaponPresentation : MonoBehaviour
     // ---------- API ----------
 
     /// <summary>Refleja el arma actual (shoot == null significa "enfundado").</summary>
+    private bool isOwner = true; // NUEVO
+
+
     public void ShowWeapon(ShootLogic shoot, GameObject weaponObject)
     {
         currentShoot = shoot;
 
+        // CAMBIO: los brazos FPS solo existen para el dueño
         if (armsModel != null)
-            armsModel.SetActive(shoot != null);
+            armsModel.SetActive(isOwner && shoot != null);
 
+        // El IK del personaje sí tiene que actualizarse en todos los clientes
         if (shoot != null)
             ApplyGripsForWeapon(weaponObject);
+
+        // NUEVO: crosshair y HUD de munición solo del dueño
+        if (!isOwner) return;
 
         if (crosshairController != null)
             crosshairController.SetVisible(shoot != null);
@@ -70,11 +81,28 @@ public class WeaponPresentation : MonoBehaviour
     {
         if (weaponObject == null) return;
 
+        // Brazos FPS -> grips del viewmodel (el arma original)
         if (armsGripController != null)
             armsGripController.SetGripsForWeapon(weaponObject);
+        else
+            Debug.LogWarning("[IK] WeaponPresentation: armsGripController NO asignado.", this);
 
+        // Personaje -> grips del worldmodel, vía el proxy fuera del Animator
         if (characterModelGripController != null)
-            characterModelGripController.SetGripsForWeapon(weaponObject);
+        {
+            var link = weaponObject.GetComponent<WeaponWorldLink>();
+            GameObject world = (link != null && link.worldModel != null) ? link.worldModel : weaponObject;
+
+            if (worldGripProxy != null)
+            {
+                worldGripProxy.SetSources(world);
+                characterModelGripController.SetGripsForWeapon(worldGripProxy.gameObject);
+            }
+            else
+            {
+                characterModelGripController.SetGripsForWeapon(world);
+            }
+        }
     }
 
     public void PlaySwitchSound()
