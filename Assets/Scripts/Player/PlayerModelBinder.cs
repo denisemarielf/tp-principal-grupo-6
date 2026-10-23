@@ -42,7 +42,7 @@ public class PlayerModelBinder : NetworkBehaviour
         models != null && CurrentIndex >= 0 && CurrentIndex < models.Length ? models[CurrentIndex] : null;
 
     // ---------- Red ----------
-
+    
     public override void OnNetworkSpawn()
     {
         if (IsServer) modelIndex.Value = PickFreeIndex();
@@ -59,6 +59,8 @@ public class PlayerModelBinder : NetworkBehaviour
         }
 
         modelIndex.OnValueChanged += OnIndexChanged;
+        if (IsOwner && PlayerModelChoice.SelectedIndex >= 0)
+            RequestModelServerRpc(PlayerModelChoice.SelectedIndex);
     }
 
     public override void OnNetworkDespawn()
@@ -72,7 +74,7 @@ public class PlayerModelBinder : NetworkBehaviour
         RefreshDependents();
     }
 
-    private int PickFreeIndex()
+    private HashSet<int> UsedByOthers()
     {
         var used = new HashSet<int>();
         foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
@@ -81,9 +83,20 @@ public class PlayerModelBinder : NetworkBehaviour
             if (po != null && po != NetworkObject && po.TryGetComponent(out PlayerModelBinder other))
                 used.Add(other.modelIndex.Value);
         }
+        return used;
+    }
+    [ServerRpc]
+    public void RequestModelServerRpc(int index)
+    {
+        if (models == null || index < 0 || index >= models.Length) return;
+        if (UsedByOthers().Contains(index)) return;   // ya lo usa otro jugador: se queda el automatico
+        modelIndex.Value = index;
+    }
+    private int PickFreeIndex()
+    {
+        var used = UsedByOthers();
         for (int i = 0; i < models.Length; i++)
             if (!used.Contains(i)) return i;
-
         return (int)(OwnerClientId % (ulong)models.Length);
     }
 

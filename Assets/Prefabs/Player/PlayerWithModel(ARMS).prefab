@@ -8733,6 +8733,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 9
       objectReference: {fileID: 0}
+    - target: {fileID: 3269920614273347450, guid: 1901a0374a7075742b255f7ce5689578, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3579340093935160288, guid: 1901a0374a7075742b255f7ce5689578, type: 3}
       propertyPath: m_Layer
       value: 9
@@ -9868,6 +9872,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CharacterModel_01
       objectReference: {fileID: 0}
+    - target: {fileID: 107836648736235793, guid: d18e6a696528bcb408b7a235c46de9f3, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 735437424049617835, guid: d18e6a696528bcb408b7a235c46de9f3, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.06250763
@@ -10375,6 +10383,10 @@ PrefabInstance:
     - target: {fileID: 3268250614089809536, guid: b6aec067eff034845a5e1ef3ac4fdea4, type: 3}
       propertyPath: m_Name
       value: CharacterModel
+      objectReference: {fileID: 0}
+    - target: {fileID: 3268250614089809536, guid: b6aec067eff034845a5e1ef3ac4fdea4, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4322012577227615230, guid: b6aec067eff034845a5e1ef3ac4fdea4, type: 3}
       propertyPath: cameraController
