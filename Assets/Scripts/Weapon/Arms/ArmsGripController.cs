@@ -61,7 +61,6 @@ public class ArmsGripController : MonoBehaviour
 
         constraint.weight = 1f;
         var data = constraint.data;
-        Debug.Log($"[IK] {name} / {constraint.name} -> {finalTarget.name} (padre: {finalTarget.parent?.name})", this);
         data.target = finalTarget;
         constraint.data = data;
     }

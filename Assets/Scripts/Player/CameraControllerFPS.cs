@@ -11,7 +11,7 @@ public class CameraControllerFPS : NetworkBehaviour
 
     private float xRotation = 0f;
 
-    public NetworkVariable<float> networkPitch = new NetworkVariable<float>(
+    private NetworkVariable<float> networkPitch = new NetworkVariable<float>(
         0f,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Owner

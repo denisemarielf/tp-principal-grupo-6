@@ -40,8 +40,7 @@ public class WeaponSway : NetworkBehaviour
 
     private float reloadDipCurrent = 0f;
     private Coroutine reloadDipRoutine;
-    public Vector3 PositionOffset => transform.localPosition - startPosition;
-    public Quaternion RotationOffset => Quaternion.Inverse(startRotation) * transform.localRotation;
+
 
     // =========================================================
     // MOVIMIENTO SINCRONIZADO

@@ -1,14 +1,17 @@
 using UnityEngine;
-using UnityEngine.Rendering;
 
+/// <summary>
+/// Todo lo visual de las armas: layers, mostrar/ocultar renderers y
+/// activar/desactivar el WeaponModel de las armas fuera del loadout.
+/// No conoce la red.
+/// </summary>
 public class WeaponVisuals : MonoBehaviour
 {
     [SerializeField] private WeaponCatalog catalog;
-    private bool isOwner;
 
+    /// <summary>Activa todas las armas del catálogo y les asigna el layer según sea owner o no.</summary>
     public void SetupCatalog(bool isOwner)
     {
-        this.isOwner = isOwner;
         int layer = GetLayer(isOwner);
 
         foreach (var entry in catalog.AllWeapons)
@@ -17,10 +20,10 @@ public class WeaponVisuals : MonoBehaviour
 
             entry.weaponObject.SetActive(true);
             SetLayerRecursively(entry.weaponObject, layer);
-            SetWorldModelVisible(entry.weaponObject, false);
         }
     }
 
+    /// <summary>Prepara un arma recién asignada a un slot (activa + layer).</summary>
     public void PrepareWeapon(GameObject weapon, bool isOwner)
     {
         if (weapon == null) return;
@@ -29,6 +32,7 @@ public class WeaponVisuals : MonoBehaviour
         SetLayerRecursively(weapon, GetLayer(isOwner));
     }
 
+    /// <summary>Muestra solo el arma 'index' y actualiza el equipped de cada ShootLogic.</summary>
     public void UpdateWeaponVisuals(GameObject[] weapons, int index)
     {
         for (int i = 0; i < weapons.Length; i++)
@@ -37,7 +41,6 @@ public class WeaponVisuals : MonoBehaviour
 
             bool isSelected = i == index;
             SetWeaponVisible(weapons[i], isSelected);
-            SetWorldModelVisible(weapons[i], isSelected);
 
             ShootLogic shootLogic = weapons[i].GetComponent<ShootLogic>();
             if (shootLogic != null)
@@ -45,18 +48,19 @@ public class WeaponVisuals : MonoBehaviour
         }
     }
 
+    /// <summary>Oculta visualmente un arma y la desequipa (sin desactivar el GameObject).</summary>
     public void HideAndUnequip(GameObject weapon)
     {
         if (weapon == null) return;
 
         SetWeaponVisible(weapon, false);
-        SetWorldModelVisible(weapon, false);
 
         ShootLogic shootLogic = weapon.GetComponent<ShootLogic>();
         if (shootLogic != null)
             shootLogic.SetEquipped(false);
     }
 
+    /// <summary>Desactiva el WeaponModel de toda arma del catálogo que no esté en el loadout.</summary>
     public void UpdateCatalogWeaponsActivity(GameObject[] loadoutWeapons)
     {
         foreach (var entry in catalog.AllWeapons)
@@ -74,27 +78,7 @@ public class WeaponVisuals : MonoBehaviour
     private void SetWeaponVisible(GameObject weapon, bool visible)
     {
         foreach (Renderer r in weapon.GetComponentsInChildren<Renderer>(true))
-        {
-            bool isGeometry = r is MeshRenderer || r is SkinnedMeshRenderer;
-
-            if (isOwner)
-                r.enabled = visible;
-            else if (isGeometry)
-                r.enabled = false; // remotos: el mesh del viewmodel nunca se dibuja
-        }
-    }
-
-    private void SetWorldModelVisible(GameObject weapon, bool visible)
-    {
-        var link = weapon.GetComponent<WeaponWorldLink>();
-        if (link == null || link.worldModel == null) return;
-
-        link.worldModel.SetActive(visible);
-        if (!visible) return;
-
-        var mode = isOwner ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
-        foreach (Renderer r in link.worldModel.GetComponentsInChildren<Renderer>(true))
-            r.shadowCastingMode = mode;
+            r.enabled = visible;
     }
 
     private static int GetLayer(bool isOwner) =>
@@ -103,6 +87,7 @@ public class WeaponVisuals : MonoBehaviour
     private static void SetLayerRecursively(GameObject obj, int layer)
     {
         obj.layer = layer;
+
         foreach (Transform child in obj.transform)
             SetLayerRecursively(child.gameObject, layer);
     }
