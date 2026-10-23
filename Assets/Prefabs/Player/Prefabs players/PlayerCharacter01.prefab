@@ -6407,7 +6407,7 @@ MonoBehaviour:
   pickupLayer:
     serializedVersion: 2
     m_Bits: 256
-  playerNameText: {fileID: 0}
+  playerNameText: {fileID: 2814359334301484824}
 --- !u!114 &7712562877563550526
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33904,6 +33904,17 @@ ParticleSystem:
   m_CorrespondingSourceObject: {fileID: 3133137367334966303, guid: d18e6a696528bcb408b7a235c46de9f3, type: 3}
   m_PrefabInstance: {fileID: 4126129512613258956}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2814359334301484824 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2183234309375779284, guid: d18e6a696528bcb408b7a235c46de9f3, type: 3}
+  m_PrefabInstance: {fileID: 4126129512613258956}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9541d86e2fd84c1d9990edf0852d74ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshPro
 --- !u!198 &3293122780774467778 stripped
 ParticleSystem:
   m_CorrespondingSourceObject: {fileID: 1509111966832963086, guid: d18e6a696528bcb408b7a235c46de9f3, type: 3}
