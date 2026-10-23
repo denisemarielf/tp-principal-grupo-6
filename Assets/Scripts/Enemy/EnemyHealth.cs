@@ -114,7 +114,10 @@ public class EnemyHealth : NetworkBehaviour
             ai.SetAggroTarget(attacker);
 
         if (currentHealth.Value <= 0f)
+        {
+            AchievementService.NotifyEnemyKilled(attacker, variant);
             Die();
+        }
     }
 
     [ContextMenu("Debug: recibir 25 de dano")]

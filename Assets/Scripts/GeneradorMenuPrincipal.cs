@@ -57,6 +57,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private GameObject panelCrearSala;
     private GameObject panelUnirseSala;
     private GameObject panelLobby;
+    private GameObject panelLogros;
 
 
     // ============================================================
@@ -360,6 +361,13 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             "JUGAR",
             AbrirSeleccionRed,
             colorRojoSangre
+        );
+
+        CrearBotonZombieTMP(
+            contBotonesP.transform,
+            "LOGROS",
+            AbrirLogros,
+            new Color(0.2f, 0.22f, 0.25f)
         );
 
         CrearBotonZombieTMP(
@@ -886,6 +894,49 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
 
         // ========================================================
+        // 11. LOGROS
+        // ========================================================
+
+        panelLogros =
+            CrearPanelContenedor(
+                canvasObj,
+                "Panel_Logros"
+            );
+
+        CrearTitulo(
+            panelLogros.transform,
+            "LOGROS",
+            "— OBJETIVOS ADICIONALES —"
+        );
+
+        GameObject marcoLogros =
+            CrearMarcoContenedor(
+                panelLogros.transform,
+                new Vector2(0, -45),
+                new Vector2(980, 470)
+            );
+
+        marcoLogros.AddComponent<AchievementListUI>().Build(
+            ObtenerFuenteRetro(),
+            escalaFuenteRetro
+        );
+
+        GameObject contVolverLogros =
+            CrearContenedorVertical(
+                panelLogros.transform,
+                new Vector2(0, -360),
+                new Vector2(500, 70)
+            );
+
+        CrearBotonZombieTMP(
+            contVolverLogros.transform,
+            "VOLVER AL MENU",
+            CerrarLogros,
+            new Color(0.2f, 0.22f, 0.25f)
+        );
+
+
+        // ========================================================
         // MOSTRAR MENÚ PRINCIPAL
         // ========================================================
 
@@ -1364,6 +1415,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         if (panelLobby)
             panelLobby.SetActive(false);
+
+        if (panelLogros)
+            panelLogros.SetActive(false);
     }
 
 
@@ -1810,6 +1864,26 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         OcultarTodosLosPaneles();
 
         panelOpciones.SetActive(true);
+
+        LimpiarSeleccionUI();
+    }
+
+
+    public void AbrirLogros()
+    {
+        OcultarTodosLosPaneles();
+
+        panelLogros.SetActive(true);
+
+        LimpiarSeleccionUI();
+    }
+
+
+    public void CerrarLogros()
+    {
+        OcultarTodosLosPaneles();
+
+        panelPrincipal.SetActive(true);
 
         LimpiarSeleccionUI();
     }
