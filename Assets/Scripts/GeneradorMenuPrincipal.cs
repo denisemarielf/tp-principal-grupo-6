@@ -47,7 +47,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     public AudioClip sfxClick;
 
     private int personajeSeleccionado = 0;
-    private TMP_Text txtBtnPersonaje;
+    private TMP_Text txtBtnPersonajeC;
+    private TMP_Text txtBtnPersonajeU;
 
     // ============================================================
     // PANELES
@@ -497,26 +498,26 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             );
         // PERSONAJE
 
-        txtBtnPersonaje =
-            CrearBotonOpcionCiclicaTMP(
-                contCrear.transform,
-                "PERSONAJE: MASCARA GAS",
-              () =>
-              {
-                  personajeSeleccionado = (personajeSeleccionado + 1) % 4;
-                  PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
+        txtBtnPersonajeC =
+             CrearBotonOpcionCiclicaTMP(
+                 contCrear.transform,
+                 "PERSONAJE: MASCARA GAS",
+               () =>
+               {
+                   personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                   PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
 
-                  string[] personajes =
-                  {
+                   string[] personajes =
+                   {
         "PERSONAJE: MASCARA GAS",
         "PERSONAJE: SWAT",
         "PERSONAJE: SOLDADO",
         "PERSONAJE: TRABAJADOR"
-    };
+     };
 
-                  txtBtnPersonaje.text = personajes[personajeSeleccionado];
-              }
-            );
+                   txtBtnPersonajeC.text = personajes[personajeSeleccionado];
+               }
+             );
 
 
         // Objetivo del mapa seleccionado
@@ -605,7 +606,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             );
         // PERSONAJE
 
-        txtBtnPersonaje =
+        txtBtnPersonajeU =
             CrearBotonOpcionCiclicaTMP(
                 contUnirse.transform,
                 "PERSONAJE: MASCARA GAS",
@@ -622,7 +623,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         "PERSONAJE: TRABAJADOR"
     };
 
-                  txtBtnPersonaje.text = personajes[personajeSeleccionado];
+                  txtBtnPersonajeU.text = personajes[personajeSeleccionado];
               }
             );
 
