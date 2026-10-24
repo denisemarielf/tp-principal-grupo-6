@@ -14,8 +14,7 @@ public class WeaponPickup : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // Las de escena quedan kinematicas; primero las bajamos al piso.
-        PickupGroundSnap.SnapToGround(transform);
+       
 
         if (rb == null)
             return;
@@ -24,6 +23,12 @@ public class WeaponPickup : NetworkBehaviour
         bool placedInScene = NetworkObject != null && NetworkObject.InScenePlaced;
         rb.useGravity = !placedInScene && IsOwner;
         rb.isKinematic = placedInScene || !IsOwner;
+    }
+    public override void OnNetworkDespawn()
+    {
+        // Se ejecuta en servidor y clientes
+        if (NetworkObject.InScenePlaced)
+            gameObject.SetActive(false);
     }
 
     public void Consume()
@@ -49,4 +54,5 @@ public class WeaponPickup : NetworkBehaviour
             Destroy(gameObject);
         }
     }
+
 }

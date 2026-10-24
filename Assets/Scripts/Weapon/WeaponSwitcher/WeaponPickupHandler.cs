@@ -13,7 +13,13 @@ public class WeaponPickupHandler : MonoBehaviour
 
     public void HandlePickup(int weaponTypeIndex, ulong pickupNetworkObjectId, int currentWeaponIndex)
     {
+        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects
+        .TryGetValue(pickupNetworkObjectId, out NetworkObject pickupNetObj))
+            return;
         var type = (WeaponType)weaponTypeIndex;
+       
+        if (loadout.HasWeaponType(type)) return;
+
 
         // Ya tenemos esta arma: el pickup permanece.
         if (loadout.HasWeaponType(type)) return;
@@ -21,6 +27,7 @@ public class WeaponPickupHandler : MonoBehaviour
         if (catalog.GetWeaponObjectByType(type) == null) return;
 
         int freeSlot = loadout.FindFreeSlot();
+
 
         if (freeSlot >= 0)
         {
@@ -59,7 +66,20 @@ public class WeaponPickupHandler : MonoBehaviour
         GameObject prefab = catalog.GetPickupPrefabByType(type);
         if (prefab == null) return;
 
-        GameObject dropped = Instantiate(prefab, position, Quaternion.identity);
+        // Más arriba y más adelante, para no nacer dentro del suelo ni del jugador
+        Vector3 spawnPos = transform.position + transform.forward * 1.2f + Vector3.up * 1.2f;
+
+        GameObject dropped = Instantiate(prefab, spawnPos, Quaternion.identity);
+
+        var rb = dropped.GetComponent<Rigidbody>();
+        if (rb != null)
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+        // Evita el empujón por superposición con el CharacterController
+        var col = dropped.GetComponentInChildren<Collider>();
+        var playerCol = GetComponent<Collider>();   // o CharacterController
+        if (col != null && playerCol != null)
+            Physics.IgnoreCollision(col, playerCol);
 
         NetworkObject netObj = dropped.GetComponent<NetworkObject>();
         if (netObj != null)
