@@ -21,7 +21,7 @@ public class WeaponPresentation : MonoBehaviour
     private ShootLogic currentShoot;
     private bool ownerUiActive;
     public WorldGripProxy worldGripProxy;
-
+    private EquippableWeapon currentWeapon; // antes: ShootLogic currentShoot
     // ---------- Ciclo de vida (lo llama WeaponSwitcher) ----------
 
     public void HideArmsForRemotePlayer()
@@ -55,26 +55,28 @@ public class WeaponPresentation : MonoBehaviour
     private bool isOwner = true; // NUEVO
 
 
-    public void ShowWeapon(ShootLogic shoot, GameObject weaponObject)
+    public void ShowWeapon(EquippableWeapon weapon, GameObject weaponObject)
     {
-        currentShoot = shoot;
+        currentWeapon = weapon;
+        bool hasWeapon = weapon != null;
+        ShootLogic firearm = weapon as ShootLogic; // null si es melee o está enfundado
 
-        // CAMBIO: los brazos FPS solo existen para el dueño
+        // Los brazos FPS solo existen para el dueño; sirven para fuego y melee
         if (armsModel != null)
-            armsModel.SetActive(isOwner && shoot != null);
+            armsModel.SetActive(isOwner && hasWeapon);
 
-        // El IK del personaje sí tiene que actualizarse en todos los clientes
-        if (shoot != null)
+        // El IK del personaje se actualiza en todos los clientes
+        if (hasWeapon)
             ApplyGripsForWeapon(weaponObject);
 
-        // NUEVO: crosshair y HUD de munición solo del dueño
         if (!isOwner) return;
 
+        // Crosshair y munición solo para armas de fuego
         if (crosshairController != null)
-            crosshairController.SetVisible(shoot != null);
+            crosshairController.SetVisible(firearm != null);
 
         if (ammoUI != null)
-            ammoUI.SetWeapon(shoot);
+            ammoUI.SetWeapon(firearm); // null oculta el HUD de munición
     }
 
     public void ApplyGripsForWeapon(GameObject weaponObject)
@@ -124,11 +126,9 @@ public class WeaponPresentation : MonoBehaviour
         while (ammoUI == null)
         {
             ammoUI = FindAnyObjectByType<AmmoUI>();
-
-            if (ammoUI == null)
-                yield return null;
+            if (ammoUI == null) yield return null;
         }
 
-        ammoUI.SetWeapon(currentShoot);
+        ammoUI.SetWeapon(currentWeapon as ShootLogic);
     }
 }
