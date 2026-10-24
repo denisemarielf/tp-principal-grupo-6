@@ -132,7 +132,11 @@ public class MeleeLogic : EquippableWeapon
             Collider col = overlapBuffer[i];
             if (col.transform.root == transform.root) continue; // no pegarse a uno mismo
 
-            Vector3 closest = col.ClosestPoint(origin);
+            // Primero: ¿es un enemigo? Si no, ni gastamos tiempo en el resto
+            EnemyHealth enemy = col.GetComponentInParent<EnemyHealth>();
+            if (enemy == null || hitThisSwing.Contains(enemy)) continue;
+
+            Vector3 closest = SafeClosestPoint(col, origin);
             Vector3 toTarget = closest - origin;
             if (toTarget.sqrMagnitude < 0.0001f) toTarget = direction;
 
@@ -146,22 +150,23 @@ public class MeleeLogic : EquippableWeapon
                 if (block.collider.transform.root != col.transform.root) continue;
             }
 
-            EnemyHealth enemy = col.GetComponentInParent<EnemyHealth>();
-            if (enemy == null || !hitThisSwing.Add(enemy)) continue;
-
+            hitThisSwing.Add(enemy);
             enemy.TakeDamage(damageAmount, transform.root);
             hitAnything = true;
 
             Vector3 normal = (origin - closest).sqrMagnitude > 0.0001f ? (origin - closest).normalized : -direction;
             PlayHitClientRpc(closest, normal, true);
         }
+    }
+    private static Vector3 SafeClosestPoint(Collider col, Vector3 point)
+    {
+        if (col is BoxCollider || col is SphereCollider || col is CapsuleCollider)
+            return col.ClosestPoint(point);
 
-        // Si no pegó a ningún enemigo, feedback de impacto contra la superficie
-        if (!hitAnything &&
-            Physics.Raycast(origin, direction, out RaycastHit surface, range, obstacleLayers, QueryTriggerInteraction.Ignore))
-        {
-            PlayHitClientRpc(surface.point, surface.normal, false);
-        }
+        if (col is MeshCollider mc && mc.convex)
+            return col.ClosestPoint(point);
+
+        return col.bounds.ClosestPoint(point);
     }
 
     // ---------- Efectos en clientes ----------
