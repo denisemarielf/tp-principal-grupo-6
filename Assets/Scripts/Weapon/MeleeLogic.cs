@@ -9,9 +9,17 @@ public class MeleeLogic : EquippableWeapon
     [Header("Input / HUD")]
     [SerializeField] private Sprite hudIcon;
     [SerializeField] private bool isAutomatic = false; // true = mantener click sigue golpeando
-
+                                                       // AHORA
+    [Header("Sonidos (se elige uno al azar por acción)")]
+    public AudioClip[] swingSounds;
+    public AudioClip[] hitFleshSounds;
+    public AudioClip[] hitSurfaceSounds;
+    [Tooltip("Variación aleatoria de pitch en el sonido del swing (0 = sin variación).")]
+    [Range(0f, 0.3f)] public float pitchVariation = 0.08f;
+    private int lastSwingIdx = -1, lastFleshIdx = -1, lastSurfaceIdx = -1;
     private bool isEquipped;
     private InputAction attackAction;
+    public ProceduralMeleeAnimation proceduralAnimation; // opcional: armas sin animaciones
 
     public override Sprite HudIcon => hudIcon;
     public override void SetEquipped(bool equipped) { isEquipped = equipped; }
@@ -87,6 +95,7 @@ public class MeleeLogic : EquippableWeapon
     {
         PlaySwingSound();
         if (weaponAnimator != null) weaponAnimator.SetTrigger(AttackHash);
+        if (proceduralAnimation != null) proceduralAnimation.PlaySwing(); // <-- volver a agregar
         if (weaponSway != null) weaponSway.AddRecoil();
         cameraRecoil?.AddRecoil(false);
     }
@@ -163,6 +172,7 @@ public class MeleeLogic : EquippableWeapon
         if (IsOwner) return; // el dueño ya lo reprodujo local
         PlaySwingSound();
         if (worldAnimator != null) worldAnimator.SetTrigger(AttackHash);
+        if (proceduralAnimation != null) proceduralAnimation.PlaySwing(); // <-- volver a agregar
     }
 
     [ClientRpc]
@@ -171,7 +181,7 @@ public class MeleeLogic : EquippableWeapon
         if (hitEnemy)
         {
             BloodSplatter.Play(point, normal);
-            PlayClipAt(hitFleshSound, point);
+            PlayClipAt(PickClip(hitFleshSounds, ref lastFleshIdx), point);   // <-- cambió
         }
         else
         {
@@ -181,19 +191,34 @@ public class MeleeLogic : EquippableWeapon
                 fx.Play();
                 Destroy(fx.gameObject, fx.main.duration + fx.main.startLifetime.constantMax);
             }
-            PlayClipAt(hitSurfaceSound, point);
+            PlayClipAt(PickClip(hitSurfaceSounds, ref lastSurfaceIdx), point); // <-- cambió
         }
     }
 
     private void PlaySwingSound()
     {
-        if (audioSource != null && swingSound != null)
-            audioSource.PlayOneShot(swingSound);
+        AudioClip clip = PickClip(swingSounds, ref lastSwingIdx);
+        if (audioSource == null || clip == null) return;
+
+        audioSource.pitch = 1f + Random.Range(-pitchVariation, pitchVariation);
+        audioSource.PlayOneShot(clip);
     }
 
     private void PlayClipAt(AudioClip clip, Vector3 point)
     {
         if (clip != null) AudioSource.PlayClipAtPoint(clip, point);
+    }
+
+    /// <summary>Elige un clip al azar evitando repetir el anterior.</summary>
+    private static AudioClip PickClip(AudioClip[] clips, ref int lastIndex)
+    {
+        if (clips == null || clips.Length == 0) return null;
+        if (clips.Length == 1) { lastIndex = 0; return clips[0]; }
+
+        int i;
+        do { i = Random.Range(0, clips.Length); } while (i == lastIndex);
+        lastIndex = i;
+        return clips[i];
     }
 
 #if UNITY_EDITOR
