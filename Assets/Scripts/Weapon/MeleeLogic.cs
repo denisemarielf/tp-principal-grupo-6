@@ -20,9 +20,15 @@ public class MeleeLogic : EquippableWeapon
     private bool isEquipped;
     private InputAction attackAction;
     public ProceduralMeleeAnimation proceduralAnimation; // opcional: armas sin animaciones
-
+    private bool attackLocked;
+    private bool attackStarted;
+    private float attackLockTime;
     public override Sprite HudIcon => hudIcon;
-    public override void SetEquipped(bool equipped) { isEquipped = equipped; }
+    public override void SetEquipped(bool equipped)
+    {
+        isEquipped = equipped;
+        attackLocked = false;
+    }
 
     public override void OnShoot(InputAction.CallbackContext context)
     {
@@ -31,12 +37,6 @@ public class MeleeLogic : EquippableWeapon
         if (context.performed) TryAttack();
     }
 
-    private void Update()
-    {
-        if (!IsOwner || !isEquipped || PauseMenuUI.IsOpen) return;
-        if (isAutomatic && attackAction != null && attackAction.IsPressed())
-            TryAttack();
-    }
     [Header("Ataque")]
     [Tooltip("Normalmente la Main Camera del jugador (ojos). Desde acá sale el volumen de golpe.")]
     public Transform attackOrigin;
@@ -73,16 +73,31 @@ public class MeleeLogic : EquippableWeapon
     private readonly HashSet<EnemyHealth> hitThisSwing = new HashSet<EnemyHealth>();
     private readonly Collider[] overlapBuffer = new Collider[32];
 
-    public bool CanAttack => Time.time >= nextLocalAttackTime;
+    public bool CanAttack => Time.time >= nextLocalAttackTime && !attackLocked;
 
     // ---------- Lado del dueño ----------
 
     /// <summary>Llamar desde el input de ataque (solo el dueño). Devuelve true si el ataque salió.</summary>
+    private void Update()
+    {
+        if (!IsOwner) return;
+        UpdateAttackLock();
+
+        if (!isEquipped || PauseMenuUI.IsOpen) return;
+        if (isAutomatic && attackAction != null && attackAction.IsPressed())
+            TryAttack();
+    }
     public bool TryAttack()
     {
         if (!IsOwner || !isEquipped || PauseMenuUI.IsOpen || !CanAttack) return false;
 
         nextLocalAttackTime = Time.time + attackCooldown;
+        if (weaponAnimator != null)
+        {
+            attackLocked = true;
+            attackStarted = false;
+            attackLockTime = Time.time;
+        }
 
         PlaySwingLocal();
 
@@ -91,13 +106,60 @@ public class MeleeLogic : EquippableWeapon
         return true;
     }
 
+    private void UpdateAttackLock()
+    {
+        if (!attackLocked) return;
+
+        if (weaponAnimator == null || !weaponAnimator.isActiveAndEnabled)
+        {
+            attackLocked = false;
+            return;
+        }
+
+        AnimatorStateInfo cur = weaponAnimator.GetCurrentAnimatorStateInfo(0);
+        bool inTransition = weaponAnimator.IsInTransition(0);
+        bool curIsAttack = cur.IsTag("Attack");
+        bool nextIsAttack = inTransition && weaponAnimator.GetNextAnimatorStateInfo(0).IsTag("Attack");
+
+        // Esperar a que el animator realmente entre al estado de ataque
+        if (!attackStarted)
+        {
+            if (curIsAttack || nextIsAttack) attackStarted = true;
+            else if (Time.time - attackLockTime > 0.5f) attackLocked = false; // seguro por si nunca entra
+            return;
+        }
+
+        // Se libera cuando el ataque terminó o empezó la transición de salida hacia idle
+        if (!curIsAttack || (inTransition && !nextIsAttack))
+            attackLocked = false;
+    }
     private void PlaySwingLocal()
     {
         PlaySwingSound();
-        if (weaponAnimator != null) weaponAnimator.SetTrigger(AttackHash);
+        if (weaponAnimator != null)
+        {
+            weaponAnimator.SetInteger("AttackIndex", PickAttackIndex());
+            weaponAnimator.SetTrigger(AttackHash);
+        }
         if (proceduralAnimation != null) proceduralAnimation.PlaySwing(); // <-- volver a agregar
         if (weaponSway != null) weaponSway.AddRecoil();
         cameraRecoil?.AddRecoil(false);
+    }
+    private static readonly int[] attackGroups = { 0, 0, 0, 1, 2, 2 };
+    private int lastAttackGroup = -1;
+
+    private int PickAttackIndex()
+    {
+        int idx;
+        int tries = 0;
+        do
+        {
+            idx = Random.Range(0, attackGroups.Length);
+            tries++;
+        } while (attackGroups[idx] == lastAttackGroup && tries < 20);
+
+        lastAttackGroup = attackGroups[idx];
+        return idx;
     }
 
     // ---------- Servidor ----------

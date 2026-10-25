@@ -1,5 +1,6 @@
-using UnityEngine;
+using System.Globalization;
 using Unity.Netcode;
+using UnityEngine;
 
 public class WeaponPickup : NetworkBehaviour
 {
@@ -14,7 +15,6 @@ public class WeaponPickup : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-       
 
         if (rb == null)
             return;
