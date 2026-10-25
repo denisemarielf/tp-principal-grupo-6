@@ -9,7 +9,8 @@ public enum WeaponType
     P90H,
     DesertH,
     CrowbarH,
-    AxeH
+    AxeH,
+    CrowbarS
     
 
 }
