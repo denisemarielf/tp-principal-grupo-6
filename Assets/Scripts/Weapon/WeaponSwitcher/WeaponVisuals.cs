@@ -39,9 +39,9 @@ public class WeaponVisuals : MonoBehaviour
             SetWeaponVisible(weapons[i], isSelected);
             SetWorldModelVisible(weapons[i], isSelected);
 
-            ShootLogic shootLogic = weapons[i].GetComponent<ShootLogic>();
-            if (shootLogic != null)
-                shootLogic.SetEquipped(isSelected);
+            EquippableWeapon weapon = weapons[i].GetComponent<EquippableWeapon>();
+            if (weapon != null)
+                weapon.SetEquipped(isSelected);
         }
     }
 
@@ -52,9 +52,9 @@ public class WeaponVisuals : MonoBehaviour
         SetWeaponVisible(weapon, false);
         SetWorldModelVisible(weapon, false);
 
-        ShootLogic shootLogic = weapon.GetComponent<ShootLogic>();
-        if (shootLogic != null)
-            shootLogic.SetEquipped(false);
+        EquippableWeapon equippable = weapon.GetComponent<EquippableWeapon>();
+        if (equippable != null)
+            equippable.SetEquipped(false);
     }
 
     public void UpdateCatalogWeaponsActivity(GameObject[] loadoutWeapons)
