@@ -109,6 +109,7 @@ public class WeaponPresentation : MonoBehaviour
 
     public void PlaySwitchSound()
     {
+        if (!isOwner) return;
         if (audioSource != null && switchSound != null)
             audioSource.PlayOneShot(switchSound);
     }
