@@ -17,6 +17,9 @@ public class Character : NetworkBehaviour
     [Tooltip("Canvas hijo con la barra de vida propia y la de los compañeros. Solo se activa en el personaje del jugador local.")]
     [SerializeField] private GameObject localHud;
 
+    [Tooltip("Otros objetos del HUD que estan fuera de localHud y tambien se apagan en los jugadores remotos.")]
+    [SerializeField] private GameObject[] extraLocalHud;
+
     private PMovement movement;
     private PlayerHealth health;
     private WeaponSwitcher weaponSwitcher;
@@ -273,6 +276,13 @@ public class Character : NetworkBehaviour
         if (localHud != null)
         {
             localHud.SetActive(isLocal);
+        }
+        if (extraLocalHud != null)
+        {
+            foreach (GameObject go in extraLocalHud)
+            {
+                if (go != null) go.SetActive(isLocal);
+            }
         }
     }
 
