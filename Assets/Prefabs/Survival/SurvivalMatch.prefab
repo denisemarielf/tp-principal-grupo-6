@@ -94,7 +94,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::SurvivalWaveDirector
   ShowTopMostFoldoutHeaderGroup: 1
   enemyPrefab: {fileID: 100001, guid: c4e8a1b2d3f5476890abcdef12345005, type: 3}
-  interval: 25
+  firstWaveDelay: 5
+  delayAfterClear: 2
   startCount: 4
   increment: 2
   minRadius: 40

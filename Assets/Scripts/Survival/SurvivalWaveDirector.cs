@@ -7,7 +7,8 @@ using UnityEngine;
 public class SurvivalWaveDirector : NetworkBehaviour
 {
     [SerializeField] private GameObject enemyPrefab;
-    [SerializeField] private float interval = 25f;
+    [SerializeField] private float firstWaveDelay = 5f;
+    [SerializeField] private float delayAfterClear = 2f;
     [SerializeField] private int startCount = 4;
     [SerializeField] private int increment = 2;
     [SerializeField] private float minRadius = 40f;
@@ -29,6 +30,8 @@ public class SurvivalWaveDirector : NetworkBehaviour
     private float timer;
     private int waveIndex;
     private bool armed;
+    private bool waveActive;
+    private bool waitingToSpawn;
 
     public int WaveNumber => waveNumber.Value;
     public int ZombiesRemaining => zombiesRemaining.Value;
@@ -47,15 +50,27 @@ public class SurvivalWaveDirector : NetworkBehaviour
         if (!armed)
         {
             armed = true;
-            timer = interval;
+            waitingToSpawn = true;
+            timer = firstWaveDelay;
         }
+
+        if (waveActive && zombiesRemaining.Value <= 0)
+        {
+            waveActive = false;
+            waitingToSpawn = true;
+            timer = delayAfterClear;
+        }
+
+        if (!waitingToSpawn)
+            return;
 
         timer -= Time.deltaTime;
         if (timer > 0f)
             return;
 
-        timer = interval;
+        waitingToSpawn = false;
         SpawnWave();
+        waveActive = true;
     }
 
     private void RefreshRemaining()
