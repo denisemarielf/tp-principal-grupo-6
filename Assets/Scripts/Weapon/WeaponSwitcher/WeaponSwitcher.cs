@@ -9,6 +9,7 @@ using UnityEngine;
 /// </summary>
 public class WeaponSwitcher : NetworkBehaviour
 {
+
     [Header("Componentes")]
     [SerializeField] private WeaponLoadout loadout;
     [SerializeField] private WeaponVisuals visuals;
@@ -16,7 +17,7 @@ public class WeaponSwitcher : NetworkBehaviour
     [SerializeField] private WeaponPickupHandler pickupHandler;
 
     private ShootLogic currentWeaponShoot;
-    public ShootLogic CurrentShoot => currentWeaponShoot;
+    
 
     private readonly NetworkVariable<int> networkWeaponIndex = new NetworkVariable<int>(
         -1,
@@ -25,15 +26,20 @@ public class WeaponSwitcher : NetworkBehaviour
     );
 
     // ---------- API pública (compatibilidad) ----------
+    private EquippableWeapon currentWeapon;
+    public EquippableWeapon CurrentWeapon => currentWeapon;
+    // Compatibilidad: devuelve null si el arma equipada es melee
+    public ShootLogic CurrentShoot => currentWeapon as ShootLogic;
+    public WeaponLogic CurrentWeaponLogic =>
+    currentWeapon != null ? currentWeapon.GetComponent<WeaponLogic>() : null;
+
+    public AmmoManager CurrentAmmoManager =>
+        currentWeapon != null ? currentWeapon.GetComponent<AmmoManager>() : null;
 
     public int CurrentWeaponIndex => networkWeaponIndex.Value;
     public int WeaponCount => loadout.Count;
 
-    public WeaponLogic CurrentWeaponLogic =>
-        currentWeaponShoot != null ? currentWeaponShoot.GetComponent<WeaponLogic>() : null;
-
-    public AmmoManager CurrentAmmoManager =>
-        currentWeaponShoot != null ? currentWeaponShoot.GetComponent<AmmoManager>() : null;
+  
 
     public void GrantAmmoToCurrentWeapon(int amount)
     {
@@ -145,13 +151,20 @@ public class WeaponSwitcher : NetworkBehaviour
 
         visuals.UpdateWeaponVisuals(weapons, index);
 
-        currentWeaponShoot = GetShootAt(index);
+        currentWeapon = GetWeaponAt(index);
 
-        presentation.ShowWeapon(currentWeaponShoot, index >= 0 ? weapons[index] : null);
+        presentation.ShowWeapon(currentWeapon, index >= 0 ? weapons[index] : null);
         presentation.PlaySwitchSound();
 
         if (IsOwner)
             networkWeaponIndex.Value = index;
+    }
+    public EquippableWeapon GetWeaponAt(int index)
+    {
+        GameObject[] weapons = loadout.Weapons;
+        if (index >= 0 && index < weapons.Length && weapons[index] != null)
+            return weapons[index].GetComponent<EquippableWeapon>();
+        return null;
     }
 
     public ShootLogic GetShootAt(int index)

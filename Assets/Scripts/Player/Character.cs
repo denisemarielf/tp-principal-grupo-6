@@ -192,7 +192,7 @@ public class Character : NetworkBehaviour
         inventory.RequestDropSlotServerRpc(inventory.SelectedSlot);
     }
 
-
+  
     private bool IsDead()
     {
         return health != null && health.IsDead;

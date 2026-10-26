@@ -5,6 +5,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using TMPro;
+using System.Collections.Generic;
+using Unity.Collections;
 
 public class GeneradorMenuPrincipal : MonoBehaviour
 {
@@ -28,7 +30,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     [TextArea(2, 5)]
     public string objetivoMapa3 =
-        "Adéntrate en el bosque, localiza el punto de extracción y sobrevive a los infectados que bloquean el camino.";
+        "Estacion de tren. Modo Supervivencia: defende el refugio frente a oleadas. La victoria es sobrevivir el tiempo con al menos un civil vivo.";
 
     [Header("Ambientación y Arte")]
     public Sprite imagenFondoCustom;
@@ -46,6 +48,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     public AudioClip sfxHover;
     public AudioClip sfxClick;
 
+    private int personajeSeleccionado = 0;
+    private TMP_Text txtBtnPersonajeC;
+    private TMP_Text txtBtnPersonajeU;
 
     // ============================================================
     // PANELES
@@ -88,6 +93,20 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private int intentoConexion;
 
     private bool suscritoARed;
+
+
+    // Nombres en el lobby
+    private const string MsgNombre = "LobbyNombre";   // cliente -> host
+    private const string MsgLista = "LobbyLista";     // host -> todos
+
+    private readonly Dictionary<ulong, string> nombresLobby =
+        new Dictionary<ulong, string>();              // solo lo usa el host
+
+    private readonly List<string> nombresLobbyActuales =
+        new List<string>();                           // lo que se muestra en pantalla
+
+    private bool mensajesRegistrados;
+    //
 
 
     // ============================================================
@@ -433,6 +452,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         // ========================================================
         // 7. CREAR SALA
         // ========================================================
+        
 
         panelCrearSala =
             CrearPanelContenedor(
@@ -483,7 +503,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                     {
                         "MAPA: SUBURBIO",
                         "MAPA: COMPLEJO DE OFICINAS",
-                        "MAPA: ZONA DE EXTRACCION"
+                        "MAPA: ESTACION DE TREN"
                     };
 
                     txtBtnMapa.text =
@@ -492,6 +512,29 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                     ActualizarObjetivoMapa();
                 }
             );
+        // PERSONAJE
+
+        txtBtnPersonajeC =
+             CrearBotonOpcionCiclicaTMP(
+                 contCrear.transform,
+                 "PERSONAJE: MASCARA GAS",
+               () =>
+               {
+                   personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                   PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
+
+                   string[] personajes =
+                   {
+        "PERSONAJE: MASCARA GAS",
+        "PERSONAJE: SWAT",
+        "PERSONAJE: SOLDADO",
+        "PERSONAJE: TRABAJADOR"
+     };
+
+                   txtBtnPersonajeC.text = personajes[personajeSeleccionado];
+               }
+             );
+
 
         // Objetivo del mapa seleccionado
         txtObjetivoMapa = CrearTextoObjetivoMapa(
@@ -540,6 +583,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         );
 
 
+
         // ========================================================
         // 8. UNIRSE A SALA
         // ========================================================
@@ -575,6 +619,28 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 contUnirse.transform,
                 "TU NOMBRE",
                 "Sobreviviente"
+            );
+        // PERSONAJE
+
+        txtBtnPersonajeU =
+            CrearBotonOpcionCiclicaTMP(
+                contUnirse.transform,
+                "PERSONAJE: MASCARA GAS",
+              () =>
+              {
+                  personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                  PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
+
+                  string[] personajes =
+                  {
+        "PERSONAJE: MASCARA GAS",
+        "PERSONAJE: SWAT",
+        "PERSONAJE: SOLDADO",
+        "PERSONAJE: TRABAJADOR"
+    };
+
+                  txtBtnPersonajeU.text = personajes[personajeSeleccionado];
+              }
             );
 
         inputCodigoSala =
@@ -1278,7 +1344,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         {
             "SUBURBIO",
             "COMPLEJO DE OFICINAS",
-            "ZONA DE EXTRACCIÓN"
+            "ESTACION DE TREN"
         };
 
         string[] objetivos =
@@ -1430,7 +1496,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         LimpiarSeleccionUI();
     }
 
-
+   
     public void AbrirSeleccionRed()
     {
         OcultarTodosLosPaneles();
@@ -1495,7 +1561,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             return;
         int intento =
             PrepararLobbyRed("CREANDO SALA...");
-
+        Debug.Log("Personaje seleccionado: " + personajeSeleccionado);
         try
         {
             await GameSessionManager.PrepareHostAsync();
@@ -1630,7 +1696,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             if (clientId != clienteSaliente)
                 cantidad++;
         }
-
+        // En los clientes, la lista que manda el host es la que manda.
+        if (!networkManager.IsServer && nombresLobbyActuales.Count > 0)
+            cantidad = nombresLobbyActuales.Count;
         MostrarRanurasJugadores(cantidad);
 
         if (string.IsNullOrEmpty(codigoSala))
@@ -1650,17 +1718,22 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         }
     }
 
-
     private void MostrarRanurasJugadores(int cantidadConectados)
     {
         for (int i = 0; i < listaRanurasJugadores.Length; i++)
         {
             if (i < cantidadConectados)
             {
+                string nombre =
+                    (i < nombresLobbyActuales.Count &&
+                     !string.IsNullOrEmpty(nombresLobbyActuales[i]))
+                    ? nombresLobbyActuales[i]
+                    : $"Jugador {i + 1}";
+
                 listaRanurasJugadores[i].text =
                     (i == 0)
-                    ? "1. Jugador 1 (LÍDER)"
-                    : $"{i + 1}. Jugador {i + 1}";
+                    ? $"1. {nombre} (LÍDER)"
+                    : $"{i + 1}. {nombre}";
 
                 listaRanurasJugadores[i].color =
                     colorVerdeZombie;
@@ -1676,14 +1749,13 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         }
     }
 
-
     private string TextoDetallesPartida()
     {
         string[] nombresMapas =
         {
             "Suburbio Zombie",
             "Complejo de Oficinas",
-            "Zona de Extraccion"
+            "Estacion de tren"
         };
 
         string[] nombresDifs =
@@ -1698,15 +1770,31 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             $"DIFICULTAD: {nombresDifs[dificultadSeleccionada].ToUpper()}";
     }
 
-
+    
     private void OnEventoConexion(
-        NetworkManager networkManager,
-        ConnectionEventData data
-    )
+    NetworkManager networkManager,
+    ConnectionEventData data
+)
     {
         switch (data.EventType)
         {
             case ConnectionEvent.ClientConnected:
+                RegistrarMensajesLobby();
+
+                if (!networkManager.IsServer)
+                {
+                    // Cliente: le manda su nombre al host.
+                    EnviarNombreAlHost();
+                }
+                else if (data.ClientId == NetworkManager.ServerClientId)
+                {
+                    // Host: arma la lista con su propio nombre.
+                    EnviarListaLobby();
+                }
+
+                ActualizarLobbyRed();
+                break;
+
             case ConnectionEvent.PeerConnected:
                 ActualizarLobbyRed();
                 break;
@@ -1719,7 +1807,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 if (networkManager.IsServer)
                 {
                     if (data.ClientId != NetworkManager.ServerClientId)
-                        ActualizarLobbyRed(data.ClientId);
+                    {
+                        nombresLobby.Remove(data.ClientId);
+                        EnviarListaLobby(data.ClientId);
+                    }
                 }
                 else
                 {
@@ -1734,7 +1825,6 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 break;
         }
     }
-
 
     private void OnFalloTransporte()
     {
@@ -1759,6 +1849,134 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         txtDetallesLobby.text = mensaje;
     }
 
+    //metodos nuevos para los nombres
+
+    // ---------- NOMBRES EN EL LOBBY ----------
+
+    private void RegistrarMensajesLobby()
+    {
+        if (mensajesRegistrados)
+            return;
+
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || nm.CustomMessagingManager == null)
+            return;
+
+        nm.CustomMessagingManager.RegisterNamedMessageHandler(
+            MsgNombre, AlRecibirNombreLobby);
+
+        nm.CustomMessagingManager.RegisterNamedMessageHandler(
+            MsgLista, AlRecibirListaLobby);
+
+        mensajesRegistrados = true;
+    }
+
+
+    // Cliente -> host
+    private void EnviarNombreAlHost()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || nm.CustomMessagingManager == null)
+            return;
+
+        string nombre = NombrePlayer.NombreJugador;
+
+        if (string.IsNullOrWhiteSpace(nombre))
+            nombre = "Jugador";
+
+        using (var writer = new FastBufferWriter(256, Allocator.Temp))
+        {
+            writer.WriteValueSafe(nombre);
+
+            nm.CustomMessagingManager.SendNamedMessage(
+                MsgNombre,
+                NetworkManager.ServerClientId,
+                writer
+            );
+        }
+    }
+
+
+    // Host: recibe el nombre de un cliente
+    private void AlRecibirNombreLobby(ulong remitente, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out string nombre);
+
+        nombre = (nombre ?? "").Trim();
+
+        if (nombre.Length > 16)
+            nombre = nombre.Substring(0, 16);
+
+        if (string.IsNullOrWhiteSpace(nombre))
+            nombre = "Jugador " + (remitente + 1);
+
+        nombresLobby[remitente] = nombre;
+
+        EnviarListaLobby();
+    }
+
+
+    // Host: arma la lista en orden de conexión y se la manda a todos
+    private void EnviarListaLobby(ulong? clienteSaliente = null)
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || !nm.IsServer)
+            return;
+
+        nombresLobbyActuales.Clear();
+
+        foreach (ulong id in nm.ConnectedClientsIds)
+        {
+            if (id == clienteSaliente)
+                continue;
+
+            string nombre;
+
+            if (id == NetworkManager.ServerClientId)
+                nombre = NombrePlayer.NombreJugador;
+            else
+                nombresLobby.TryGetValue(id, out nombre);
+
+            nombresLobbyActuales.Add(nombre ?? "");
+        }
+
+        // Actualiza la pantalla del propio host
+        ActualizarLobbyRed(clienteSaliente);
+
+        // Avisa a los clientes (si hay alguno)
+        if (nombresLobbyActuales.Count > 1 && nm.CustomMessagingManager != null)
+        {
+            using (var writer = new FastBufferWriter(1024, Allocator.Temp))
+            {
+                writer.WriteValueSafe(nombresLobbyActuales.Count);
+
+                foreach (string nombre in nombresLobbyActuales)
+                    writer.WriteValueSafe(nombre);
+
+                nm.CustomMessagingManager.SendNamedMessageToAll(MsgLista, writer);
+            }
+        }
+    }
+
+
+    // Cliente: recibe la lista completa del host
+    private void AlRecibirListaLobby(ulong remitente, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out int cantidad);
+
+        nombresLobbyActuales.Clear();
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            reader.ReadValueSafe(out string nombre);
+            nombresLobbyActuales.Add(nombre);
+        }
+
+        MostrarRanurasJugadores(cantidad);
+    } //ultimo metodo nuevo
 
     public void SalirDelLobby()
     {
@@ -1775,6 +1993,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // Si el que sale es el host, la sala se cierra para todos.
     private void CerrarConexion()
     {
+        nombresLobby.Clear();
+        nombresLobbyActuales.Clear();
+        mensajesRegistrados = false;
         DesuscribirDeRed();
 
         NetworkManager networkManager = NetworkManager.Singleton;
@@ -1858,7 +2079,16 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // ============================================================
     // OPCIONES
     // ============================================================
+    public static class DatosJugador
+    {
+        public static int PersonajeSeleccionado = 0;
+    }
+  
 
+    public class CharacterSelectorUI : MonoBehaviour
+    {
+        public void SelectCharacter(int index) => PlayerModelChoice.SelectedIndex = index;
+    }
     public void AbrirOpciones()
     {
         OcultarTodosLosPaneles();

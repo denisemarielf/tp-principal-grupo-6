@@ -4,7 +4,7 @@ using Unity.Netcode;
 
 [RequireComponent(typeof(AmmoManager))]
 [RequireComponent(typeof(WeaponLogic))]
-public class ShootLogic : NetworkBehaviour
+public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
 {
     public float shootRate = 0.5f;
     public bool isAutomatic = true; // false = semiautomática (un disparo por apretón)
@@ -14,6 +14,8 @@ public class ShootLogic : NetworkBehaviour
     private bool isEquipped = false;
     private AmmoManager ammoManager;
     private WeaponLogic weaponLogic;
+    public override Sprite HudIcon => hudIcon;       // antes: public Sprite HudIcon => hudIcon;
+    public override bool UsesAmmo => true;
 
     private void Awake()
     {
@@ -24,12 +26,7 @@ public class ShootLogic : NetworkBehaviour
     /// <summary>Llamado por WeaponSwitcher cada vez que cambia el arma equipada,
     /// para que esta arma solo reaccione al input cuando es la activa (el
     /// GameObject sigue vivo y corriendo aunque no esté equipada).</summary>
-    public void SetEquipped(bool equipped)
-    {
-
-        isEquipped = equipped;
-       
-    }
+    public override void SetEquipped(bool equipped) { isEquipped = equipped; }
 
     private void Update()
     {
@@ -46,7 +43,7 @@ public class ShootLogic : NetworkBehaviour
         }
     }
 
-    public void OnShoot(InputAction.CallbackContext context)
+    public override void OnShoot(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
 
@@ -78,7 +75,7 @@ public class ShootLogic : NetworkBehaviour
         weaponLogic.RequestFire();
     }
 
-    public void OnReload(InputAction.CallbackContext context)
+    public override void OnReload(InputAction.CallbackContext context)
     {
         if (!IsOwner) return;
         if (context.performed) ammoManager.TryReload();
@@ -87,6 +84,9 @@ public class ShootLogic : NetworkBehaviour
     // Pasamanos hacia AmmoManager / WeaponLogic para no romper el API que ya usan
     // otros scripts (WeaponSwitcher, WeaponPowerUps, AmmoUI, etc.)
     public void AddReserveAmmo(int amount) => ammoManager.AddReserveAmmo(amount);
+
+   
+
     public int CurrentAmmo => ammoManager.CurrentAmmo;
     public int ReserveAmmo => ammoManager.ReserveAmmo;
     public int MagazineSize => ammoManager.MagazineSize; //nueva
@@ -95,7 +95,7 @@ public class ShootLogic : NetworkBehaviour
     [Header("Icono del HUD")]
     [SerializeField] private Sprite hudIcon;
 
-    public Sprite HudIcon => hudIcon;
+    
     public int DamageAmount
     {
         get => weaponLogic.damageAmount;
