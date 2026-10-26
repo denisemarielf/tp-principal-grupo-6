@@ -10,8 +10,8 @@ public class SurvivalWaveDirector : NetworkBehaviour
     [SerializeField] private float interval = 25f;
     [SerializeField] private int startCount = 4;
     [SerializeField] private int increment = 2;
-    [SerializeField] private float minRadius = 18f;
-    [SerializeField] private float maxRadius = 28f;
+    [SerializeField] private float minRadius = 40f;
+    [SerializeField] private float maxRadius = 52f;
 
     private readonly NetworkVariable<int> waveNumber = new NetworkVariable<int>(
         0,
