@@ -23,7 +23,7 @@ public class SurvivalModeController : NetworkBehaviour
     [SerializeField] private float matchDuration = 300f;
     [SerializeField] private int civilianCount = 4;
     [SerializeField] private int pointsPerCivilian = 100;
-    [SerializeField] private float civilianRingRadius = 2.5f;
+    [SerializeField] private float civilianRingRadius = 6f;
     [SerializeField] private GameObject civilianPrefab;
 
     private readonly NetworkVariable<float> timeRemaining = new NetworkVariable<float>(
@@ -150,16 +150,16 @@ public class SurvivalModeController : NetworkBehaviour
         }
 
         int count = Mathf.Max(1, civilianCount);
+        var used = new System.Collections.Generic.List<Vector3>(count);
         for (int i = 0; i < count; i++)
         {
-            float angle = (Mathf.PI * 2f * i) / count;
-            Vector3 desired = transform.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * civilianRingRadius;
-            if (!TryNavPoint(desired, out Vector3 point) && !TryNavPoint(transform.position, out point))
+            if (!TryCivilianPoint(i, count, used, out Vector3 point))
             {
                 Debug.LogWarning("SurvivalModeController: no pude apoyar un civil en el NavMesh.");
                 continue;
             }
 
+            used.Add(point);
             GameObject civilian = Instantiate(civilianPrefab, point, Quaternion.identity);
             civilian.transform.localScale = Vector3.one * 2f;
             RescuableNpc npc = civilian.GetComponent<RescuableNpc>();
@@ -187,15 +187,36 @@ public class SurvivalModeController : NetworkBehaviour
             Debug.Log($"SurvivalModeController: refugio con {spawnedCivilians} civiles.");
     }
 
-    private static bool TryNavPoint(Vector3 desired, out Vector3 point)
+    // Busca un punto del anillo que no caiga encima de otro civil. El sample corto evita que todos terminen en el mismo sitio del NavMesh.
+    private bool TryCivilianPoint(int index, int count, System.Collections.Generic.List<Vector3> used, out Vector3 point)
     {
-        if (NavMesh.SamplePosition(desired, out NavMeshHit hit, 8f, NavMesh.AllAreas))
+        const float minSeparation = 3.2f;
+        for (int ring = 0; ring < 8; ring++)
         {
+            float radius = civilianRingRadius + ring * 2.2f;
+            float angle = (Mathf.PI * 2f * index) / count + ring * 0.35f;
+            Vector3 desired = transform.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+            if (!NavMesh.SamplePosition(desired, out NavMeshHit hit, 2.5f, NavMesh.AllAreas))
+                continue;
+
             point = hit.position;
-            return true;
+            bool crowded = false;
+            foreach (Vector3 other in used)
+            {
+                Vector3 flat = point - other;
+                flat.y = 0f;
+                if (flat.sqrMagnitude < minSeparation * minSeparation)
+                {
+                    crowded = true;
+                    break;
+                }
+            }
+
+            if (!crowded)
+                return true;
         }
 
-        point = desired;
+        point = transform.position;
         return false;
     }
 

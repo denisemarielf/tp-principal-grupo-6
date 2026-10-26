@@ -147,13 +147,13 @@ public class GameOverUI : MonoBehaviour
 
         hudText = CreateChild<TextMeshProUGUI>("Tiempo", survivalHud.transform);
         hudText.fontSize = 36f;
-        hudText.alignment = TextAlignmentOptions.Center;
+        hudText.alignment = TextAlignmentOptions.TopRight;
         hudText.color = Color.white;
         RectTransform rect = hudText.rectTransform;
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2(0f, -24f);
-        rect.sizeDelta = new Vector2(900f, 220f);
+        rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(-36f, -28f);
+        rect.sizeDelta = new Vector2(520f, 220f);
     }
 
     private void UpdateSurvivalHud(SurvivalModeController mode)
