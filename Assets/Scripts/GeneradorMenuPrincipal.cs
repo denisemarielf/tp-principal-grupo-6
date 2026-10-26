@@ -48,6 +48,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     public AudioClip sfxHover;
     public AudioClip sfxClick;
 
+    private int personajeSeleccionado = 0;
+    private TMP_Text txtBtnPersonajeC;
+    private TMP_Text txtBtnPersonajeU;
 
     // ============================================================
     // PANELES
@@ -59,6 +62,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private GameObject panelCrearSala;
     private GameObject panelUnirseSala;
     private GameObject panelLobby;
+    private GameObject panelLogros;
 
 
     // ============================================================
@@ -380,6 +384,13 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         CrearBotonZombieTMP(
             contBotonesP.transform,
+            "LOGROS",
+            AbrirLogros,
+            new Color(0.2f, 0.22f, 0.25f)
+        );
+
+        CrearBotonZombieTMP(
+            contBotonesP.transform,
             "OPCIONES",
             AbrirOpciones,
             new Color(0.2f, 0.22f, 0.25f)
@@ -441,6 +452,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         // ========================================================
         // 7. CREAR SALA
         // ========================================================
+        
 
         panelCrearSala =
             CrearPanelContenedor(
@@ -500,6 +512,29 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                     ActualizarObjetivoMapa();
                 }
             );
+        // PERSONAJE
+
+        txtBtnPersonajeC =
+             CrearBotonOpcionCiclicaTMP(
+                 contCrear.transform,
+                 "PERSONAJE: MASCARA GAS",
+               () =>
+               {
+                   personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                   PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
+
+                   string[] personajes =
+                   {
+        "PERSONAJE: MASCARA GAS",
+        "PERSONAJE: SWAT",
+        "PERSONAJE: SOLDADO",
+        "PERSONAJE: TRABAJADOR"
+     };
+
+                   txtBtnPersonajeC.text = personajes[personajeSeleccionado];
+               }
+             );
+
 
         // Objetivo del mapa seleccionado
         txtObjetivoMapa = CrearTextoObjetivoMapa(
@@ -548,6 +583,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         );
 
 
+
         // ========================================================
         // 8. UNIRSE A SALA
         // ========================================================
@@ -583,6 +619,28 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 contUnirse.transform,
                 "TU NOMBRE",
                 "Sobreviviente"
+            );
+        // PERSONAJE
+
+        txtBtnPersonajeU =
+            CrearBotonOpcionCiclicaTMP(
+                contUnirse.transform,
+                "PERSONAJE: MASCARA GAS",
+              () =>
+              {
+                  personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                  PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
+
+                  string[] personajes =
+                  {
+        "PERSONAJE: MASCARA GAS",
+        "PERSONAJE: SWAT",
+        "PERSONAJE: SOLDADO",
+        "PERSONAJE: TRABAJADOR"
+    };
+
+                  txtBtnPersonajeU.text = personajes[personajeSeleccionado];
+              }
             );
 
         inputCodigoSala =
@@ -897,6 +955,49 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             contOpciones.transform,
             "VOLVER AL MENU",
             CerrarOpciones,
+            new Color(0.2f, 0.22f, 0.25f)
+        );
+
+
+        // ========================================================
+        // 11. LOGROS
+        // ========================================================
+
+        panelLogros =
+            CrearPanelContenedor(
+                canvasObj,
+                "Panel_Logros"
+            );
+
+        CrearTitulo(
+            panelLogros.transform,
+            "LOGROS",
+            "— OBJETIVOS ADICIONALES —"
+        );
+
+        GameObject marcoLogros =
+            CrearMarcoContenedor(
+                panelLogros.transform,
+                new Vector2(0, -45),
+                new Vector2(980, 470)
+            );
+
+        marcoLogros.AddComponent<AchievementListUI>().Build(
+            ObtenerFuenteRetro(),
+            escalaFuenteRetro
+        );
+
+        GameObject contVolverLogros =
+            CrearContenedorVertical(
+                panelLogros.transform,
+                new Vector2(0, -360),
+                new Vector2(500, 70)
+            );
+
+        CrearBotonZombieTMP(
+            contVolverLogros.transform,
+            "VOLVER AL MENU",
+            CerrarLogros,
             new Color(0.2f, 0.22f, 0.25f)
         );
 
@@ -1380,6 +1481,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         if (panelLobby)
             panelLobby.SetActive(false);
+
+        if (panelLogros)
+            panelLogros.SetActive(false);
     }
 
 
@@ -1392,7 +1496,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         LimpiarSeleccionUI();
     }
 
-
+   
     public void AbrirSeleccionRed()
     {
         OcultarTodosLosPaneles();
@@ -1457,7 +1561,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             return;
         int intento =
             PrepararLobbyRed("CREANDO SALA...");
-
+        Debug.Log("Personaje seleccionado: " + personajeSeleccionado);
         try
         {
             await GameSessionManager.PrepareHostAsync();
@@ -1650,8 +1754,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         string[] nombresMapas =
         {
             "Suburbio Zombie",
-            "Centro Urbano",
-            "Bosque Oscuro"
+            "Complejo de Oficinas",
+            "Zona de Extraccion"
         };
 
         string[] nombresDifs =
@@ -1975,12 +2079,41 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // ============================================================
     // OPCIONES
     // ============================================================
+    public static class DatosJugador
+    {
+        public static int PersonajeSeleccionado = 0;
+    }
+  
 
+    public class CharacterSelectorUI : MonoBehaviour
+    {
+        public void SelectCharacter(int index) => PlayerModelChoice.SelectedIndex = index;
+    }
     public void AbrirOpciones()
     {
         OcultarTodosLosPaneles();
 
         panelOpciones.SetActive(true);
+
+        LimpiarSeleccionUI();
+    }
+
+
+    public void AbrirLogros()
+    {
+        OcultarTodosLosPaneles();
+
+        panelLogros.SetActive(true);
+
+        LimpiarSeleccionUI();
+    }
+
+
+    public void CerrarLogros()
+    {
+        OcultarTodosLosPaneles();
+
+        panelPrincipal.SetActive(true);
 
         LimpiarSeleccionUI();
     }

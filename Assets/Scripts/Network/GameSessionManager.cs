@@ -61,6 +61,7 @@ public static class GameSessionManager
     public static void ReturnToMainMenu()
     {
         gameStarted = false;
+        PlayerCarryOver.Clear();
 
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager != null)
@@ -130,8 +131,15 @@ public static class GameSessionManager
             {
                 character.PlaceAtSpawn(spawnPosition, spawnRotation, playerIndex);
             }
+
+            if (PlayerCarryOver.HasServerPending)
+                PlayerCarryOver.ApplyServerState(player, clientId);
+
             playerIndex++;
         }
+
+        if (PlayerCarryOver.HasServerPending)
+            PlayerCarryOver.MarkServerApplied();
     }
 
     // Si se acaba de salir de una sala, el NetworkManager no puede volver a arrancar hasta terminar de apagarse.

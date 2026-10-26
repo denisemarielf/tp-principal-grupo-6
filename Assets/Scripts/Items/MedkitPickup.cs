@@ -25,6 +25,7 @@ public class MedkitPickup : NetworkPickup
     public override void OnNetworkSpawn()
     {
         active.Add(this);
+        PickupGroundSnap.SnapToGround(transform);
         if (usePrompt != null)
             usePrompt.SetActive(false);
     }

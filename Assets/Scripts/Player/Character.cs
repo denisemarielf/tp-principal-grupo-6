@@ -25,6 +25,8 @@ public class Character : NetworkBehaviour
 
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
+    private PlayerInventory inventory;
+    
 
     [Header("Nombre del jugador")] //nuevo
     [SerializeField] private TextMeshPro playerNameText;
@@ -32,12 +34,15 @@ public class Character : NetworkBehaviour
     // Último nombre recibido (el servidor lo usa para responder a los demás)
     private string nombreJugador = ""; //nuevo
 
+    // Nombre con el que se identifica al jugador (ej. en el guardado de partida, US 3.6).
+    public string PlayerName => string.IsNullOrEmpty(nombreJugador) ? "Jugador " + (OwnerClientId + 1) : nombreJugador;
+
 
     private void Awake()
     {
         movement = GetComponent<PMovement>();
         health = GetComponent<PlayerHealth>();
-
+        inventory = GetComponent<PlayerInventory>();
         weaponSwitcher = GetComponentInChildren<WeaponSwitcher>();
     }
 
@@ -67,6 +72,7 @@ public class Character : NetworkBehaviour
 
             DisableSceneCameras();
             StartCoroutine(MoveToSpawnPoint());
+            StartCoroutine(ApplyCarryOverWhenReady());
         }
         else if (!IsServer)
         {
@@ -156,7 +162,34 @@ public class Character : NetworkBehaviour
             movement.TryJump();
         }
     }
+   
+    public void OnUseItem(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
 
+        inventory.RequestUseSlotServerRpc(inventory.SelectedSlot);
+    }
+
+    public void OnInventoryNext(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+        inventory.CycleSelection(1);
+    }
+
+    public void OnInventoryPrev(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+        inventory.CycleSelection(-1);
+    }
+    public void OnDropItem(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+
+        // El servidor valida el slot; si está vacío suena el sonido de error.
+        inventory.RequestDropSlotServerRpc(inventory.SelectedSlot);
+    }
+
+  
     private bool IsDead()
     {
         return health != null && health.IsDead;
@@ -171,9 +204,9 @@ public class Character : NetworkBehaviour
     {
         if (!IsOwner || IsDead() || !context.performed) return;
 
-        MedkitPickup medkit = MedkitPickup.FindNearest(transform.position);
-        float medkitDist = medkit != null
-            ? Vector3.Distance(transform.position, medkit.transform.position)
+        ItemPickup item = ItemPickup.FindNearest(transform.position);
+        float itemDist = item != null
+            ? Vector3.Distance(transform.position, item.transform.position)
             : float.MaxValue;
 
         Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, pickupLayer);
@@ -198,15 +231,13 @@ public class Character : NetworkBehaviour
             ? Vector3.Distance(transform.position, npc.transform.position)
             : float.MaxValue;
 
-        if (npc != null && npcDist <= medkitDist && npcDist <= nearestWeaponDist)
+        if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
         {
-            Debug.Log($"E apretada. npc={(npc != null ? npc.name : "null")}, medkit={(medkit != null)}, weapon={(nearestWeapon != null)}");
             npc.RequestRescue();
         }
-
-        else if (medkit != null && medkitDist <= nearestWeaponDist)
+        else if (item != null && itemDist <= nearestWeaponDist)
         {
-            medkit.RequestUse();
+            inventory?.RequestPickupItemServerRpc(item.NetworkObjectId);
         }
         else if (nearestWeapon != null)
         {
@@ -304,6 +335,22 @@ public class Character : NetworkBehaviour
         if (placedByServer) yield break;
 
         TeleportTo(transform.position + Vector3.right * spawnSpacing * OwnerClientId, transform.rotation);
+    }
+
+    // Espera a que el loadout de red se reconstruya tras ApplyServerState (US 4.10).
+    private IEnumerator ApplyCarryOverWhenReady()
+    {
+        if (!PlayerCarryOver.HasLocalOwnerPending)
+            yield break;
+
+        float timeout = Time.realtimeSinceStartup + 3f;
+        while (!PlayerCarryOver.IsLocalLoadoutReady(gameObject)
+               && Time.realtimeSinceStartup < timeout)
+            yield return null;
+
+        // Un frame extra para que RebuildSlot termine tras el cambio de NetworkVariable.
+        yield return null;
+        PlayerCarryOver.TryApplyLocalOwner(gameObject);
     }
 
     private IEnumerator TeleportNextFrame(Vector3 position, Quaternion rotation)

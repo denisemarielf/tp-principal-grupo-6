@@ -438,6 +438,7 @@ public class RescuableNpc : NetworkBehaviour
         StopAgent();
         agent.enabled = false;
         Debug.Log($"RescuableNpc: {name} llego a la zona segura.");
+        AchievementService.NotifyCivilianRescued(leaderId.Value);
     }
 
     // ---------- Vida (solo host) ----------

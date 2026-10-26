@@ -1,5 +1,6 @@
-using UnityEngine;
+using System.Globalization;
 using Unity.Netcode;
+using UnityEngine;
 
 public class WeaponPickup : NetworkBehaviour
 {
@@ -14,13 +15,20 @@ public class WeaponPickup : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+
         if (rb == null)
             return;
 
-        // Las armas de la escena se quedan donde están. Si caen, atraviesan la calle.
+        // Las armas de la escena se quedan donde estan. Si caen, atraviesan la calle.
         bool placedInScene = NetworkObject != null && NetworkObject.InScenePlaced;
         rb.useGravity = !placedInScene && IsOwner;
         rb.isKinematic = placedInScene || !IsOwner;
+    }
+    public override void OnNetworkDespawn()
+    {
+        // Se ejecuta en servidor y clientes
+        if (NetworkObject.InScenePlaced)
+            gameObject.SetActive(false);
     }
 
     public void Consume()
@@ -46,4 +54,5 @@ public class WeaponPickup : NetworkBehaviour
             Destroy(gameObject);
         }
     }
+
 }
