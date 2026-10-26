@@ -30,7 +30,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     [TextArea(2, 5)]
     public string objetivoMapa3 =
-        "Adéntrate en el bosque, localiza el punto de extracción y sobrevive a los infectados que bloquean el camino.";
+        "Estacion de tren. Modo Supervivencia: defende el refugio frente a oleadas. La victoria es sobrevivir el tiempo con al menos un civil vivo.";
 
     [Header("Ambientación y Arte")]
     public Sprite imagenFondoCustom;
@@ -503,7 +503,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                     {
                         "MAPA: SUBURBIO",
                         "MAPA: COMPLEJO DE OFICINAS",
-                        "MAPA: ZONA DE EXTRACCION"
+                        "MAPA: ESTACION DE TREN"
                     };
 
                     txtBtnMapa.text =
@@ -1344,7 +1344,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         {
             "SUBURBIO",
             "COMPLEJO DE OFICINAS",
-            "ZONA DE EXTRACCIÓN"
+            "ESTACION DE TREN"
         };
 
         string[] objetivos =
@@ -1755,7 +1755,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         {
             "Suburbio Zombie",
             "Complejo de Oficinas",
-            "Zona de Extraccion"
+            "Estacion de tren"
         };
 
         string[] nombresDifs =
