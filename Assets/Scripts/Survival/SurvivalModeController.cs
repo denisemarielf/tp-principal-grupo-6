@@ -161,6 +161,7 @@ public class SurvivalModeController : NetworkBehaviour
             }
 
             GameObject civilian = Instantiate(civilianPrefab, point, Quaternion.identity);
+            civilian.transform.localScale = Vector3.one * 2f;
             RescuableNpc npc = civilian.GetComponent<RescuableNpc>();
             if (npc != null)
                 npc.ConfigureAsShelter();

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -12,14 +13,32 @@ public class SurvivalWaveDirector : NetworkBehaviour
     [SerializeField] private float minRadius = 18f;
     [SerializeField] private float maxRadius = 28f;
 
+    private readonly NetworkVariable<int> waveNumber = new NetworkVariable<int>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private readonly NetworkVariable<int> zombiesRemaining = new NetworkVariable<int>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private readonly List<EnemyHealth> currentWave = new List<EnemyHealth>();
     private float timer;
     private int waveIndex;
     private bool armed;
+
+    public int WaveNumber => waveNumber.Value;
+    public int ZombiesRemaining => zombiesRemaining.Value;
 
     private void Update()
     {
         if (!IsServer || !IsSpawned)
             return;
+
+        RefreshRemaining();
 
         SurvivalModeController mode = SurvivalModeController.Current;
         if (mode == null || mode.IsFinished || !mode.CiviliansReady)
@@ -39,10 +58,32 @@ public class SurvivalWaveDirector : NetworkBehaviour
         SpawnWave();
     }
 
+    private void RefreshRemaining()
+    {
+        int alive = 0;
+        for (int i = currentWave.Count - 1; i >= 0; i--)
+        {
+            EnemyHealth enemy = currentWave[i];
+            if (enemy == null)
+            {
+                currentWave.RemoveAt(i);
+                continue;
+            }
+
+            if (!enemy.IsDead())
+                alive++;
+        }
+
+        if (zombiesRemaining.Value != alive)
+            zombiesRemaining.Value = alive;
+    }
+
     private void SpawnWave()
     {
+        currentWave.Clear();
         int count = startCount + waveIndex * increment;
         waveIndex++;
+        waveNumber.Value = waveIndex;
         Vector3 center = transform.position;
 
         for (int i = 0; i < count; i++)
@@ -51,9 +92,12 @@ public class SurvivalWaveDirector : NetworkBehaviour
             float radius = Random.Range(minRadius, maxRadius);
             Vector3 desired = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
             EnemyVariant variant = (EnemyVariant)Random.Range(0, 3);
-            EnemySceneSetup.SpawnNetworkEnemy(enemyPrefab, desired, variant);
+            EnemyHealth spawned = EnemySceneSetup.SpawnNetworkEnemy(enemyPrefab, desired, variant);
+            if (spawned != null)
+                currentWave.Add(spawned);
         }
 
-        Debug.Log($"SurvivalWaveDirector: oleada {waveIndex} con {count} enemigos.");
+        zombiesRemaining.Value = currentWave.Count;
+        Debug.Log($"SurvivalWaveDirector: oleada {waveIndex} con {currentWave.Count} enemigos.");
     }
 }

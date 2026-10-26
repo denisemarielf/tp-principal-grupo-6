@@ -153,7 +153,7 @@ public class GameOverUI : MonoBehaviour
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
         rect.pivot = new Vector2(0.5f, 1f);
         rect.anchoredPosition = new Vector2(0f, -24f);
-        rect.sizeDelta = new Vector2(900f, 120f);
+        rect.sizeDelta = new Vector2(900f, 220f);
     }
 
     private void UpdateSurvivalHud(SurvivalModeController mode)
@@ -164,7 +164,11 @@ public class GameOverUI : MonoBehaviour
         int total = Mathf.CeilToInt(Mathf.Max(0f, mode.TimeRemaining));
         int minutes = total / 60;
         int seconds = total % 60;
-        hudText.text = $"SUPERVIVENCIA  {minutes:00}:{seconds:00}\nCiviles vivos: {mode.AliveCivilians}";
+        SurvivalWaveDirector waves = mode.GetComponent<SurvivalWaveDirector>();
+        int round = waves != null ? waves.WaveNumber : 0;
+        int zombies = waves != null ? waves.ZombiesRemaining : 0;
+        string roundLabel = round > 0 ? round.ToString() : "-";
+        hudText.text = $"SUPERVIVENCIA  {minutes:00}:{seconds:00}\nCiviles vivos: {mode.AliveCivilians}\nRonda {roundLabel}\nZombies: {zombies}";
     }
 
     private void Show(string title, string subtitle, Color titleColor)
