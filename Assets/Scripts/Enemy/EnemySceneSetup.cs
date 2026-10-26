@@ -6,6 +6,8 @@ using UnityEngine.AI;
 
 public class EnemySceneSetup : MonoBehaviour
 {
+    // Lo dispara el server cuando el NavMesh de la escena ya está horneado.
+    public static event System.Action NavMeshReady;
     const int NotWalkableArea = 1;
 
     [SerializeField] private GameObject enemyPrefab;
@@ -70,6 +72,14 @@ public class EnemySceneSetup : MonoBehaviour
             yield break;
 
         yield return BuildNavMesh();
+        NavMeshReady?.Invoke();
+
+        // Supervivencia usa oleadas propias. El horneado igual hace falta para zombies y civiles.
+        if (FindAnyObjectByType<SurvivalMatchBootstrap>() != null)
+        {
+            Debug.Log("EnemySceneSetup: modo Supervivencia, no se planifican enemigos de mapa abierto.");
+            yield break;
+        }
 
         if (!useSceneColliders)
         {
@@ -226,6 +236,40 @@ public class EnemySceneSetup : MonoBehaviour
         {
             position += Vector3.up * FeetLift(enemyPrefab);
         }
+
+        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        EnemyHealth health = enemy.GetComponent<EnemyHealth>();
+        if (health != null)
+            health.Configure(variant);
+
+        EnemyAppearance appearance = enemy.GetComponent<EnemyAppearance>();
+        if (appearance != null)
+            appearance.Configure(variant);
+
+        Ai ai = enemy.GetComponent<Ai>();
+        if (ai != null)
+            ai.Configure(variant);
+
+        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
+        if (netObj != null)
+            netObj.Spawn(true);
+
+        return health;
+    }
+
+    // Spawn de un enemigo en red, sobre el NavMesh. Lo usan las oleadas de Supervivencia.
+    public static EnemyHealth SpawnNetworkEnemy(GameObject enemyPrefab, Vector3 position, EnemyVariant variant)
+    {
+        if (enemyPrefab == null)
+        {
+            Debug.LogError("EnemySceneSetup: falta el prefab del enemigo.");
+            return null;
+        }
+
+        if (NavMesh.SamplePosition(position, out NavMeshHit hit, 8f, NavMesh.AllAreas))
+            position = hit.position + Vector3.up * FeetLift(enemyPrefab);
+        else
+            position += Vector3.up * FeetLift(enemyPrefab);
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         EnemyHealth health = enemy.GetComponent<EnemyHealth>();

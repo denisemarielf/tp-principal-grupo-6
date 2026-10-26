@@ -88,6 +88,15 @@ public class RescuableNpc : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    // Civil del refugio de Supervivencia: quieto, sin rescate, igual lo atacan los zombies.
+    private NetworkVariable<bool> shelter = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private bool pendingShelter;
+
     private NavMeshAgent agent;
     private bool hasSpeedParameter;
     private Vector3 lastPosition;
@@ -101,8 +110,16 @@ public class RescuableNpc : NetworkBehaviour
 
     public NpcState State => state.Value;
     public bool IsDead => isDead.Value;
+    public bool IsShelter => shelter.Value;
     public float CurrentHealth => currentHealth.Value;
     public float MaxHealth => maxHealth;
+
+    // Llamar en el server antes de Spawn para que el valor viaje con el objeto.
+    public void ConfigureAsShelter()
+    {
+        pendingShelter = true;
+        shelter.Value = true;
+    }
 
     // Los enemigos solo atacan a NPCs vivos que todavia no llegaron a la zona segura.
     public bool IsTargetable => IsSpawned && !isDead.Value && state.Value != NpcState.Safe;
@@ -131,6 +148,9 @@ public class RescuableNpc : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        if (IsServer && pendingShelter)
+            shelter.Value = true;
+
         All.Add(this);
         lastPosition = transform.position;
         homePosition = transform.position;
@@ -181,7 +201,7 @@ public class RescuableNpc : NetworkBehaviour
             agent.Warp(placed.position);
 
         if (agent.isOnNavMesh)
-            agent.isStopped = state.Value != NpcState.Following;
+            agent.isStopped = shelter.Value || state.Value != NpcState.Following;
     }
 
     private void Update()
@@ -190,6 +210,12 @@ public class RescuableNpc : NetworkBehaviour
         UpdatePrompt();
 
         if (!IsServer || !IsSpawned || isDead.Value) return;
+
+        if (shelter.Value)
+        {
+            StopAgent();
+            return;
+        }
 
         if (state.Value == NpcState.Safe) return;
 
@@ -386,7 +412,7 @@ public class RescuableNpc : NetworkBehaviour
 
         foreach (RescuableNpc npc in All)
         {
-            if (npc == null || npc.isDead.Value || npc.state.Value != NpcState.Waiting) continue;
+            if (npc == null || npc.isDead.Value || npc.shelter.Value || npc.state.Value != NpcState.Waiting) continue;
 
             float distance = Vector3.Distance(position, npc.transform.position);
             if (distance <= npc.rescueRadius && distance < nearestDistance)
@@ -402,7 +428,7 @@ public class RescuableNpc : NetworkBehaviour
     public void RequestRescue()
     {
         Debug.Log($"RequestRescue: spawned={IsSpawned}, dead={isDead.Value}, state={state.Value}");
-        if (!IsSpawned || isDead.Value || state.Value != NpcState.Waiting) return;
+        if (!IsSpawned || isDead.Value || shelter.Value || state.Value != NpcState.Waiting) return;
         RequestRescueRpc();
     }
 
@@ -410,7 +436,7 @@ public class RescuableNpc : NetworkBehaviour
     private void RequestRescueRpc(RpcParams rpcParams = default)
     {
         ulong senderId = rpcParams.Receive.SenderClientId;
-        if (isDead.Value || state.Value != NpcState.Waiting) return;
+        if (isDead.Value || shelter.Value || state.Value != NpcState.Waiting) return;
 
         if (!NetworkManager.ConnectedClients.TryGetValue(senderId, out NetworkClient client) || !IsAlivePlayer(client))
             return;
@@ -492,6 +518,12 @@ public class RescuableNpc : NetworkBehaviour
     private void UpdatePrompt()
     {
         if (usePrompt == null || !IsSpawned) return;
+
+        if (shelter.Value)
+        {
+            usePrompt.SetActive(false);
+            return;
+        }
 
         bool show = LocalPlayerCanRescue();
         usePrompt.SetActive(show);
