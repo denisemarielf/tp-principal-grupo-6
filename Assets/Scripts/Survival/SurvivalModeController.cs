@@ -20,14 +20,14 @@ public class SurvivalModeController : NetworkBehaviour
     public static SurvivalModeController Current { get; private set; }
     public static event Action<SurvivalMatchOutcome> MatchEnded;
 
-    [SerializeField] private float matchDuration = 300f;
+    [SerializeField] private float matchDuration = 180f;
     [SerializeField] private int civilianCount = 4;
     [SerializeField] private int pointsPerCivilian = 100;
     [SerializeField] private float civilianRingRadius = 6f;
     [SerializeField] private GameObject civilianPrefab;
 
     private readonly NetworkVariable<float> timeRemaining = new NetworkVariable<float>(
-        300f,
+        180f,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
