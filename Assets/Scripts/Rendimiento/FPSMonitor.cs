@@ -1,5 +1,6 @@
 
 
+
 using System;
 using System.Globalization;
 using System.IO;
@@ -14,9 +15,6 @@ public class FPSMonitor : MonoBehaviour
 
     private const float IntervalSeconds = 1f;
     private const float FrameLimitMs = 1000f / 30f;
-
-    // Las pausas superiores a este valor no entran
-    // en los promedios normales de rendimiento.
     private const float LongPauseSeconds = 0.5f;
 
     private float intervalElapsed;
@@ -42,7 +40,11 @@ public class FPSMonitor : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
 
-        sessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        sessionId = DateTime.Now.ToString(
+            "MM_dd_HH_mm",
+            CultureInfo.InvariantCulture
+        );
+
         intervalScene = SceneManager.GetActiveScene().name;
 
         OpenLog();
@@ -52,13 +54,23 @@ public class FPSMonitor : MonoBehaviour
     {
         try
         {
-            string fileName =
-                $"FPS_{sessionId}_{Guid.NewGuid().ToString("N").Substring(0, 6)}.csv";
-
+            string baseName = $"FPS_{sessionId}";
             string path = Path.Combine(
                 Application.persistentDataPath,
-                fileName
+                baseName + ".csv"
             );
+
+            int suffix = 1;
+
+            while (File.Exists(path))
+            {
+                path = Path.Combine(
+                    Application.persistentDataPath,
+                    $"{baseName}_{suffix}.csv"
+                );
+
+                suffix++;
+            }
 
             writer = new StreamWriter(path, false);
 
@@ -89,21 +101,34 @@ public class FPSMonitor : MonoBehaviour
             return;
 
         sessionTime += frameTime;
-        intervalElapsed += frameTime;
 
         string activeScene = SceneManager.GetActiveScene().name;
 
-        // Evita mezclar mediciones de dos escenas en una misma fila.
+        // Cerrar el intervalo anterior antes de registrar
+        // datos correspondientes a la nueva escena.
         if (activeScene != intervalScene)
         {
             WriteInterval();
             intervalScene = activeScene;
+
+            // Excluir el frame de transición del cálculo normal.
+            excludedTime += frameTime;
+
+            if (frameTime > LongPauseSeconds)
+                longPauses++;
+
+            intervalElapsed += frameTime;
+
+            if (intervalElapsed >= IntervalSeconds)
+                WriteInterval();
+
+            return;
         }
+
+        intervalElapsed += frameTime;
 
         if (frameTime > LongPauseSeconds)
         {
-            // Registramos la pausa, pero no la usamos
-            // para calcular los FPS habituales.
             longPauses++;
             excludedTime += frameTime;
         }
@@ -123,9 +148,13 @@ public class FPSMonitor : MonoBehaviour
     private void WriteInterval()
     {
         if (writer == null)
+        {
+            ResetInterval();
             return;
+        }
 
-        if (framesMeasured == 0 && longPauses == 0)
+        if (framesMeasured == 0 && longPauses == 0
+            && excludedTime == 0f)
         {
             ResetInterval();
             return;
@@ -140,7 +169,10 @@ public class FPSMonitor : MonoBehaviour
             : 0f;
 
         string row = string.Join(",",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            DateTime.Now.ToString(
+                "yyyy-MM-dd HH:mm:ss",
+                CultureInfo.InvariantCulture
+            ),
             sessionTime.ToString("F2", CultureInfo.InvariantCulture),
             intervalScene,
             fps.ToString("F2", CultureInfo.InvariantCulture),
@@ -149,7 +181,8 @@ public class FPSMonitor : MonoBehaviour
             framesMeasured,
             longPauses,
             (excludedTime * 1000f).ToString(
-                "F2", CultureInfo.InvariantCulture)
+                "F2", CultureInfo.InvariantCulture
+            )
         );
 
         try
