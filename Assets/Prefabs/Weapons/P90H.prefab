@@ -20459,7 +20459,7 @@ MonoBehaviour:
   spawnPoint: {fileID: 5586554936153479538}
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 1500
-  damageAmount: 10
+  damageAmount: 25
   hitscanRange: 100
   hitscanLayers:
     serializedVersion: 2
@@ -20525,7 +20525,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.729
   m_Pitch: 1
   Loop: 0
   Mute: 0

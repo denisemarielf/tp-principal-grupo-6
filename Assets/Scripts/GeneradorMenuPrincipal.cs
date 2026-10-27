@@ -877,36 +877,32 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         // ========================================================
         // 10. OPCIONES
         // ========================================================
+        InicializarOpcionesVideo();
 
         panelOpciones =
             CrearPanelContenedor(
                 canvasObj,
                 "Panel_Opciones"
             );
-
         CrearTitulo(
             panelOpciones.transform,
             "CONFIGURACIÓN",
             "— AJUSTES DEL JUEGO —"
         );
-
         GameObject marcoOpciones =
             CrearMarcoContenedor(
                 panelOpciones.transform,
                 new Vector2(0, -30),
-                new Vector2(550, 360)
+                new Vector2(550, 520)   // más alto para que entren las opciones nuevas
             );
-
         GameObject contOpciones =
             CrearContenedorVertical(
                 marcoOpciones.transform,
                 Vector2.zero,
-                new Vector2(500, 320)
+                new Vector2(500, 480)
             );
 
-
         // VOLUMEN
-
         CrearControlSlider(
             contOpciones.transform,
             "VOLUMEN GENERAL",
@@ -917,14 +913,11 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             }
         );
 
-
         // PANTALLA
-
         string txtPantalla =
             Screen.fullScreen
             ? "PANTALLA: COMPLETA"
             : "PANTALLA: VENTANA";
-
         CrearBotonOpcionTMP(
             contOpciones.transform,
             txtPantalla,
@@ -932,15 +925,12 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             {
                 bool nuevoEstado =
                     !Screen.fullScreen;
-
                 Screen.fullScreenMode =
                     nuevoEstado
                     ? FullScreenMode.ExclusiveFullScreen
                     : FullScreenMode.Windowed;
-
                 Screen.fullScreen =
                     nuevoEstado;
-
                 btnText.text =
                     nuevoEstado
                     ? "PANTALLA: COMPLETA"
@@ -948,9 +938,35 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             }
         );
 
+        // RESOLUCIÓN
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoResolucion(),
+            CambiarResolucion
+        );
+
+        // CALIDAD GRÁFICA
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoCalidad(),
+            CambiarCalidad
+        );
+
+        // VSYNC
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoVSync(),
+            CambiarVSync
+        );
+
+        // LÍMITE DE FPS
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoLimiteFps(),
+            CambiarLimiteFps
+        );
 
         // VOLVER
-
         CrearBotonZombieTMP(
             contOpciones.transform,
             "VOLVER AL MENU",
@@ -3671,5 +3687,105 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         });
 
         trigger.triggers.Add(entryExit);
+    }
+    // ========================================================
+    // OPCIONES DE VIDEO (sin persistencia)
+    // ========================================================
+    private List<Resolution> resolucionesDisponibles = new List<Resolution>();
+    private int indiceResolucion;
+
+    private readonly int[] limitesFps = { 30, 60, 120, 144, -1 }; // -1 = ilimitado
+    private int indiceLimiteFps;
+
+    private void InicializarOpcionesVideo()
+    {
+        // Resoluciones únicas (width x height), ignorando las repetidas por refresco
+        resolucionesDisponibles.Clear();
+        foreach (Resolution r in Screen.resolutions)
+        {
+            bool existe = resolucionesDisponibles.Exists(
+                x => x.width == r.width && x.height == r.height);
+            if (!existe) resolucionesDisponibles.Add(r);
+        }
+
+        // Si por algún motivo no hay lista (ej: editor), usar la actual
+        if (resolucionesDisponibles.Count == 0)
+            resolucionesDisponibles.Add(Screen.currentResolution);
+
+        // Buscar la resolución actual
+        indiceResolucion = resolucionesDisponibles.Count - 1;
+        for (int i = 0; i < resolucionesDisponibles.Count; i++)
+        {
+            if (resolucionesDisponibles[i].width == Screen.width &&
+                resolucionesDisponibles[i].height == Screen.height)
+            {
+                indiceResolucion = i;
+                break;
+            }
+        }
+
+        // Buscar el límite de FPS actual
+        indiceLimiteFps = limitesFps.Length - 1;
+        for (int i = 0; i < limitesFps.Length; i++)
+        {
+            if (limitesFps[i] == Application.targetFrameRate)
+            {
+                indiceLimiteFps = i;
+                break;
+            }
+        }
+    }
+
+    private string TextoResolucion()
+    {
+        Resolution r = resolucionesDisponibles[indiceResolucion];
+        return "RESOLUCIÓN: " + r.width + " x " + r.height;
+    }
+
+    private string TextoCalidad()
+    {
+        string nombre = QualitySettings.names[QualitySettings.GetQualityLevel()];
+        return "GRÁFICOS: " + nombre.ToUpper();
+    }
+
+    private string TextoVSync()
+    {
+        return QualitySettings.vSyncCount > 0
+            ? "VSYNC: ACTIVADO"
+            : "VSYNC: DESACTIVADO";
+    }
+
+    private string TextoLimiteFps()
+    {
+        int fps = limitesFps[indiceLimiteFps];
+        return fps < 0 ? "LÍMITE FPS: ILIMITADO" : "LÍMITE FPS: " + fps;
+    }
+
+    private void CambiarResolucion(TMPro.TMP_Text btnText)
+    {
+        indiceResolucion = (indiceResolucion + 1) % resolucionesDisponibles.Count;
+        Resolution r = resolucionesDisponibles[indiceResolucion];
+        Screen.SetResolution(r.width, r.height, Screen.fullScreenMode);
+        btnText.text = TextoResolucion();
+    }
+
+    private void CambiarCalidad(TMPro.TMP_Text btnText)
+    {
+        int nivel = (QualitySettings.GetQualityLevel() + 1) % QualitySettings.names.Length;
+        QualitySettings.SetQualityLevel(nivel, true);
+        btnText.text = TextoCalidad();
+    }
+
+    private void CambiarVSync(TMPro.TMP_Text btnText)
+    {
+        QualitySettings.vSyncCount = QualitySettings.vSyncCount > 0 ? 0 : 1;
+        btnText.text = TextoVSync();
+    }
+
+    private void CambiarLimiteFps(TMPro.TMP_Text btnText)
+    {
+        indiceLimiteFps = (indiceLimiteFps + 1) % limitesFps.Length;
+        Application.targetFrameRate = limitesFps[indiceLimiteFps];
+        btnText.text = TextoLimiteFps();
     }
 }
