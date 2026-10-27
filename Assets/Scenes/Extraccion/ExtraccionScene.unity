@@ -167,6 +167,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1682973}
+  - component: {fileID: 1682976}
   - component: {fileID: 1682974}
   - component: {fileID: 1682975}
   m_Layer: 0
@@ -203,6 +204,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c7ddcce248674847aadd7b3fe06606b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::TrainMenuController
+  ShowTopMostFoldoutHeaderGroup: 1
   train: {fileID: 1779865562}
   startPoint: {fileID: 1969086855}
   endPoint: {fileID: 1655982972}
@@ -218,17 +220,14 @@ MonoBehaviour:
   hornClips:
   - {fileID: 8300000, guid: ca8dad4125e4e17479e188071f8eacbf, type: 3}
   - {fileID: 8300000, guid: 1b50b19196bd09a41b751834dedc44fa, type: 3}
-  hornPitchRange: {x: 0.95, y: 1.05}
-  fadeTime: 1.5
-  movingMaxVolume: 1
-  ignoreTags:
-  - WorldWall
-  - Player
-  rotationOffset: {x: 0, y: 0, z: 0}
   movingClips:
   - {fileID: 8300000, guid: 1efce9e1aee2f0b4b8c1c876b07630df, type: 3}
   - {fileID: 8300000, guid: 7f578f587e395784192e7f9f2b0f7dc0, type: 3}
   - {fileID: 8300000, guid: 85c9a790c2177874991f5e3e72bb5cb1, type: 3}
+  hornPitchRange: {x: 0.95, y: 1.05}
+  fadeTime: 1.5
+  movingMaxVolume: 1
+  rotationOffset: {x: 0, y: 0, z: 0}
 --- !u!82 &1682975
 AudioSource:
   m_ObjectHideFlags: 0
@@ -326,6 +325,33 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1682976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1682972}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3693275389
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1 &9738402
 GameObject:
   m_ObjectHideFlags: 0
@@ -45188,6 +45214,7 @@ GameObject:
   - component: {fileID: 1137760399}
   - component: {fileID: 1137760401}
   - component: {fileID: 1137760402}
+  - component: {fileID: 1137760403}
   m_Layer: 0
   m_Name: TrenController2
   m_TagString: Untagged
@@ -45222,6 +45249,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c7ddcce248674847aadd7b3fe06606b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::TrainMenuController
+  ShowTopMostFoldoutHeaderGroup: 1
   train: {fileID: 985824554}
   startPoint: {fileID: 233156634}
   endPoint: {fileID: 922343228}
@@ -45237,17 +45265,14 @@ MonoBehaviour:
   hornClips:
   - {fileID: 8300000, guid: 1b50b19196bd09a41b751834dedc44fa, type: 3}
   - {fileID: 8300000, guid: ca8dad4125e4e17479e188071f8eacbf, type: 3}
-  hornPitchRange: {x: 0.95, y: 1.05}
-  fadeTime: 1.5
-  movingMaxVolume: 1
-  ignoreTags:
-  - WorldWall
-  - Player
-  rotationOffset: {x: 0, y: 0, z: 0}
   movingClips:
   - {fileID: 8300000, guid: 1efce9e1aee2f0b4b8c1c876b07630df, type: 3}
   - {fileID: 8300000, guid: 7f578f587e395784192e7f9f2b0f7dc0, type: 3}
   - {fileID: 8300000, guid: 85c9a790c2177874991f5e3e72bb5cb1, type: 3}
+  hornPitchRange: {x: 0.95, y: 1.05}
+  fadeTime: 1.5
+  movingMaxVolume: 1
+  rotationOffset: {x: 0, y: 0, z: 0}
 --- !u!82 &1137760402
 AudioSource:
   m_ObjectHideFlags: 0
@@ -45345,6 +45370,33 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1137760403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1137760398}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1149094035
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1 &1139129616 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1777614575764828, guid: fbdc15967ab215741a7fe3d32e0049e2, type: 3}
