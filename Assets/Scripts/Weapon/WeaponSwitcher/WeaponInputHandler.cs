@@ -14,18 +14,14 @@ public class WeaponInputHandler : MonoBehaviour
     {
         if (!switcher.IsOwner || !context.performed || PauseMenuUI.IsOpen) return;
 
-        ShootLogic shoot = switcher.CurrentShoot;
-        if (shoot != null)
-            shoot.OnShoot(context);
+        switcher.CurrentWeapon?.OnShoot(context);
     }
 
     public void OnReload(InputAction.CallbackContext context)
     {
         if (!switcher.IsOwner || !context.performed) return;
 
-        ShootLogic shoot = switcher.CurrentShoot;
-        if (shoot != null)
-            shoot.OnReload(context);
+        switcher.CurrentWeapon?.OnReload(context);
     }
 
     private void Select(InputAction.CallbackContext context, int index)

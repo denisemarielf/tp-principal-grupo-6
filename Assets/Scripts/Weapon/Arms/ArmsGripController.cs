@@ -61,6 +61,7 @@ public class ArmsGripController : MonoBehaviour
 
         constraint.weight = 1f;
         var data = constraint.data;
+        
         data.target = finalTarget;
         constraint.data = data;
     }

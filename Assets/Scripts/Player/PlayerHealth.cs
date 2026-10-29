@@ -42,6 +42,8 @@ public class PlayerHealth : NetworkBehaviour
     public float CurrentHealth => currentHealth.Value;
     public bool IsDead => isDead.Value;
 
+    public bool IsFull => currentHealth.Value >= maxHealth;
+
     public override void OnNetworkSpawn()
     {
         currentHealth.OnValueChanged += OnHealthValueChanged;
@@ -54,6 +56,15 @@ public class PlayerHealth : NetworkBehaviour
         }
 
         HealthChanged?.Invoke(currentHealth.Value, maxHealth);
+    }
+
+    // Solo server. Restaura vida tras un cambio de escena encadenado (US 4.10).
+    public void ApplyCarryOver(float health)
+    {
+        if (!IsServer) return;
+
+        currentHealth.Value = Mathf.Clamp(health, 0f, maxHealth);
+        isDead.Value = currentHealth.Value <= 0f;
     }
 
     public override void OnNetworkDespawn()

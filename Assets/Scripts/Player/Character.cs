@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro;
 
 [RequireComponent(typeof(PMovement))]
 public class Character : NetworkBehaviour
@@ -16,6 +17,9 @@ public class Character : NetworkBehaviour
     [Tooltip("Canvas hijo con la barra de vida propia y la de los compañeros. Solo se activa en el personaje del jugador local.")]
     [SerializeField] private GameObject localHud;
 
+    [Tooltip("Otros objetos del HUD que estan fuera de localHud y tambien se apagan en los jugadores remotos.")]
+    [SerializeField] private GameObject[] extraLocalHud;
+
     private PMovement movement;
     private PlayerHealth health;
     private WeaponSwitcher weaponSwitcher;
@@ -24,27 +28,60 @@ public class Character : NetworkBehaviour
 
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
+    private PlayerInventory inventory;
+    
+
+    [Header("Nombre del jugador")] //nuevo
+    [SerializeField] private TextMeshPro playerNameText;
+
+    // Último nombre recibido (el servidor lo usa para responder a los demás)
+    private string nombreJugador = ""; //nuevo
+
+    // Nombre con el que se identifica al jugador (ej. en el guardado de partida, US 3.6).
+    public string PlayerName => string.IsNullOrEmpty(nombreJugador) ? "Jugador " + (OwnerClientId + 1) : nombreJugador;
 
 
     private void Awake()
     {
         movement = GetComponent<PMovement>();
         health = GetComponent<PlayerHealth>();
-
+        inventory = GetComponent<PlayerInventory>();
         weaponSwitcher = GetComponentInChildren<WeaponSwitcher>();
+    }
+
+    //Para que el texto se vea bien desde todos los angulos
+    private void LateUpdate()
+    {
+        if (playerNameText == null) return;
+
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        playerNameText.transform.rotation = cam.transform.rotation;
     }
 
     public override void OnNetworkSpawn()
     {
-        // Solo el dueño lee input y renderiza con la camara de su personaje.
-        // Si los personajes remotos tuvieran PlayerInput y Camera activos, le robarian el teclado
-        // y la pantalla al jugador local.
         SetLocalOnlyComponents(IsOwner);
 
         if (IsOwner)
         {
+            string nombre = NombrePlayer.NombreJugador;
+
+            if (string.IsNullOrWhiteSpace(nombre))
+                nombre = "Jugador " + (OwnerClientId + 1);
+
+            EnviarNombreAlServidorRpc(nombre);
+
             DisableSceneCameras();
             StartCoroutine(MoveToSpawnPoint());
+            StartCoroutine(ApplyCarryOverWhenReady());
+        }
+        else if (!IsServer)
+        {
+            // Personaje de otro jugador visto desde un cliente:
+            // pedimos su nombre por si el servidor ya lo tenía.
+            PedirNombreRpc();
         }
     }
 
@@ -58,6 +95,43 @@ public class Character : NetworkBehaviour
         RestoreSceneCameras();
         base.OnDestroy();
     }
+
+    //metodos nuevos 
+    // El dueño manda su nombre al servidor.
+    [Rpc(SendTo.Server, RequireOwnership = true)]
+    private void EnviarNombreAlServidorRpc(string nombre)
+    {
+        string limpio = (nombre ?? "").Trim();
+
+        if (limpio.Length > 16)
+            limpio = limpio.Substring(0, 16);
+
+        // Nunca queda vacío
+        if (string.IsNullOrWhiteSpace(limpio))
+            limpio = "Jugador " + (OwnerClientId + 1);
+
+        nombreJugador = limpio;
+        AplicarNombreRpc(nombreJugador);
+    }
+
+    // Un cliente que ve este personaje por primera vez pide el nombre.
+    [Rpc(SendTo.Server, RequireOwnership = false)]
+    private void PedirNombreRpc()
+    {
+        if (!string.IsNullOrEmpty(nombreJugador))
+            AplicarNombreRpc(nombreJugador);
+    }
+
+    // El servidor le avisa a todos el nombre de este personaje.
+    [Rpc(SendTo.Everyone)]
+    private void AplicarNombreRpc(string nombre)
+    {
+        nombreJugador = nombre;
+
+        if (playerNameText != null)
+            playerNameText.text = nombre;
+    }
+    //aca termina
 
 
     public void OnMove(InputAction.CallbackContext context)
@@ -91,7 +165,34 @@ public class Character : NetworkBehaviour
             movement.TryJump();
         }
     }
+   
+    public void OnUseItem(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
 
+        inventory.RequestUseSlotServerRpc(inventory.SelectedSlot);
+    }
+
+    public void OnInventoryNext(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+        inventory.CycleSelection(1);
+    }
+
+    public void OnInventoryPrev(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+        inventory.CycleSelection(-1);
+    }
+    public void OnDropItem(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+
+        // El servidor valida el slot; si está vacío suena el sonido de error.
+        inventory.RequestDropSlotServerRpc(inventory.SelectedSlot);
+    }
+
+  
     private bool IsDead()
     {
         return health != null && health.IsDead;
@@ -106,9 +207,9 @@ public class Character : NetworkBehaviour
     {
         if (!IsOwner || IsDead() || !context.performed) return;
 
-        MedkitPickup medkit = MedkitPickup.FindNearest(transform.position);
-        float medkitDist = medkit != null
-            ? Vector3.Distance(transform.position, medkit.transform.position)
+        ItemPickup item = ItemPickup.FindNearest(transform.position);
+        float itemDist = item != null
+            ? Vector3.Distance(transform.position, item.transform.position)
             : float.MaxValue;
 
         Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, pickupLayer);
@@ -133,15 +234,13 @@ public class Character : NetworkBehaviour
             ? Vector3.Distance(transform.position, npc.transform.position)
             : float.MaxValue;
 
-        if (npc != null && npcDist <= medkitDist && npcDist <= nearestWeaponDist)
+        if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
         {
-            Debug.Log($"E apretada. npc={(npc != null ? npc.name : "null")}, medkit={(medkit != null)}, weapon={(nearestWeapon != null)}");
             npc.RequestRescue();
         }
-
-        else if (medkit != null && medkitDist <= nearestWeaponDist)
+        else if (item != null && itemDist <= nearestWeaponDist)
         {
-            medkit.RequestUse();
+            inventory?.RequestPickupItemServerRpc(item.NetworkObjectId);
         }
         else if (nearestWeapon != null)
         {
@@ -177,6 +276,13 @@ public class Character : NetworkBehaviour
         if (localHud != null)
         {
             localHud.SetActive(isLocal);
+        }
+        if (extraLocalHud != null)
+        {
+            foreach (GameObject go in extraLocalHud)
+            {
+                if (go != null) go.SetActive(isLocal);
+            }
         }
     }
 
@@ -239,6 +345,22 @@ public class Character : NetworkBehaviour
         if (placedByServer) yield break;
 
         TeleportTo(transform.position + Vector3.right * spawnSpacing * OwnerClientId, transform.rotation);
+    }
+
+    // Espera a que el loadout de red se reconstruya tras ApplyServerState (US 4.10).
+    private IEnumerator ApplyCarryOverWhenReady()
+    {
+        if (!PlayerCarryOver.HasLocalOwnerPending)
+            yield break;
+
+        float timeout = Time.realtimeSinceStartup + 3f;
+        while (!PlayerCarryOver.IsLocalLoadoutReady(gameObject)
+               && Time.realtimeSinceStartup < timeout)
+            yield return null;
+
+        // Un frame extra para que RebuildSlot termine tras el cambio de NetworkVariable.
+        yield return null;
+        PlayerCarryOver.TryApplyLocalOwner(gameObject);
     }
 
     private IEnumerator TeleportNextFrame(Vector3 position, Quaternion rotation)

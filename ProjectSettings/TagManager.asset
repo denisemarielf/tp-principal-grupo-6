@@ -2,11 +2,12 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
+  serializedVersion: 3
   tags:
   - Weapon
   - Player
   - Enemy
+  - WorldWall
   layers:
   - Default
   - TransparentFX
@@ -18,8 +19,8 @@ TagManager:
   - Weapon
   - Pickup
   - OwnBody
-  - 
-  - 
+  - Enemy
+  - WorldWall
   - 
   - 
   - 

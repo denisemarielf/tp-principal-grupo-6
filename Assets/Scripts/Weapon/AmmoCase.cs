@@ -36,6 +36,8 @@ public class AmmoCase : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        PickupGroundSnap.SnapToGround(transform);
+
         isAvailable.OnValueChanged += OnAvailabilityChanged;
 
         UpdateVisuals(isAvailable.Value);
@@ -66,7 +68,7 @@ public class AmmoCase : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"[AmmoCase] OnTriggerEnter con: {other.name} | IsServer: {IsServer} | isAvailable: {isAvailable.Value}");
+        
 
         if (!IsServer)
             return;
@@ -75,7 +77,7 @@ public class AmmoCase : NetworkBehaviour
             return;
 
         CharacterController characterController = other.GetComponentInParent<CharacterController>();
-        Debug.Log($"[AmmoCase] characterController encontrado: {characterController != null}");
+        
 
         if (characterController == null)
             return;

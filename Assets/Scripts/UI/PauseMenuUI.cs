@@ -1,4 +1,5 @@
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -14,6 +15,9 @@ public class PauseMenuUI : MonoBehaviour
 
     private GameObject panel;
     private Slider volumeSlider;
+    private Button saveButton;
+    private TextMeshProUGUI saveStatus;
+    private bool saveInProgress;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
@@ -73,12 +77,48 @@ public class PauseMenuUI : MonoBehaviour
         IsOpen = true;
         volumeSlider.SetValueWithoutNotify(AudioListener.volume);
         panel.SetActive(true);
+        RefreshSaveUi();
 
         if (EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(null);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+    }
+
+    // US 3.6: el boton de guardar es solo del host y se habilita unicamente en una zona segura.
+    private void RefreshSaveUi()
+    {
+        NetworkManager network = NetworkManager.Singleton;
+        bool isHost = network != null && network.IsListening && network.IsServer;
+        saveButton.gameObject.SetActive(isHost);
+        saveStatus.gameObject.SetActive(isHost);
+        if (!isHost) return;
+
+        SaveBlockReason reason = SaveGameService.GetBlockReason();
+        saveButton.interactable = reason == SaveBlockReason.None && !saveInProgress;
+        saveStatus.text = SaveSystem.Describe(reason);
+        saveStatus.color = new Color(0.9f, 0.7f, 0.2f);
+    }
+
+    private void SaveGame()
+    {
+        if (saveInProgress) return;
+
+        saveInProgress = true;
+        saveButton.interactable = false;
+        saveStatus.text = "Guardando...";
+        saveStatus.color = new Color(0.9f, 0.9f, 0.85f);
+
+        SaveGameService.RequestSave((success, message) =>
+        {
+            saveInProgress = false;
+            if (this == null) return; // se salio de la partida mientras se guardaba
+
+            RefreshSaveUi();
+            saveStatus.text = message;
+            saveStatus.color = success ? new Color(0.4f, 0.8f, 0.4f) : new Color(0.9f, 0.7f, 0.2f);
+        });
     }
 
     private void Close()
@@ -135,7 +175,7 @@ public class PauseMenuUI : MonoBehaviour
         RectTransform boxRect = box.GetComponent<RectTransform>();
         boxRect.anchorMin = new Vector2(0.5f, 0.5f);
         boxRect.anchorMax = new Vector2(0.5f, 0.5f);
-        boxRect.sizeDelta = new Vector2(520, 420);
+        boxRect.sizeDelta = new Vector2(520, 540);
 
         VerticalLayoutGroup layout = box.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(36, 36, 36, 36);
@@ -150,6 +190,8 @@ public class PauseMenuUI : MonoBehaviour
         CreateLabel(box.transform, "VOLUMEN", 22, new Color(0.9f, 0.9f, 0.85f), 32);
         volumeSlider = CreateVolumeSlider(box.transform);
         CreateButton(box.transform, "CONTINUAR", new Color(0.2f, 0.22f, 0.25f), Close);
+        saveButton = CreateButton(box.transform, "GUARDAR PARTIDA", new Color(0.2f, 0.45f, 0.25f), SaveGame);
+        saveStatus = CreateLabel(box.transform, "", 18, new Color(0.9f, 0.7f, 0.2f), 28);
         CreateButton(box.transform, "SALIR DE LA PARTIDA", new Color(0.8f, 0.12f, 0.12f), ExitMatch);
     }
 
@@ -198,7 +240,7 @@ public class PauseMenuUI : MonoBehaviour
         return slider;
     }
 
-    private static void CreateLabel(Transform parent, string text, float fontSize, Color color, float height)
+    private static TextMeshProUGUI CreateLabel(Transform parent, string text, float fontSize, Color color, float height)
     {
         GameObject labelObject = new GameObject("Texto", typeof(RectTransform));
         labelObject.transform.SetParent(parent, false);
@@ -213,9 +255,10 @@ public class PauseMenuUI : MonoBehaviour
         label.fontStyle = FontStyles.Bold;
         if (TMP_Settings.defaultFontAsset != null)
             label.font = TMP_Settings.defaultFontAsset;
+        return label;
     }
 
-    private static void CreateButton(Transform parent, string text, Color color, UnityEngine.Events.UnityAction onClick)
+    private static Button CreateButton(Transform parent, string text, Color color, UnityEngine.Events.UnityAction onClick)
     {
         GameObject buttonObject = new GameObject(text, typeof(RectTransform));
         buttonObject.transform.SetParent(parent, false);
@@ -243,6 +286,7 @@ public class PauseMenuUI : MonoBehaviour
 
         CreateLabel(buttonObject.transform, text, 22, Color.white, 52);
         Stretch(buttonObject.GetComponentInChildren<TextMeshProUGUI>().rectTransform);
+        return button;
     }
 
     private static Image CreateImage(Transform parent, string name, Color color)

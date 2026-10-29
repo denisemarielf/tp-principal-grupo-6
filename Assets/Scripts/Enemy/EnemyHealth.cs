@@ -114,7 +114,10 @@ public class EnemyHealth : NetworkBehaviour
             ai.SetAggroTarget(attacker);
 
         if (currentHealth.Value <= 0f)
+        {
+            AchievementService.NotifyEnemyKilled(attacker, variant);
             Die();
+        }
     }
 
     [ContextMenu("Debug: recibir 25 de dano")]
@@ -260,11 +263,27 @@ public class EnemyHealth : NetworkBehaviour
             yield return new WaitForSeconds(deathClip.length);
 
         if (NetworkObject != null && NetworkObject.IsSpawned)
-            NetworkObject.Despawn(true);
-        else
-            Destroy(gameObject);
-    }
+        {
+            // Solo el servidor puede despawnear
+            if (!IsServer) yield break;
 
+            if (NetworkObject.InScenePlaced)
+            {
+                // Colocado a mano en la escena: despawnear sin destruir
+                NetworkObject.Despawn(false);
+                gameObject.SetActive(false);
+            }
+            else
+            {
+                // Instanciado en runtime: destruir
+                NetworkObject.Despawn(true);
+            }
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
     private void StopDeathGraph()
     {
         pinToGround = false;

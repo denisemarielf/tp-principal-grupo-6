@@ -56,14 +56,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1963208049
+  GlobalObjectIdHash: 391087361
   InScenePlacedSourceGlobalObjectIdHash: 538428761
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -144,9 +144,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::PickupGlow
   glowLight: {fileID: 7147015670883899662}
-  pulseSpeed: 2
-  minIntensity: 1
-  maxIntensity: 2.5
+  pulseSpeed: 4
+  minIntensity: 3
+  maxIntensity: 5
 --- !u!54 &9189601156877762694
 Rigidbody:
   m_ObjectHideFlags: 0

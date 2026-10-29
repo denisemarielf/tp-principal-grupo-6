@@ -6,6 +6,8 @@ using UnityEngine.AI;
 
 public class EnemySceneSetup : MonoBehaviour
 {
+    // Lo dispara el server cuando el NavMesh de la escena ya está horneado.
+    public static event System.Action NavMeshReady;
     const int NotWalkableArea = 1;
 
     [SerializeField] private GameObject enemyPrefab;
@@ -70,6 +72,14 @@ public class EnemySceneSetup : MonoBehaviour
             yield break;
 
         yield return BuildNavMesh();
+        NavMeshReady?.Invoke();
+
+        // Supervivencia usa oleadas propias. El horneado igual hace falta para zombies y civiles.
+        if (FindAnyObjectByType<SurvivalMatchBootstrap>() != null)
+        {
+            Debug.Log("EnemySceneSetup: modo Supervivencia, no se planifican enemigos de mapa abierto.");
+            yield break;
+        }
 
         if (!useSceneColliders)
         {
@@ -78,9 +88,51 @@ public class EnemySceneSetup : MonoBehaviour
             yield break;
         }
 
-        PlanAcrossMap();
+        if (!PlanFromSpawnPoints())
+            PlanAcrossMap();
+
         streaming = true;
         UpdateStreaming();
+    }
+
+    // Si la escena tiene EnemySpawnPoint, usa esos (oficinas). Si no, false y sigue el plan de calle (suburbio).
+    private bool PlanFromSpawnPoints()
+    {
+        EnemySpawnPoint[] points = FindObjectsByType<EnemySpawnPoint>(FindObjectsInactive.Exclude);
+        if (points == null || points.Length == 0)
+            return false;
+
+        hasRoad = false;
+        Vector3 playerSpawn = PlayerSpawnPosition();
+        int added = 0;
+
+        foreach (EnemySpawnPoint marker in points)
+        {
+            if (marker == null)
+                continue;
+
+            Vector3 position = marker.transform.position;
+            if (NavMesh.SamplePosition(position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+                position = hit.position;
+
+            if (FlatDistance(position, playerSpawn) < minDistanceFromSpawn)
+                continue;
+
+            planned.Add(new PlannedEnemy
+            {
+                position = position,
+                variant = (EnemyVariant)Random.Range(0, 3)
+            });
+            added++;
+        }
+
+        if (added == 0)
+        {
+            Debug.LogWarning("EnemySceneSetup: hay EnemySpawnPoint pero ninguno quedo usable (muy cerca del spawn?).", this);
+            return false;
+        }
+
+        return true;
     }
 
     private void PlanAcrossMap()
@@ -184,6 +236,40 @@ public class EnemySceneSetup : MonoBehaviour
         {
             position += Vector3.up * FeetLift(enemyPrefab);
         }
+
+        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        EnemyHealth health = enemy.GetComponent<EnemyHealth>();
+        if (health != null)
+            health.Configure(variant);
+
+        EnemyAppearance appearance = enemy.GetComponent<EnemyAppearance>();
+        if (appearance != null)
+            appearance.Configure(variant);
+
+        Ai ai = enemy.GetComponent<Ai>();
+        if (ai != null)
+            ai.Configure(variant);
+
+        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
+        if (netObj != null)
+            netObj.Spawn(true);
+
+        return health;
+    }
+
+    // Spawn de un enemigo en red, sobre el NavMesh. Lo usan las oleadas de Supervivencia.
+    public static EnemyHealth SpawnNetworkEnemy(GameObject enemyPrefab, Vector3 position, EnemyVariant variant)
+    {
+        if (enemyPrefab == null)
+        {
+            Debug.LogError("EnemySceneSetup: falta el prefab del enemigo.");
+            return null;
+        }
+
+        if (NavMesh.SamplePosition(position, out NavMeshHit hit, 8f, NavMesh.AllAreas))
+            position = hit.position + Vector3.up * FeetLift(enemyPrefab);
+        else
+            position += Vector3.up * FeetLift(enemyPrefab);
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         EnemyHealth health = enemy.GetComponent<EnemyHealth>();

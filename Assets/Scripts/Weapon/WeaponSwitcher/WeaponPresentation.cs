@@ -20,11 +20,14 @@ public class WeaponPresentation : MonoBehaviour
 
     private ShootLogic currentShoot;
     private bool ownerUiActive;
-
+    public WorldGripProxy worldGripProxy;
+    private EquippableWeapon currentWeapon; // antes: ShootLogic currentShoot
     // ---------- Ciclo de vida (lo llama WeaponSwitcher) ----------
 
     public void HideArmsForRemotePlayer()
     {
+        isOwner = false; // NUEVO
+
         if (armsModel != null)
             armsModel.SetActive(false);
     }
@@ -49,36 +52,64 @@ public class WeaponPresentation : MonoBehaviour
     // ---------- API ----------
 
     /// <summary>Refleja el arma actual (shoot == null significa "enfundado").</summary>
-    public void ShowWeapon(ShootLogic shoot, GameObject weaponObject)
+    private bool isOwner = true; // NUEVO
+
+
+    public void ShowWeapon(EquippableWeapon weapon, GameObject weaponObject)
     {
-        currentShoot = shoot;
+        currentWeapon = weapon;
+        bool hasWeapon = weapon != null;
+        ShootLogic firearm = weapon as ShootLogic; // null si es melee o está enfundado
 
+        // Los brazos FPS solo existen para el dueño; sirven para fuego y melee
         if (armsModel != null)
-            armsModel.SetActive(shoot != null);
+            armsModel.SetActive(isOwner && hasWeapon);
 
-        if (shoot != null)
+        // El IK del personaje se actualiza en todos los clientes
+        if (hasWeapon)
             ApplyGripsForWeapon(weaponObject);
 
+        if (!isOwner) return;
+
+        // Crosshair y munición solo para armas de fuego
         if (crosshairController != null)
-            crosshairController.SetVisible(shoot != null);
+            crosshairController.SetVisible(firearm != null);
 
         if (ammoUI != null)
-            ammoUI.SetWeapon(shoot);
+            ammoUI.SetWeapon(firearm); // null oculta el HUD de munición
     }
 
     public void ApplyGripsForWeapon(GameObject weaponObject)
     {
         if (weaponObject == null) return;
 
+        // Brazos FPS -> grips del viewmodel (el arma original)
         if (armsGripController != null)
             armsGripController.SetGripsForWeapon(weaponObject);
+        else
+            Debug.LogWarning("[IK] WeaponPresentation: armsGripController NO asignado.", this);
 
+        // Personaje -> grips del worldmodel, vía el proxy fuera del Animator
         if (characterModelGripController != null)
-            characterModelGripController.SetGripsForWeapon(weaponObject);
+        {
+            var link = weaponObject.GetComponent<WeaponWorldLink>();
+            GameObject world = (link != null && link.worldModel != null) ? link.worldModel : weaponObject;
+
+            if (worldGripProxy != null)
+            {
+                worldGripProxy.SetSources(world);
+                characterModelGripController.SetGripsForWeapon(worldGripProxy.gameObject);
+            }
+            else
+            {
+                characterModelGripController.SetGripsForWeapon(world);
+            }
+        }
     }
 
     public void PlaySwitchSound()
     {
+        if (!isOwner) return;
         if (audioSource != null && switchSound != null)
             audioSource.PlayOneShot(switchSound);
     }
@@ -96,11 +127,9 @@ public class WeaponPresentation : MonoBehaviour
         while (ammoUI == null)
         {
             ammoUI = FindAnyObjectByType<AmmoUI>();
-
-            if (ammoUI == null)
-                yield return null;
+            if (ammoUI == null) yield return null;
         }
 
-        ammoUI.SetWeapon(currentShoot);
+        ammoUI.SetWeapon(currentWeapon as ShootLogic);
     }
 }
