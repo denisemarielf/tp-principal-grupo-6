@@ -1464,7 +1464,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -1509,6 +1509,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   spawnSpacing: 2
   localHud: {fileID: 7739054632452436582}
+  extraLocalHud: []
   interactRange: 5
   pickupLayer:
     serializedVersion: 2
@@ -6852,6 +6853,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::SafeZoneUI
   statusText: {fileID: 5107940265634346506}
   rescueText: {fileID: 7187978948723125151}
+  rescuePanel: {fileID: 0}
   levelCompletePanel: {fileID: 6232852666024054752}
 --- !u!1 &7797608464584795576
 GameObject:

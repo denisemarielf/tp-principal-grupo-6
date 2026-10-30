@@ -8,6 +8,7 @@ using TMPro;
 using System.Collections.Generic;
 using Unity.Collections;
 
+
 public class GeneradorMenuPrincipal : MonoBehaviour
 {
     // ============================================================
@@ -51,6 +52,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private int personajeSeleccionado = 0;
     private TMP_Text txtBtnPersonajeC;
     private TMP_Text txtBtnPersonajeU;
+    [SerializeField] private CharacterPreview characterPreview;
 
     // ============================================================
     // PANELES
@@ -513,27 +515,35 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 }
             );
         // PERSONAJE
+        var raw = CrearVistaPreviewPersonaje(marcoCrear.transform);
+        characterPreview.Display = raw;
+        characterPreview.Show(personajeSeleccionado);
+        PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // la opcion mostrada al abrir tambien cuenta
 
         txtBtnPersonajeC =
-             CrearBotonOpcionCiclicaTMP(
-                 contCrear.transform,
-                 "PERSONAJE: MASCARA GAS",
-               () =>
-               {
-                   personajeSeleccionado = (personajeSeleccionado + 1) % 4;
-                   PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
+            CrearBotonOpcionCiclicaTMP(
+                contCrear.transform,
+                "PERSONAJE: MASCARA GAS",
+                () =>
+                {
+                    personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                    PlayerModelChoice.SelectedIndex = personajeSeleccionado;
+                    characterPreview.Show(personajeSeleccionado);   // NUEVO
 
-                   string[] personajes =
-                   {
-        "PERSONAJE: MASCARA GAS",
-        "PERSONAJE: SWAT",
-        "PERSONAJE: SOLDADO",
-        "PERSONAJE: TRABAJADOR"
-     };
+                    string[] personajes =
+                    {
+                "PERSONAJE: MASCARA GAS",
+                "PERSONAJE: SWAT",
+                "PERSONAJE: SOLDADO",
+                "PERSONAJE: TRABAJADOR"
+                    };
 
-                   txtBtnPersonajeC.text = personajes[personajeSeleccionado];
-               }
-             );
+                    
+                    if (txtBtnPersonajeU != null) txtBtnPersonajeU.text = personajes[personajeSeleccionado];
+                    txtBtnPersonajeC.text = personajes[personajeSeleccionado];
+                }
+
+            );
 
 
         // Objetivo del mapa seleccionado
@@ -622,25 +632,32 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             );
         // PERSONAJE
 
+        var rawU = CrearVistaPreviewPersonaje(marcoUnirse.transform);   // el marco de ESTE panel
+        characterPreview.Display = rawU;
+        characterPreview.Show(personajeSeleccionado);
+        PlayerModelChoice.SelectedIndex = personajeSeleccionado;
+
         txtBtnPersonajeU =
             CrearBotonOpcionCiclicaTMP(
                 contUnirse.transform,
                 "PERSONAJE: MASCARA GAS",
-              () =>
-              {
-                  personajeSeleccionado = (personajeSeleccionado + 1) % 4;
-                  PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // NUEVO
+                () =>
+                {
+                    personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                    PlayerModelChoice.SelectedIndex = personajeSeleccionado;
+                    characterPreview.Show(personajeSeleccionado);
 
-                  string[] personajes =
-                  {
-        "PERSONAJE: MASCARA GAS",
-        "PERSONAJE: SWAT",
-        "PERSONAJE: SOLDADO",
-        "PERSONAJE: TRABAJADOR"
-    };
+                    string[] personajes =
+                    {
+                "PERSONAJE: MASCARA GAS",
+                "PERSONAJE: SWAT",
+                "PERSONAJE: SOLDADO",
+                "PERSONAJE: TRABAJADOR"
+                    };
 
-                  txtBtnPersonajeU.text = personajes[personajeSeleccionado];
-              }
+                    txtBtnPersonajeU.text = personajes[personajeSeleccionado];
+                    if (txtBtnPersonajeC != null) txtBtnPersonajeC.text = personajes[personajeSeleccionado];
+                }
             );
 
         inputCodigoSala =
@@ -3787,5 +3804,23 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         indiceLimiteFps = (indiceLimiteFps + 1) % limitesFps.Length;
         Application.targetFrameRate = limitesFps[indiceLimiteFps];
         btnText.text = TextoLimiteFps();
+    }
+    private RawImage CrearVistaPreviewPersonaje(Transform parent)
+    {
+        var go = new GameObject("PreviewPersonaje",
+            typeof(RectTransform), typeof(RawImage), typeof(LayoutElement));
+        go.transform.SetParent(parent, false);
+
+        go.GetComponent<LayoutElement>().ignoreLayout = true;   // fuera del layout
+
+        var rect = (RectTransform)go.transform;
+        rect.anchorMin = rect.anchorMax = new Vector2(0f, 0.5f);  // borde izquierdo del panel
+        rect.pivot = new Vector2(1f, 0.5f);                       // crece hacia la izquierda
+        rect.sizeDelta = new Vector2(300f, 450f);                 // mantiene la proporcion 2:3 de la textura
+        rect.anchoredPosition = new Vector2(-40f, 0f);            // separacion del panel
+
+        var raw = go.GetComponent<RawImage>();
+        raw.raycastTarget = false;
+        return raw;
     }
 }

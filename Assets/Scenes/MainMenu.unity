@@ -119,6 +119,64 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &416137081
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 416137083}
+  - component: {fileID: 416137082}
+  m_Layer: 12
+  m_Name: CharacterPreview
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &416137082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 416137081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac8540b5d6e54d04a80706d28d2300d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::CharacterPreview
+  previewPrefabs:
+  - {fileID: 5043248155123321781, guid: 0dd2115d8b78f6149a10d50d3d092944, type: 3}
+  - {fileID: 3309401066284292396, guid: 33c9b8c70df3b0c49b2f2f4590adb269, type: 3}
+  - {fileID: 2495047309208907945, guid: 776256ebc1a9e4b4eab1b3e6e554e22f, type: 3}
+  - {fileID: 1757458636583499031, guid: e66f29ac473d1e949a507462c7d62ca2, type: 3}
+  previewLayer: CharacterPreview
+  stagePosition: {x: 0, y: -500, z: 0}
+  textureSize: {x: 512, y: 768}
+  fieldOfView: 30
+  cameraDistance: 3.5
+  lookHeight: 0.95
+  lightIntensity: 5
+  rotateSpeed: 25
+  frameMargin: 1.15
+--- !u!4 &416137083
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 416137081}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.26336, y: -0, z: -19.4561}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &425686428
 GameObject:
   m_ObjectHideFlags: 0
@@ -163,6 +221,7 @@ MonoBehaviour:
   musicaFondo: {fileID: 8300000, guid: 74f5ee4fa87c57349b6b180e3f9ed16c, type: 3}
   sfxHover: {fileID: 8300000, guid: 82fc8621ceeb7f145ba58c8dfe63cdaa, type: 3}
   sfxClick: {fileID: 8300000, guid: f39c4a040d83b6848bb01f993fc14bf3, type: 3}
+  characterPreview: {fileID: 416137082}
 --- !u!4 &425686430
 Transform:
   m_ObjectHideFlags: 0
@@ -681,3 +740,4 @@ SceneRoots:
   - {fileID: 2032374417}
   - {fileID: 956903569}
   - {fileID: 1147689531}
+  - {fileID: 416137083}
