@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PowerUp : NetworkBehaviour
 {
-    public enum PowerUpType { Speed , Damage }
+    public enum PowerUpType { Health,Speed , Damage }
 
     [Header("Config")]
     public PowerUpType type;
@@ -68,9 +68,13 @@ public class PowerUp : NetworkBehaviour
                 PMovement movement = player.GetComponent<PMovement>();
                 movement?.ApplySpeedBoost(amount, duration);
                 break;
+            case PowerUpType.Health:
+                PlayerHealth health = player.GetComponent<PlayerHealth>();
+
+                health?.ApplyHealthBoost(amount, duration);
+                break;
             case PowerUpType.Damage:
-                WeaponSwitcher damageSwitcher = player.GetComponentInChildren<WeaponSwitcher>();
-                damageSwitcher?.ApplyDamageBoost(amount, duration);
+                player.GetComponent<PlayerDamageBoost>()?.ApplyDamageBoost(amount, duration);
                 break;
         }
     }

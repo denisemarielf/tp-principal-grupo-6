@@ -186,6 +186,11 @@ public class MeleeLogic : EquippableWeapon
         hitThisSwing.Clear();
         int count = Physics.OverlapSphereNonAlloc(origin, range, overlapBuffer, hitLayers, QueryTriggerInteraction.Ignore);
 
+        // Se calcula una sola vez por golpe
+        float finalDamage = damageAmount;
+        PlayerDamageBoost boost = GetComponentInParent<PlayerDamageBoost>();
+        if (boost != null) finalDamage *= boost.Multiplier;
+
         float halfArc = arcAngle * 0.5f;
         bool hitAnything = false;
 
@@ -213,7 +218,7 @@ public class MeleeLogic : EquippableWeapon
             }
 
             hitThisSwing.Add(enemy);
-            enemy.TakeDamage(damageAmount, transform.root);
+            enemy.TakeDamage(finalDamage, transform.root);
             hitAnything = true;
 
             Vector3 normal = (origin - closest).sqrMagnitude > 0.0001f ? (origin - closest).normalized : -direction;

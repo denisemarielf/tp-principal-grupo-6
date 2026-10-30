@@ -2,6 +2,7 @@ using System;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 // Salud del jugador (US 3.3). El host es el unico que modifica la vida; los clientes la leen
 // de las NetworkVariables y la barra de vida (PlayerHealthBar) escucha HealthChanged.
@@ -37,7 +38,14 @@ public class PlayerHealth : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
+    private NetworkVariable<float> networkMaxHealth = new NetworkVariable<float>(
+    0f,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
 
+    private float baseMaxHealth;
+    private Coroutine healthBoostRoutine;
     public float MaxHealth => maxHealth;
     public float CurrentHealth => currentHealth.Value;
     public bool IsDead => isDead.Value;
@@ -48,11 +56,18 @@ public class PlayerHealth : NetworkBehaviour
     {
         currentHealth.OnValueChanged += OnHealthValueChanged;
         isDead.OnValueChanged += OnDeadValueChanged;
+        networkMaxHealth.OnValueChanged += OnMaxHealthChanged;
 
         if (IsServer)
         {
+            baseMaxHealth = maxHealth;
+            networkMaxHealth.Value = maxHealth;
             currentHealth.Value = maxHealth;
             isDead.Value = false;
+        }
+        else
+        {
+            maxHealth = networkMaxHealth.Value; // para quien entra tarde
         }
 
         HealthChanged?.Invoke(currentHealth.Value, maxHealth);
@@ -69,7 +84,9 @@ public class PlayerHealth : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+
         currentHealth.OnValueChanged -= OnHealthValueChanged;
+        networkMaxHealth.OnValueChanged -= OnMaxHealthChanged;
         isDead.OnValueChanged -= OnDeadValueChanged;
     }
 
@@ -135,7 +152,7 @@ public class PlayerHealth : NetworkBehaviour
                 playerInput.enabled = false;
         }
 
-        Debug.Log($"PlayerHealth: el jugador {OwnerClientId} murio.");
+        
         Died?.Invoke();
     }
 
@@ -186,5 +203,35 @@ public class PlayerHealth : NetworkBehaviour
         AudioClip clip = healSounds[UnityEngine.Random.Range(0, healSounds.Length)];
         audioSource.pitch = 1f;
         audioSource.PlayOneShot(clip, healVolume);
+    }
+    private void OnMaxHealthChanged(float previous, float current)
+    {
+
+        maxHealth = current;
+        HealthChanged?.Invoke(currentHealth.Value, maxHealth);
+    }
+
+    public void ApplyHealthBoost(float amount, float duration)
+    {
+        
+        if (!IsServer || isDead.Value || amount <= 0f) return;
+
+        // Si ya había un boost activo, se reinicia (no se acumula)
+        if (healthBoostRoutine != null) StopCoroutine(healthBoostRoutine);
+        healthBoostRoutine = StartCoroutine(HealthBoostRoutine(amount, duration));
+    }
+
+    private IEnumerator HealthBoostRoutine(float amount, float duration)
+    {
+        maxHealth = baseMaxHealth + amount;
+        networkMaxHealth.Value = maxHealth;
+        currentHealth.Value = Mathf.Min(currentHealth.Value + amount, maxHealth);
+
+        yield return new WaitForSeconds(duration);
+
+        maxHealth = baseMaxHealth;
+        networkMaxHealth.Value = maxHealth;
+        currentHealth.Value = Mathf.Min(currentHealth.Value, maxHealth);
+        healthBoostRoutine = null;
     }
 }

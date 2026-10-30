@@ -154,7 +154,11 @@ public class WeaponLogic : NetworkBehaviour
         if (enemyHealth == null)
             return false;
 
-        enemyHealth.TakeDamage(damageAmount, transform.root);
+        float finalDamage = damageAmount;
+        PlayerDamageBoost boost = GetComponentInParent<PlayerDamageBoost>();
+        if (boost != null) finalDamage *= boost.Multiplier;
+
+        enemyHealth.TakeDamage(finalDamage, transform.root);
         return true;
     }
 
