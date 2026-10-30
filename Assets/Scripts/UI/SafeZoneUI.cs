@@ -8,7 +8,7 @@ using UnityEngine.UI;
 // HUD de la zona segura (US Zona Segura). Va dentro del HUD del Player prefab.
 // - Muestra cuantos jugadores vivos estan en la zona segura mientras haya alguno adentro.
 // - Al completarse el nivel muestra el panel de "Nivel completado", frena al jugador y libera el cursor.
-// - En Suburbio (US 4.10) ofrece continuar a Oficinas conservando el estado de los jugadores.
+// - En Suburbio ofrece continuar a Oficinas, y en Oficinas a la estacion, conservando el estado de los jugadores.
 public class SafeZoneUI : MonoBehaviour
 {
     [Tooltip("Texto tipo 'Zona segura: 1/2 jugadores'. Se oculta cuando no hay nadie adentro.")]
@@ -16,6 +16,11 @@ public class SafeZoneUI : MonoBehaviour
     [Tooltip("Opcional: texto tipo 'Civiles rescatados: 1/3 - Puntos: 100'. Se muestra mientras haya civiles en el nivel.")]
     [SerializeField] private TMP_Text rescueText;
     [Tooltip("Panel que se muestra al completar el nivel. Puede tener un boton que llame a ReturnToMainMenu().")]
+
+    [SerializeField] private GameObject rescuePanel;
+    [Tooltip("Panel que contiene el texto y los iconos de civiles/puntos. Se oculta junto con ellos.")]
+    
+
     [SerializeField] private GameObject levelCompletePanel;
 
     private GameObject continueButton;
@@ -63,6 +68,7 @@ public class SafeZoneUI : MonoBehaviour
             : $"Zona segura: {zone.PlayersInside}/{zone.AlivePlayers} jugadores";
     }
 
+    /*
     private void UpdateRescueText()
     {
         if (rescueText == null) return;
@@ -71,6 +77,23 @@ public class SafeZoneUI : MonoBehaviour
         bool show = zone != null && zone.TotalNpcs > 0;
         rescueText.gameObject.SetActive(show);
         if (!show) return;
+
+        rescueText.text = $"CIVILES  {zone.RescuedNpcs}/{zone.TotalNpcs}\nPUNTOS  {zone.TeamScore}";
+    }
+    */
+
+    private void UpdateRescueText()
+    {
+        SafeZone zone = SafeZone.Current;
+        bool show = zone != null && zone.TotalNpcs > 0;
+
+        // Si hay panel, se prende/apaga todo junto (texto + iconos).
+        if (rescuePanel != null)
+            rescuePanel.SetActive(show);
+        else if (rescueText != null)
+            rescueText.gameObject.SetActive(show);
+
+        if (!show || rescueText == null) return;
 
         rescueText.text = $"CIVILES  {zone.RescuedNpcs}/{zone.TotalNpcs}\nPUNTOS  {zone.TeamScore}";
     }
@@ -94,7 +117,7 @@ public class SafeZoneUI : MonoBehaviour
             if (playerInput != null)
                 playerInput.enabled = false;
 
-            if (IsSuburbScene())
+            if (HasNextScene())
                 PlayerCarryOver.CaptureLocalOwner(localPlayer.gameObject);
         }
 
@@ -106,7 +129,7 @@ public class SafeZoneUI : MonoBehaviour
 
     private void SetupContinueUi()
     {
-        if (levelCompletePanel == null || !IsSuburbScene()) return;
+        if (levelCompletePanel == null || !HasNextScene()) return;
 
         EnsureContinueUi();
 
@@ -136,12 +159,13 @@ public class SafeZoneUI : MonoBehaviour
                 panelFont = menuLabel.font;
         }
 
+        bool toStation = IsOfficesScene();
         continueButton = CreatePanelButton(
             levelCompletePanel.transform,
-            "ContinueToOfficesButton",
-            "Continuar a Oficinas",
+            toStation ? "ContinueToStationButton" : "ContinueToOfficesButton",
+            toStation ? "Continuar a la estacion" : "Continuar a Oficinas",
             new Vector2(0f, -30f),
-            ContinueToOffices,
+            toStation ? ContinueToStation : ContinueToOffices,
             panelFont);
 
         GameObject waitingGo = new GameObject("WaitingHostText", typeof(RectTransform));
@@ -215,8 +239,29 @@ public class SafeZoneUI : MonoBehaviour
         return SceneManager.GetActiveScene().name == PlayerCarryOver.SuburbSceneName;
     }
 
+    private static bool IsOfficesScene()
+    {
+        return SceneManager.GetActiveScene().name == PlayerCarryOver.OfficesSceneName;
+    }
+
+    private static bool HasNextScene()
+    {
+        return IsSuburbScene() || IsOfficesScene();
+    }
+
     // Solo el host. Captura estado de red y carga Oficinas para todos (CA1 + CA4).
     public void ContinueToOffices()
+    {
+        ContinueTo(PlayerCarryOver.OfficesSceneName);
+    }
+
+    // Solo el host. Al terminar Oficinas sigue la cadena hacia la estacion.
+    public void ContinueToStation()
+    {
+        ContinueTo(PlayerCarryOver.StationSceneName);
+    }
+
+    private static void ContinueTo(string sceneName)
     {
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager == null || !networkManager.IsServer) return;
@@ -226,7 +271,7 @@ public class SafeZoneUI : MonoBehaviour
             PlayerCarryOver.CaptureLocalOwner(localPlayer.gameObject);
 
         PlayerCarryOver.CaptureServerState();
-        GameSessionManager.StartGame(PlayerCarryOver.OfficesSceneName);
+        GameSessionManager.StartGame(sceneName);
     }
 
     // Para el boton "Volver al menu" del panel.

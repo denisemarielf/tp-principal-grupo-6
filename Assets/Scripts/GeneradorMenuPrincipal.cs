@@ -5,6 +5,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using TMPro;
+using System.Collections.Generic;
+using Unity.Collections;
 
 public class GeneradorMenuPrincipal : MonoBehaviour
 {
@@ -28,7 +30,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     [TextArea(2, 5)]
     public string objetivoMapa3 =
-        "Adéntrate en el bosque, localiza el punto de extracción y sobrevive a los infectados que bloquean el camino.";
+        "Estacion de tren. Modo Supervivencia: defende el refugio frente a oleadas. La victoria es sobrevivir el tiempo con al menos un civil vivo.";
 
     [Header("Ambientación y Arte")]
     public Sprite imagenFondoCustom;
@@ -91,6 +93,20 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private int intentoConexion;
 
     private bool suscritoARed;
+
+
+    // Nombres en el lobby
+    private const string MsgNombre = "LobbyNombre";   // cliente -> host
+    private const string MsgLista = "LobbyLista";     // host -> todos
+
+    private readonly Dictionary<ulong, string> nombresLobby =
+        new Dictionary<ulong, string>();              // solo lo usa el host
+
+    private readonly List<string> nombresLobbyActuales =
+        new List<string>();                           // lo que se muestra en pantalla
+
+    private bool mensajesRegistrados;
+    //
 
 
     // ============================================================
@@ -487,7 +503,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                     {
                         "MAPA: SUBURBIO",
                         "MAPA: COMPLEJO DE OFICINAS",
-                        "MAPA: ZONA DE EXTRACCION"
+                        "MAPA: ESTACION DE TREN"
                     };
 
                     txtBtnMapa.text =
@@ -861,36 +877,32 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         // ========================================================
         // 10. OPCIONES
         // ========================================================
+        InicializarOpcionesVideo();
 
         panelOpciones =
             CrearPanelContenedor(
                 canvasObj,
                 "Panel_Opciones"
             );
-
         CrearTitulo(
             panelOpciones.transform,
             "CONFIGURACIÓN",
             "— AJUSTES DEL JUEGO —"
         );
-
         GameObject marcoOpciones =
             CrearMarcoContenedor(
                 panelOpciones.transform,
                 new Vector2(0, -30),
-                new Vector2(550, 360)
+                new Vector2(550, 520)   // más alto para que entren las opciones nuevas
             );
-
         GameObject contOpciones =
             CrearContenedorVertical(
                 marcoOpciones.transform,
                 Vector2.zero,
-                new Vector2(500, 320)
+                new Vector2(500, 480)
             );
 
-
         // VOLUMEN
-
         CrearControlSlider(
             contOpciones.transform,
             "VOLUMEN GENERAL",
@@ -901,14 +913,11 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             }
         );
 
-
         // PANTALLA
-
         string txtPantalla =
             Screen.fullScreen
             ? "PANTALLA: COMPLETA"
             : "PANTALLA: VENTANA";
-
         CrearBotonOpcionTMP(
             contOpciones.transform,
             txtPantalla,
@@ -916,15 +925,12 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             {
                 bool nuevoEstado =
                     !Screen.fullScreen;
-
                 Screen.fullScreenMode =
                     nuevoEstado
                     ? FullScreenMode.ExclusiveFullScreen
                     : FullScreenMode.Windowed;
-
                 Screen.fullScreen =
                     nuevoEstado;
-
                 btnText.text =
                     nuevoEstado
                     ? "PANTALLA: COMPLETA"
@@ -932,9 +938,35 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             }
         );
 
+        // RESOLUCIÓN
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoResolucion(),
+            CambiarResolucion
+        );
+
+        // CALIDAD GRÁFICA
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoCalidad(),
+            CambiarCalidad
+        );
+
+        // VSYNC
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoVSync(),
+            CambiarVSync
+        );
+
+        // LÍMITE DE FPS
+        CrearBotonOpcionTMP(
+            contOpciones.transform,
+            TextoLimiteFps(),
+            CambiarLimiteFps
+        );
 
         // VOLVER
-
         CrearBotonZombieTMP(
             contOpciones.transform,
             "VOLVER AL MENU",
@@ -1328,7 +1360,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         {
             "SUBURBIO",
             "COMPLEJO DE OFICINAS",
-            "ZONA DE EXTRACCIÓN"
+            "ESTACION DE TREN"
         };
 
         string[] objetivos =
@@ -1680,7 +1712,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             if (clientId != clienteSaliente)
                 cantidad++;
         }
-
+        // En los clientes, la lista que manda el host es la que manda.
+        if (!networkManager.IsServer && nombresLobbyActuales.Count > 0)
+            cantidad = nombresLobbyActuales.Count;
         MostrarRanurasJugadores(cantidad);
 
         if (string.IsNullOrEmpty(codigoSala))
@@ -1700,17 +1734,22 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         }
     }
 
-
     private void MostrarRanurasJugadores(int cantidadConectados)
     {
         for (int i = 0; i < listaRanurasJugadores.Length; i++)
         {
             if (i < cantidadConectados)
             {
+                string nombre =
+                    (i < nombresLobbyActuales.Count &&
+                     !string.IsNullOrEmpty(nombresLobbyActuales[i]))
+                    ? nombresLobbyActuales[i]
+                    : $"Jugador {i + 1}";
+
                 listaRanurasJugadores[i].text =
                     (i == 0)
-                    ? "1. Jugador 1 (LÍDER)"
-                    : $"{i + 1}. Jugador {i + 1}";
+                    ? $"1. {nombre} (LÍDER)"
+                    : $"{i + 1}. {nombre}";
 
                 listaRanurasJugadores[i].color =
                     colorVerdeZombie;
@@ -1726,14 +1765,13 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         }
     }
 
-
     private string TextoDetallesPartida()
     {
         string[] nombresMapas =
         {
             "Suburbio Zombie",
             "Complejo de Oficinas",
-            "Zona de Extraccion"
+            "Estacion de tren"
         };
 
         string[] nombresDifs =
@@ -1748,15 +1786,31 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             $"DIFICULTAD: {nombresDifs[dificultadSeleccionada].ToUpper()}";
     }
 
-
+    
     private void OnEventoConexion(
-        NetworkManager networkManager,
-        ConnectionEventData data
-    )
+    NetworkManager networkManager,
+    ConnectionEventData data
+)
     {
         switch (data.EventType)
         {
             case ConnectionEvent.ClientConnected:
+                RegistrarMensajesLobby();
+
+                if (!networkManager.IsServer)
+                {
+                    // Cliente: le manda su nombre al host.
+                    EnviarNombreAlHost();
+                }
+                else if (data.ClientId == NetworkManager.ServerClientId)
+                {
+                    // Host: arma la lista con su propio nombre.
+                    EnviarListaLobby();
+                }
+
+                ActualizarLobbyRed();
+                break;
+
             case ConnectionEvent.PeerConnected:
                 ActualizarLobbyRed();
                 break;
@@ -1769,7 +1823,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 if (networkManager.IsServer)
                 {
                     if (data.ClientId != NetworkManager.ServerClientId)
-                        ActualizarLobbyRed(data.ClientId);
+                    {
+                        nombresLobby.Remove(data.ClientId);
+                        EnviarListaLobby(data.ClientId);
+                    }
                 }
                 else
                 {
@@ -1784,7 +1841,6 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 break;
         }
     }
-
 
     private void OnFalloTransporte()
     {
@@ -1809,6 +1865,134 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         txtDetallesLobby.text = mensaje;
     }
 
+    //metodos nuevos para los nombres
+
+    // ---------- NOMBRES EN EL LOBBY ----------
+
+    private void RegistrarMensajesLobby()
+    {
+        if (mensajesRegistrados)
+            return;
+
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || nm.CustomMessagingManager == null)
+            return;
+
+        nm.CustomMessagingManager.RegisterNamedMessageHandler(
+            MsgNombre, AlRecibirNombreLobby);
+
+        nm.CustomMessagingManager.RegisterNamedMessageHandler(
+            MsgLista, AlRecibirListaLobby);
+
+        mensajesRegistrados = true;
+    }
+
+
+    // Cliente -> host
+    private void EnviarNombreAlHost()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || nm.CustomMessagingManager == null)
+            return;
+
+        string nombre = NombrePlayer.NombreJugador;
+
+        if (string.IsNullOrWhiteSpace(nombre))
+            nombre = "Jugador";
+
+        using (var writer = new FastBufferWriter(256, Allocator.Temp))
+        {
+            writer.WriteValueSafe(nombre);
+
+            nm.CustomMessagingManager.SendNamedMessage(
+                MsgNombre,
+                NetworkManager.ServerClientId,
+                writer
+            );
+        }
+    }
+
+
+    // Host: recibe el nombre de un cliente
+    private void AlRecibirNombreLobby(ulong remitente, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out string nombre);
+
+        nombre = (nombre ?? "").Trim();
+
+        if (nombre.Length > 16)
+            nombre = nombre.Substring(0, 16);
+
+        if (string.IsNullOrWhiteSpace(nombre))
+            nombre = "Jugador " + (remitente + 1);
+
+        nombresLobby[remitente] = nombre;
+
+        EnviarListaLobby();
+    }
+
+
+    // Host: arma la lista en orden de conexión y se la manda a todos
+    private void EnviarListaLobby(ulong? clienteSaliente = null)
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || !nm.IsServer)
+            return;
+
+        nombresLobbyActuales.Clear();
+
+        foreach (ulong id in nm.ConnectedClientsIds)
+        {
+            if (id == clienteSaliente)
+                continue;
+
+            string nombre;
+
+            if (id == NetworkManager.ServerClientId)
+                nombre = NombrePlayer.NombreJugador;
+            else
+                nombresLobby.TryGetValue(id, out nombre);
+
+            nombresLobbyActuales.Add(nombre ?? "");
+        }
+
+        // Actualiza la pantalla del propio host
+        ActualizarLobbyRed(clienteSaliente);
+
+        // Avisa a los clientes (si hay alguno)
+        if (nombresLobbyActuales.Count > 1 && nm.CustomMessagingManager != null)
+        {
+            using (var writer = new FastBufferWriter(1024, Allocator.Temp))
+            {
+                writer.WriteValueSafe(nombresLobbyActuales.Count);
+
+                foreach (string nombre in nombresLobbyActuales)
+                    writer.WriteValueSafe(nombre);
+
+                nm.CustomMessagingManager.SendNamedMessageToAll(MsgLista, writer);
+            }
+        }
+    }
+
+
+    // Cliente: recibe la lista completa del host
+    private void AlRecibirListaLobby(ulong remitente, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out int cantidad);
+
+        nombresLobbyActuales.Clear();
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            reader.ReadValueSafe(out string nombre);
+            nombresLobbyActuales.Add(nombre);
+        }
+
+        MostrarRanurasJugadores(cantidad);
+    } //ultimo metodo nuevo
 
     public void SalirDelLobby()
     {
@@ -1825,6 +2009,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // Si el que sale es el host, la sala se cierra para todos.
     private void CerrarConexion()
     {
+        nombresLobby.Clear();
+        nombresLobbyActuales.Clear();
+        mensajesRegistrados = false;
         DesuscribirDeRed();
 
         NetworkManager networkManager = NetworkManager.Singleton;
@@ -3500,5 +3687,105 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         });
 
         trigger.triggers.Add(entryExit);
+    }
+    // ========================================================
+    // OPCIONES DE VIDEO (sin persistencia)
+    // ========================================================
+    private List<Resolution> resolucionesDisponibles = new List<Resolution>();
+    private int indiceResolucion;
+
+    private readonly int[] limitesFps = { 30, 60, 120, 144, -1 }; // -1 = ilimitado
+    private int indiceLimiteFps;
+
+    private void InicializarOpcionesVideo()
+    {
+        // Resoluciones únicas (width x height), ignorando las repetidas por refresco
+        resolucionesDisponibles.Clear();
+        foreach (Resolution r in Screen.resolutions)
+        {
+            bool existe = resolucionesDisponibles.Exists(
+                x => x.width == r.width && x.height == r.height);
+            if (!existe) resolucionesDisponibles.Add(r);
+        }
+
+        // Si por algún motivo no hay lista (ej: editor), usar la actual
+        if (resolucionesDisponibles.Count == 0)
+            resolucionesDisponibles.Add(Screen.currentResolution);
+
+        // Buscar la resolución actual
+        indiceResolucion = resolucionesDisponibles.Count - 1;
+        for (int i = 0; i < resolucionesDisponibles.Count; i++)
+        {
+            if (resolucionesDisponibles[i].width == Screen.width &&
+                resolucionesDisponibles[i].height == Screen.height)
+            {
+                indiceResolucion = i;
+                break;
+            }
+        }
+
+        // Buscar el límite de FPS actual
+        indiceLimiteFps = limitesFps.Length - 1;
+        for (int i = 0; i < limitesFps.Length; i++)
+        {
+            if (limitesFps[i] == Application.targetFrameRate)
+            {
+                indiceLimiteFps = i;
+                break;
+            }
+        }
+    }
+
+    private string TextoResolucion()
+    {
+        Resolution r = resolucionesDisponibles[indiceResolucion];
+        return "RESOLUCIÓN: " + r.width + " x " + r.height;
+    }
+
+    private string TextoCalidad()
+    {
+        string nombre = QualitySettings.names[QualitySettings.GetQualityLevel()];
+        return "GRÁFICOS: " + nombre.ToUpper();
+    }
+
+    private string TextoVSync()
+    {
+        return QualitySettings.vSyncCount > 0
+            ? "VSYNC: ACTIVADO"
+            : "VSYNC: DESACTIVADO";
+    }
+
+    private string TextoLimiteFps()
+    {
+        int fps = limitesFps[indiceLimiteFps];
+        return fps < 0 ? "LÍMITE FPS: ILIMITADO" : "LÍMITE FPS: " + fps;
+    }
+
+    private void CambiarResolucion(TMPro.TMP_Text btnText)
+    {
+        indiceResolucion = (indiceResolucion + 1) % resolucionesDisponibles.Count;
+        Resolution r = resolucionesDisponibles[indiceResolucion];
+        Screen.SetResolution(r.width, r.height, Screen.fullScreenMode);
+        btnText.text = TextoResolucion();
+    }
+
+    private void CambiarCalidad(TMPro.TMP_Text btnText)
+    {
+        int nivel = (QualitySettings.GetQualityLevel() + 1) % QualitySettings.names.Length;
+        QualitySettings.SetQualityLevel(nivel, true);
+        btnText.text = TextoCalidad();
+    }
+
+    private void CambiarVSync(TMPro.TMP_Text btnText)
+    {
+        QualitySettings.vSyncCount = QualitySettings.vSyncCount > 0 ? 0 : 1;
+        btnText.text = TextoVSync();
+    }
+
+    private void CambiarLimiteFps(TMPro.TMP_Text btnText)
+    {
+        indiceLimiteFps = (indiceLimiteFps + 1) % limitesFps.Length;
+        Application.targetFrameRate = limitesFps[indiceLimiteFps];
+        btnText.text = TextoLimiteFps();
     }
 }

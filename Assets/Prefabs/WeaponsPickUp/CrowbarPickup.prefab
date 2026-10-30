@@ -197,9 +197,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::PickupGlow
   glowLight: {fileID: 1684739878442761271}
-  pulseSpeed: 2
-  minIntensity: 1
-  maxIntensity: 2.5
+  pulseSpeed: 3
+  minIntensity: 3
+  maxIntensity: 5
 --- !u!54 &6258235389277825533
 Rigidbody:
   m_ObjectHideFlags: 0
