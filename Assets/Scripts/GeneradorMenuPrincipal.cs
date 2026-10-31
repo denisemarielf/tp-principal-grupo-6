@@ -2984,7 +2984,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private List<Resolution> resolucionesDisponibles = new List<Resolution>();
     private int indiceResolucion;
 
-    private readonly int[] limitesFps = { 30, 60, 120, 144, -1 }; // -1 = ilimitado
+    private readonly int[] limitesFps = { 30, 60, 120, 144,250, -1 }; // -1 = ilimitado
     private int indiceLimiteFps;
 
     private void InicializarOpcionesVideo()
