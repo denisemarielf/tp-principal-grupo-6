@@ -4,6 +4,9 @@ using UnityEngine.Rendering;
 // Gotas de sangre al pegarle a un zombie. Se arma en codigo para no depender de un prefab.
 public static class BloodSplatter
 {
+    // Cambiá este valor para agrandar o achicar toda la sangre (1 = tamaño original).
+    private const float Scale = 4f;
+
     private static Material material;
     private static Texture2D dropletTexture;
 
@@ -23,26 +26,26 @@ public static class BloodSplatter
         main.loop = false;
         main.duration = 0.2f;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.28f, 0.5f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(1.6f, 3.8f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.02f, 0.055f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(2.2f, 4.8f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.02f * Scale, 0.055f * Scale);
         main.startColor = new ParticleSystem.MinMaxGradient(
             new Color(0.35f, 0.02f, 0.02f, 1f),
             new Color(0.72f, 0.06f, 0.04f, 1f));
         main.gravityModifier = 2.2f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 24;
+        main.maxParticles = 40;
 
         ParticleSystem.EmissionModule emission = particles.emission;
         emission.rateOverTime = 0f;
         emission.SetBursts(new[]
         {
-            new ParticleSystem.Burst(0f, new ParticleSystem.MinMaxCurve(8f, 14f))
+            new ParticleSystem.Burst(0f, new ParticleSystem.MinMaxCurve(14f, 22f))
         });
 
         ParticleSystem.ShapeModule shape = particles.shape;
         shape.shapeType = ParticleSystemShapeType.Cone;
-        shape.angle = 28f;
-        shape.radius = 0.02f;
+        shape.angle = 35f;
+        shape.radius = 0.04f;
 
         ParticleSystem.SizeOverLifetimeModule sizeOverLifetime = particles.sizeOverLifetime;
         sizeOverLifetime.enabled = true;
