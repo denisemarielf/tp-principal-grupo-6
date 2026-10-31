@@ -32,6 +32,7 @@ public class PlayerHealthBar : MonoBehaviour
 
     private void Awake()
     {
+      
         if (deathPanel != null)
             deathPanel.SetActive(false);
     }
@@ -55,15 +56,24 @@ public class PlayerHealthBar : MonoBehaviour
         }
     }
 
+
+    private float nextBindLog;
+
+    private float nextBindTry;
+
     private void TryBindLocalPlayer()
     {
-        NetworkManager networkManager = NetworkManager.Singleton;
-        NetworkObject localPlayer = networkManager != null ? networkManager.LocalClient?.PlayerObject : null;
-        if (localPlayer == null) return;
+        if (Time.time < nextBindTry) return;
+        nextBindTry = Time.time + 0.5f;
 
-        PlayerHealth health = localPlayer.GetComponent<PlayerHealth>();
-        if (health != null)
-            BindTo(health);
+        foreach (PlayerHealth health in FindObjectsByType<PlayerHealth>())
+        {
+            if (health.IsSpawned && health.IsOwner)
+            {
+                BindTo(health);
+                return;
+            }
+        }
     }
 
     // Muestra la vida de un jugador puntual (lo usa TeamHealthPanel).
@@ -77,6 +87,8 @@ public class PlayerHealthBar : MonoBehaviour
     {
         Unbind();
         if (health == null) return;
+
+     
 
         target = health;
         if (deathPanel != null)
@@ -103,6 +115,8 @@ public class PlayerHealthBar : MonoBehaviour
 
     private void OnHealthChanged(float current, float max)
     {
+        
+
         targetFill = max > 0f ? Mathf.Clamp01(current / max) : 0f;
 
         if (fillImage != null)
