@@ -320,6 +320,71 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1037504296
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1037504298}
+  - component: {fileID: 1037504297}
+  m_Layer: 0
+  m_Name: _PantallaCarga
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1037504297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1037504296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6862b72907105744ba80690d1a7a3256, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::LoadingScreen
+  fondos:
+  - {fileID: 21300000, guid: 2593c777e4ccc3e438b344884814f2f6, type: 3}
+  consejos:
+  - "Mant\xE9n al grupo unido: un sobreviviente aislado dura poco."
+  - Presiona la tecla H para interactuar con los consumibles del inventario
+  - "Guarda munici\xF3n para los momentos cr\xEDticos."
+  segundosPorConsejo: 7
+  mapas:
+  - nombreEscena: SampleScene
+    nombreMostrado: SUBURBIO
+  - nombreEscena: MapaOficina
+    nombreMostrado: COMPLEJO DE OFICINAS
+  - nombreEscena: ExtraccionScene
+    nombreMostrado: ESTACION DE TREN
+  fuenteTitulo: {fileID: 11400000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
+  fuenteTexto: {fileID: 11400000, guid: 8a89fa14b10d46a99122fd4f73fca9a2, type: 2}
+  tiempoMinimo: 2
+  tiempoMaximo: 90
+  velocidadBarra: 1
+  fundidoEntrada: 0.25
+  fundidoSalida: 0.5
+--- !u!4 &1037504298
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1037504296}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -40.59381, y: 13.4209, z: 241.81316}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1147689529
 GameObject:
   m_ObjectHideFlags: 0
@@ -745,3 +810,4 @@ SceneRoots:
   - {fileID: 956903569}
   - {fileID: 1147689531}
   - {fileID: 416137083}
+  - {fileID: 1037504298}
