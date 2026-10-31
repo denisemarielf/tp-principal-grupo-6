@@ -215,10 +215,14 @@ MonoBehaviour:
     para escapar del complejo de oficinas.
   objetivoMapa3: 'Estacion de tren. Modo Supervivencia: defende el refugio frente
     a oleadas. La victoria es sobrevivir el tiempo con al menos un civil vivo.'
-  imagenFondoCustom: {fileID: 21300000, guid: 34541b0fae9e8f947a907f04d80646a8, type: 3}
-  fuenteRetro: {fileID: 11400000, guid: 53230108c3499c740971b1b865711c22, type: 2}
-  escalaFuenteRetro: 1
-  musicaFondo: {fileID: 8300000, guid: 74f5ee4fa87c57349b6b180e3f9ed16c, type: 3}
+  imagenFondoCustom: {fileID: 21300000, guid: afc2ce6cd823bcc4bbd8447f61407446, type: 3}
+  fuenteTitulo: {fileID: 11400000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
+  fuenteTexto: {fileID: 11400000, guid: 8a89fa14b10d46a99122fd4f73fca9a2, type: 2}
+  escalaFuente: 1
+  margenIzquierdo: 120
+  margenSuperior: 70
+  anchoTarjeta: 600
+  musicaFondo: {fileID: 8300000, guid: 8533b9572b0d01545aaa99fe0e500e84, type: 3}
   sfxHover: {fileID: 8300000, guid: 82fc8621ceeb7f145ba58c8dfe63cdaa, type: 3}
   sfxClick: {fileID: 8300000, guid: f39c4a040d83b6848bb01f993fc14bf3, type: 3}
   characterPreview: {fileID: 416137082}

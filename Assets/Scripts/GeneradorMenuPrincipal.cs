@@ -350,7 +350,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         CrearTitulo(
             panelPrincipal.transform,
             "ULTIMO TREN A RETIRO",
-            "SOBREVIVE EN EL CONURBANO",
+            "SOBREVIVE AL BROTE",
             true
         );
 

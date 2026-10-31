@@ -249,7 +249,7 @@ public class AchievementListUI : MonoBehaviour
         label.characterSpacing = letterSpacing;
         label.raycastTarget = false;
         label.textWrappingMode = TextWrappingModes.NoWrap;
-        label.overflowMode = TextOverflowModes.Ellipsis;
+        label.overflowMode = TextOverflowModes.Overflow;
         if (font != null)
             label.font = font;
 
