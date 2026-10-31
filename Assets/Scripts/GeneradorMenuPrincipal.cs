@@ -1042,8 +1042,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         RectTransform rtViewport = viewport.GetComponent<RectTransform>();
         rtViewport.anchorMin = Vector2.zero;
         rtViewport.anchorMax = Vector2.one;
-        rtViewport.offsetMin = new Vector2(28f, 24f);
-        rtViewport.offsetMax = new Vector2(-36f, -30f);
+        const float padX = 32f;
+        const float padY = 28f;
+        rtViewport.offsetMin = new Vector2(padX, padY);
+        rtViewport.offsetMax = new Vector2(-padX, -padY);
 
         Image imgViewport = viewport.GetComponent<Image>();
         imgViewport.color = new Color(1f, 1f, 1f, 0f);
@@ -1111,8 +1113,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         rtBarra.anchorMin = new Vector2(1f, 0f);
         rtBarra.anchorMax = new Vector2(1f, 1f);
         rtBarra.pivot = new Vector2(1f, 0.5f);
-        rtBarra.offsetMin = new Vector2(-16f, 24f);
-        rtBarra.offsetMax = new Vector2(-10f, -30f);
+        rtBarra.offsetMin = new Vector2(-18f, padY);
+        rtBarra.offsetMax = new Vector2(-12f, -padY);
 
         GameObject handle = new GameObject(
             "Handle", typeof(RectTransform), typeof(Image));
@@ -1134,9 +1136,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         scrollbar.handleRect = rtHandle;
 
         scroll.verticalScrollbar = scrollbar;
-        scroll.verticalScrollbarVisibility =
-            ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
-        scroll.verticalScrollbarSpacing = -3f;
+        scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+        scroll.verticalScrollbarSpacing = 0f;
 
         barra.transform.SetAsLastSibling();
 
@@ -3083,19 +3084,39 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // para no tapar el menú alineado a la izquierda.
     private RawImage CrearVistaPreviewPersonaje(Transform parent)
     {
-        var go = new GameObject(
-            "PreviewPersonaje", typeof(RectTransform), typeof(RawImage));
-        go.transform.SetParent(parent, false);
+        // Marco (fondo oscuro translúcido)
+        var marcoGO = new GameObject(
+            "MarcoPreviewPersonaje", typeof(RectTransform), typeof(Image));
+        marcoGO.transform.SetParent(parent, false);
+
+        var marcoRect = (RectTransform)marcoGO.transform;
+        marcoRect.anchorMin = new Vector2(1f, 0.5f);
+        marcoRect.anchorMax = new Vector2(1f, 0.5f);
+        marcoRect.pivot = new Vector2(1f, 0.5f);
+        marcoRect.sizeDelta = new Vector2(480f, 700f);          // 440x660 + 20 px de margen por lado
+        marcoRect.anchoredPosition = new Vector2(-120f, -10f);
+
+        var fondo = marcoGO.GetComponent<Image>();
+        fondo.color = colorVidrio;
+        fondo.raycastTarget = false;
+
+        // Preview 3D, centrado dentro del marco
+        var go = new GameObject("PreviewPersonaje", typeof(RectTransform), typeof(RawImage));
+        go.transform.SetParent(marcoGO.transform, false);
 
         var rect = (RectTransform)go.transform;
-        rect.anchorMin = new Vector2(1f, 0.5f);
-        rect.anchorMax = new Vector2(1f, 0.5f);
-        rect.pivot = new Vector2(1f, 0.5f);                    // crece hacia la izquierda
-        rect.sizeDelta = new Vector2(440f, 660f);              // mantiene la proporcion 2:3 de la textura
-        rect.anchoredPosition = new Vector2(-140f, -10f);      // separacion del borde derecho
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = new Vector2(440f, 660f);               // proporción 2:3 de la textura
+        rect.anchoredPosition = Vector2.zero;
 
         var raw = go.GetComponent<RawImage>();
         raw.raycastTarget = false;
+
+        // Borde fino + acento rojo en la esquina (se agrega al final para que quede encima)
+        AgregarBordeFino(marcoGO.transform);
+
         return raw;
     }
 }
