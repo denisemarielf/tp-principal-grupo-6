@@ -162,7 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3945232058
+  GlobalObjectIdHash: 3745137013
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -276,9 +276,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyCombat
   ShowTopMostFoldoutHeaderGroup: 1
   attackDamage: 15
-  attackRange: 2.5
-  attackCooldown: 0.8
-  hitSlowMultiplier: 0.7
+  attackRange: 3
+  attackDuration: 1.2
+  hitSlowMultiplier: 0.08
   hitSlowDuration: 1.25
 --- !u!114 &100012
 MonoBehaviour:

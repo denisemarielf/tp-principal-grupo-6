@@ -19,7 +19,8 @@ public class EnemyAnimation : NetworkBehaviour
     [SerializeField] private float runStepInterval = 0.3f;
     [SerializeField] private Vector2 pitchRange = new Vector2(0.92f, 1.08f);
     private float nextStepTime;
-    private bool wasAttacking;
+   
+
 
     [SerializeField] private RuntimeAnimatorController locomotion;
 
@@ -77,10 +78,7 @@ public class EnemyAnimation : NetworkBehaviour
             state = Attack;
         else if (HorizontalSpeed() > MoveThreshold)
             state = ActiveModelIsFragil() ? Run : Walk;
-        bool attackingNow = state == Attack;
-        if (attackingNow && !wasAttacking)
-            PlayRandom(attackClips);
-        wasAttacking = attackingNow;
+      
 
         if (state == Walk || state == Run)
         {
@@ -125,9 +123,15 @@ public class EnemyAnimation : NetworkBehaviour
             Animator animator = child.GetComponent<Animator>();
             if (animator == null)
                 animator = child.gameObject.AddComponent<Animator>();
+            if (child.GetComponent<EnemyAttackEventRelay>() == null)
+                child.gameObject.AddComponent<EnemyAttackEventRelay>();
             return animator;
         }
 
         return null;
+    }
+    public void PlayAttackHitSound()
+    {
+        PlayRandom(attackClips);
     }
 }

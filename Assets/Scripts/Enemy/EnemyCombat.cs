@@ -6,14 +6,17 @@ public class EnemyCombat : NetworkBehaviour
 {
     [Header("Ataque")]
     public float attackDamage = 15f;
-    public float attackRange = 2.5f;
-    public float attackCooldown = 0.8f;
+    public float attackRange = 15.5f;
+    public float attackDuration = 1.2f; // duración de UN ciclo del clip de ataque (ya con la velocidad del estado)
+
+    private float attackEndTime;
+    private bool IsCommitted => Time.time < attackEndTime;
 
     [Header("Frenado")]
-    public float hitSlowMultiplier = 0.7f;
+    public float hitSlowMultiplier = 1.7f;
     public float hitSlowDuration = 1.25f;
 
-    private float lastAttackTime;
+    
     private NavMeshAgent navMeshAgent;
     private Ai ai;
     private EnemyHealth enemyHealth;
@@ -45,6 +48,12 @@ public class EnemyCombat : NetworkBehaviour
             ? Vector3.Distance(transform.position, player.position)
             : Mathf.Infinity;
 
+        if (IsCommitted)
+        {
+            // Termina el golpe aunque el jugador se haya movido: no apuntar ni cancelar.
+            navMeshAgent.isStopped = true;
+            return;
+        }
         if (distanceToPlayer <= attackRange)
         {
             currentTarget = player;
@@ -52,9 +61,7 @@ public class EnemyCombat : NetworkBehaviour
             FaceTarget(player);
             if (enemyAnimation != null)
                 enemyAnimation.SetAttacking(true);
-
-            if (Time.time >= lastAttackTime + attackCooldown)
-                Attack();
+            attackEndTime = Time.time + attackDuration;
         }
         else
         {
@@ -65,15 +72,12 @@ public class EnemyCombat : NetworkBehaviour
         }
     }
 
-    private void Attack()
-    {
-        lastAttackTime = Time.time;
-        DealDamage();
-    }
+ 
 
     public void DealDamage()
     {
         if (!IsServer || currentTarget == null) return;
+        if (Vector3.Distance(transform.position, currentTarget.position) > attackRange * 1.2f) return;
 
         PlayerHealth playerHealth = currentTarget.GetComponent<PlayerHealth>();
         if (playerHealth != null)
