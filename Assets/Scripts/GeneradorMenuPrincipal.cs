@@ -58,6 +58,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     [Tooltip("Ancho de las tarjetas con opciones (crear sala, unirse, opciones).")]
     public float anchoTarjeta = 600f;
+    // Las lee PauseMenuUI (que vive en otra escena) para usar las MISMAS
+    // fuentes que asignaste acá en el Inspector.
+    public static TMP_FontAsset FuenteTituloActual { get; private set; }
+    public static TMP_FontAsset FuenteTextoActual { get; private set; }
 
     [Header("Audio y Efectos Sonoros")]
     public AudioClip musicaFondo;
@@ -237,6 +241,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     {
         spriteDegradadoSuave = CrearSpriteDegradadoHorizontal(1f);
         spriteDegradadoFuerte = CrearSpriteDegradadoHorizontal(1.6f);
+        // Se guardan para que el menú de pausa de la partida use las mismas fuentes.
+        FuenteTituloActual = ObtenerFuenteTitulo();
+        FuenteTextoActual = ObtenerFuenteTexto();
 
         // ========================================================
         // 1. CANVAS
