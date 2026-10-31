@@ -6,18 +6,24 @@ using UnityEngine.UI;
 public class AchievementListUI : MonoBehaviour
 {
     private static readonly Color UnlockedColor = new Color(0.2f, 0.85f, 0.3f, 1f);
-    private static readonly Color LockedColor = new Color(0.45f, 0.47f, 0.5f, 1f);
-    private static readonly Color UnlockedRowColor = new Color(0.1f, 0.2f, 0.12f, 0.95f);
-    private static readonly Color LockedRowColor = new Color(0.055f, 0.06f, 0.07f, 0.95f);
-    private static readonly Color TextColor = new Color(0.92f, 0.92f, 0.88f, 1f);
+    private static readonly Color LockedColor = new Color(0.52f, 0.55f, 0.54f, 1f);
+    private static readonly Color TextColor = new Color(0.93f, 0.94f, 0.92f, 1f);
+    private static readonly Color DescriptionColor = new Color(0.68f, 0.71f, 0.70f, 1f);
 
-    private const float RowHeight = 74f;
+    // Filas transparentes: bloqueada = velo blanco tenue, desbloqueada = velo verde.
+    private static readonly Color UnlockedRowColor = new Color(0.2f, 0.85f, 0.3f, 0.16f);
+    private static readonly Color LockedRowColor = new Color(1f, 1f, 1f, 0.05f);
+    private static readonly Color LockedBarColor = new Color(1f, 1f, 1f, 0.28f);
+
+    private const float RowHeight = 70f;
+
+    private static Sprite fadeSprite;
 
     private class Row
     {
         public AchievementDef Def;
         public Image Background;
-        public Image Indicator;
+        public Image Indicator;   // barra de acento a la izquierda de la fila
         public TextMeshProUGUI Name;
         public TextMeshProUGUI Status;
     }
@@ -32,13 +38,14 @@ public class AchievementListUI : MonoBehaviour
         font = fontAsset;
         fontScale = scale;
 
-        summary = CreateLabel(transform, "Resumen", "", 22f, UnlockedColor, TextAlignmentOptions.Center);
+        // Resumen arriba a la izquierda, alineado con el resto del menú.
+        summary = CreateLabel(transform, "Resumen", "", 22f, UnlockedColor, TextAlignmentOptions.MidlineLeft, 3f);
         RectTransform summaryRect = summary.rectTransform;
         summaryRect.anchorMin = new Vector2(0f, 1f);
         summaryRect.anchorMax = new Vector2(1f, 1f);
-        summaryRect.pivot = new Vector2(0.5f, 1f);
-        summaryRect.anchoredPosition = new Vector2(0f, -12f);
-        summaryRect.sizeDelta = new Vector2(0f, 36f);
+        summaryRect.pivot = new Vector2(0f, 1f);
+        summaryRect.anchoredPosition = new Vector2(32f, -20f);
+        summaryRect.sizeDelta = new Vector2(-64f, 34f);
 
         RectTransform content = BuildScroll();
         foreach (AchievementDef def in AchievementCatalog.All)
@@ -63,7 +70,7 @@ public class AchievementListUI : MonoBehaviour
             if (unlocked) unlockedCount++;
 
             row.Background.color = unlocked ? UnlockedRowColor : LockedRowColor;
-            row.Indicator.color = unlocked ? UnlockedColor : LockedColor;
+            row.Indicator.color = unlocked ? UnlockedColor : LockedBarColor;
             row.Name.color = unlocked ? UnlockedColor : TextColor;
             row.Status.text = unlocked ? "DESBLOQUEADO" : "BLOQUEADO";
             row.Status.color = unlocked ? UnlockedColor : LockedColor;
@@ -80,11 +87,12 @@ public class AchievementListUI : MonoBehaviour
         RectTransform viewportRect = viewport.GetComponent<RectTransform>();
         viewportRect.anchorMin = Vector2.zero;
         viewportRect.anchorMax = Vector2.one;
-        viewportRect.offsetMin = new Vector2(16f, 16f);
-        viewportRect.offsetMax = new Vector2(-36f, -56f);
+        viewportRect.offsetMin = new Vector2(28f, 24f);
+        viewportRect.offsetMax = new Vector2(-40f, -66f);
 
         Image viewportImage = viewport.AddComponent<Image>();
         viewportImage.color = new Color(1f, 1f, 1f, 0f);
+        viewportImage.canvasRenderer.cullTransparentMesh = false;
         viewport.AddComponent<RectMask2D>();
 
         GameObject contentObject = new GameObject("Contenido_Logros", typeof(RectTransform));
@@ -99,7 +107,7 @@ public class AchievementListUI : MonoBehaviour
 
         VerticalLayoutGroup layout = contentObject.AddComponent<VerticalLayoutGroup>();
         layout.spacing = 8f;
-        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.childAlignment = TextAnchor.UpperLeft;
         layout.childControlWidth = true;
         layout.childControlHeight = true;
         layout.childForceExpandWidth = true;
@@ -122,26 +130,27 @@ public class AchievementListUI : MonoBehaviour
         return contentRect;
     }
 
+    // Barra fina y discreta, igual que la del panel de objetivo del mapa.
     private Scrollbar BuildScrollbar()
     {
         GameObject barObject = new GameObject("Barra_Logros", typeof(RectTransform));
         barObject.transform.SetParent(transform, false);
 
         Image barBackground = barObject.AddComponent<Image>();
-        barBackground.color = new Color(0.12f, 0.13f, 0.15f, 1f);
+        barBackground.color = new Color(1f, 1f, 1f, 0.06f);
 
         RectTransform barRect = barObject.GetComponent<RectTransform>();
         barRect.anchorMin = new Vector2(1f, 0f);
         barRect.anchorMax = new Vector2(1f, 1f);
         barRect.pivot = new Vector2(1f, 0.5f);
-        barRect.sizeDelta = new Vector2(12f, -72f);
-        barRect.anchoredPosition = new Vector2(-12f, -20f);
+        barRect.offsetMin = new Vector2(-22f, 24f);
+        barRect.offsetMax = new Vector2(-16f, -66f);
 
         GameObject handleObject = new GameObject("Manija", typeof(RectTransform));
         handleObject.transform.SetParent(barObject.transform, false);
 
         Image handleImage = handleObject.AddComponent<Image>();
-        handleImage.color = UnlockedColor;
+        handleImage.color = new Color(1f, 1f, 1f, 0.38f);
 
         RectTransform handleRect = handleObject.GetComponent<RectTransform>();
         handleRect.anchorMin = Vector2.zero;
@@ -156,56 +165,66 @@ public class AchievementListUI : MonoBehaviour
         return scrollbar;
     }
 
+    // Sin layout groups anidados: cada texto se posiciona con anclas fijas,
+    // así nunca puede colapsar a ancho/alto cero.
     private Row BuildRow(Transform parent, AchievementDef def)
     {
         GameObject rowObject = new GameObject("Logro_" + def.Id, typeof(RectTransform));
         rowObject.transform.SetParent(parent, false);
 
+        // Fondo con degradado: se desvanece hacia la derecha.
         Image background = rowObject.AddComponent<Image>();
+        background.sprite = GetFadeSprite();
+        background.raycastTarget = false;
 
+        // El único layout es el del contenido (VerticalLayoutGroup del scroll).
         LayoutElement rowSize = rowObject.AddComponent<LayoutElement>();
+        rowSize.minHeight = RowHeight;
         rowSize.preferredHeight = RowHeight;
 
-        HorizontalLayoutGroup layout = rowObject.AddComponent<HorizontalLayoutGroup>();
-        layout.padding = new RectOffset(18, 18, 8, 8);
-        layout.spacing = 16f;
-        layout.childAlignment = TextAnchor.MiddleLeft;
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = false;
-
+        // Barra de acento a la izquierda
         GameObject indicatorObject = new GameObject("Estado", typeof(RectTransform));
         indicatorObject.transform.SetParent(rowObject.transform, false);
         Image indicator = indicatorObject.AddComponent<Image>();
         indicator.raycastTarget = false;
-        LayoutElement indicatorSize = indicatorObject.AddComponent<LayoutElement>();
-        indicatorSize.preferredWidth = 24f;
-        indicatorSize.preferredHeight = 24f;
 
-        GameObject textBlock = new GameObject("Textos", typeof(RectTransform));
-        textBlock.transform.SetParent(rowObject.transform, false);
-        LayoutElement textBlockSize = textBlock.AddComponent<LayoutElement>();
-        textBlockSize.flexibleWidth = 1f;
+        RectTransform indicatorRect = indicatorObject.GetComponent<RectTransform>();
+        indicatorRect.anchorMin = new Vector2(0f, 0f);
+        indicatorRect.anchorMax = new Vector2(0f, 1f);
+        indicatorRect.pivot = new Vector2(0f, 0.5f);
+        indicatorRect.anchoredPosition = Vector2.zero;
+        indicatorRect.sizeDelta = new Vector2(3f, -14f);
 
-        VerticalLayoutGroup textLayout = textBlock.AddComponent<VerticalLayoutGroup>();
-        textLayout.spacing = 2f;
-        textLayout.childAlignment = TextAnchor.MiddleLeft;
-        textLayout.childControlWidth = true;
-        textLayout.childControlHeight = true;
-        textLayout.childForceExpandWidth = true;
-        textLayout.childForceExpandHeight = false;
+        // Nombre (arriba)
+        TextMeshProUGUI nameLabel = CreateLabel(rowObject.transform, "Nombre", def.Title.ToUpperInvariant(), 26f, TextColor, TextAlignmentOptions.MidlineLeft, 2f);
+        RectTransform nameRect = nameLabel.rectTransform;
+        nameRect.anchorMin = new Vector2(0f, 1f);
+        nameRect.anchorMax = new Vector2(1f, 1f);
+        nameRect.pivot = new Vector2(0f, 1f);
+        nameRect.offsetMin = new Vector2(28f, nameRect.offsetMin.y);
+        nameRect.offsetMax = new Vector2(-230f, nameRect.offsetMax.y);
+        nameRect.anchoredPosition = new Vector2(nameRect.anchoredPosition.x, -8f);
+        nameRect.sizeDelta = new Vector2(nameRect.sizeDelta.x, 32f);
 
-        TextMeshProUGUI nameLabel = CreateLabel(textBlock.transform, "Nombre", def.Title.ToUpperInvariant(), 24f, TextColor, TextAlignmentOptions.Left);
-        AddHeight(nameLabel, 30f);
+        // Descripción (abajo)
+        TextMeshProUGUI descriptionLabel = CreateLabel(rowObject.transform, "Descripcion", def.Description, 18f, DescriptionColor, TextAlignmentOptions.MidlineLeft, 0.5f);
+        RectTransform descRect = descriptionLabel.rectTransform;
+        descRect.anchorMin = new Vector2(0f, 1f);
+        descRect.anchorMax = new Vector2(1f, 1f);
+        descRect.pivot = new Vector2(0f, 1f);
+        descRect.offsetMin = new Vector2(28f, descRect.offsetMin.y);
+        descRect.offsetMax = new Vector2(-230f, descRect.offsetMax.y);
+        descRect.anchoredPosition = new Vector2(descRect.anchoredPosition.x, -40f);
+        descRect.sizeDelta = new Vector2(descRect.sizeDelta.x, 24f);
 
-        TextMeshProUGUI descriptionLabel = CreateLabel(textBlock.transform, "Descripcion", def.Description, 16f, LockedColor, TextAlignmentOptions.Left);
-        descriptionLabel.color = new Color(0.72f, 0.73f, 0.7f, 1f);
-        AddHeight(descriptionLabel, 22f);
-
-        TextMeshProUGUI statusLabel = CreateLabel(rowObject.transform, "Estado_Texto", "", 16f, LockedColor, TextAlignmentOptions.Right);
-        LayoutElement statusSize = statusLabel.gameObject.AddComponent<LayoutElement>();
-        statusSize.preferredWidth = 200f;
+        // Estado (derecha, centrado en vertical)
+        TextMeshProUGUI statusLabel = CreateLabel(rowObject.transform, "Estado_Texto", "", 18f, LockedColor, TextAlignmentOptions.MidlineRight, 3f);
+        RectTransform statusRect = statusLabel.rectTransform;
+        statusRect.anchorMin = new Vector2(1f, 0f);
+        statusRect.anchorMax = new Vector2(1f, 1f);
+        statusRect.pivot = new Vector2(1f, 0.5f);
+        statusRect.anchoredPosition = new Vector2(-20f, 0f);
+        statusRect.sizeDelta = new Vector2(200f, 0f);
 
         return new Row
         {
@@ -217,13 +236,7 @@ public class AchievementListUI : MonoBehaviour
         };
     }
 
-    private void AddHeight(TextMeshProUGUI label, float height)
-    {
-        LayoutElement element = label.gameObject.AddComponent<LayoutElement>();
-        element.preferredHeight = height * fontScale;
-    }
-
-    private TextMeshProUGUI CreateLabel(Transform parent, string objectName, string text, float size, Color color, TextAlignmentOptions alignment)
+    private TextMeshProUGUI CreateLabel(Transform parent, string objectName, string text, float size, Color color, TextAlignmentOptions alignment, float letterSpacing = 0f)
     {
         GameObject labelObject = new GameObject(objectName, typeof(RectTransform));
         labelObject.transform.SetParent(parent, false);
@@ -233,7 +246,7 @@ public class AchievementListUI : MonoBehaviour
         label.fontSize = size * fontScale;
         label.alignment = alignment;
         label.color = color;
-        label.fontStyle = FontStyles.Bold;
+        label.characterSpacing = letterSpacing;
         label.raycastTarget = false;
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.overflowMode = TextOverflowModes.Ellipsis;
@@ -241,5 +254,30 @@ public class AchievementListUI : MonoBehaviour
             label.font = font;
 
         return label;
+    }
+
+    // Sprite blanco 256x1 cuyo alpha baja de 1 a 0 (izquierda -> derecha).
+    private static Sprite GetFadeSprite()
+    {
+        if (fadeSprite != null)
+            return fadeSprite;
+
+        const int width = 256;
+        Texture2D tex = new Texture2D(width, 1, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color32[] pixels = new Color32[width];
+        for (int i = 0; i < width; i++)
+        {
+            float u = i / (float)(width - 1);
+            pixels[i] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt((1f - u) * 255f));
+        }
+
+        tex.SetPixels32(pixels);
+        tex.Apply();
+
+        fadeSprite = Sprite.Create(tex, new Rect(0, 0, width, 1), new Vector2(0.5f, 0.5f), 100f);
+        return fadeSprite;
     }
 }

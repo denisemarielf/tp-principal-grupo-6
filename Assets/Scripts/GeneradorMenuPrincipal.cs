@@ -7,6 +7,7 @@ using UnityEngine.InputSystem.UI;
 using TMPro;
 using System.Collections.Generic;
 using Unity.Collections;
+using UnityEngine.Serialization;
 
 
 public class GeneradorMenuPrincipal : MonoBehaviour
@@ -36,13 +37,27 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     [Header("Ambientación y Arte")]
     public Sprite imagenFondoCustom;
 
-    [Header("Tipografía Retro")]
-    [Tooltip("Arrastrá acá el TMP Font Asset de tu fuente PSX/pixel.")]
-    public TMP_FontAsset fuenteRetro;
+    [Header("Tipografía")]
+    [Tooltip("TMP Font Asset para los TÍTULOS. Recomendado: fuente stencil / militar (Black Ops One, Saira Stencil One, Stardos Stencil).")]
+    public TMP_FontAsset fuenteTitulo;
+
+    [Tooltip("TMP Font Asset para botones y textos. Recomendado: fuente condensada y legible (Rajdhani Bold, Teko, Oswald).")]
+    public TMP_FontAsset fuenteTexto;
 
     [Tooltip("Escala general de la tipografía.")]
     [Range(0.7f, 1.5f)]
-    public float escalaFuenteRetro = 1.0f;
+    [FormerlySerializedAs("escalaFuenteRetro")]
+    public float escalaFuente = 1.0f;
+
+    [Header("Diseño (px sobre un canvas de 1920x1080)")]
+    [Tooltip("Distancia desde el borde izquierdo de la pantalla. Todo el menú se alinea a esta línea.")]
+    public float margenIzquierdo = 120f;
+
+    [Tooltip("Distancia desde el borde superior hasta el título.")]
+    public float margenSuperior = 70f;
+
+    [Tooltip("Ancho de las tarjetas con opciones (crear sala, unirse, opciones).")]
+    public float anchoTarjeta = 600f;
 
     [Header("Audio y Efectos Sonoros")]
     public AudioClip musicaFondo;
@@ -137,20 +152,22 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // COLORES
     // ============================================================
 
-    private Color colorRojoSangre =
-        new Color(0.8f, 0.12f, 0.12f, 1f);
+    private Color colorRojoSangre = new Color(0.80f, 0.12f, 0.12f, 1f);
+    private Color colorRojoHover = new Color(0.95f, 0.25f, 0.15f, 1f);
+    private Color colorVerdeZombie = new Color(0.2f, 0.85f, 0.3f, 1f);   // lo usa el lobby
+    private Color colorAmbar = new Color(0.95f, 0.78f, 0.28f, 1f);
 
-    private Color colorRojoHover =
-        new Color(0.95f, 0.25f, 0.15f, 1f);
+    private Color colorTexto = new Color(0.93f, 0.94f, 0.92f, 1f);
+    private Color colorTextoSuave = new Color(0.68f, 0.71f, 0.70f, 1f);
+    private Color colorTextoApagado = new Color(0.52f, 0.55f, 0.54f, 1f);
 
-    private Color colorVerdeZombie =
-        new Color(0.2f, 0.85f, 0.3f, 1f);
+    // "Vidrio": paneles semitransparentes con borde fino.
+    private Color colorVidrio = new Color(0.03f, 0.035f, 0.04f, 0.58f);
+    private Color colorBordePanel = new Color(1f, 1f, 1f, 0.10f);
 
-    private Color colorGrisOscuro =
-        new Color(0.08f, 0.09f, 0.11f, 0.95f);
-
-    private Color colorBordePanel =
-        new Color(0.25f, 0.28f, 0.32f, 0.8f);
+    // Degradados generados por código (no hace falta ningún asset).
+    private Sprite spriteDegradadoSuave;    // alpha 1 -> 0 lineal
+    private Sprite spriteDegradadoFuerte;   // alpha 1 -> 0 curvado (oscurece el lado izquierdo)
 
 
     // ============================================================
@@ -209,40 +226,35 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         }
     }
 
-
     // ============================================================
     // CONSTRUIR INTERFAZ
     // ============================================================
 
+    // Y donde empieza el contenido (botones / tarjetas), debajo del título.
+    private float InicioContenidoY => margenSuperior + 240f;
+
     private void ConstruirInterfazCompleta()
     {
+        spriteDegradadoSuave = CrearSpriteDegradadoHorizontal(1f);
+        spriteDegradadoFuerte = CrearSpriteDegradadoHorizontal(1.6f);
+
         // ========================================================
         // 1. CANVAS
         // ========================================================
 
-        GameObject canvasObj =
-            new GameObject("Canvas_Menu");
+        GameObject canvasObj = new GameObject("Canvas_Menu");
 
-        Canvas canvas =
-            canvasObj.AddComponent<Canvas>();
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
-        canvas.renderMode =
-            RenderMode.ScreenSpaceOverlay;
+        // pixelPerfect desactivado: con tipografía moderna suavizada
+        // y animaciones de hover se ve borroso / tiembla.
+        canvas.pixelPerfect = false;
 
-        canvas.pixelPerfect = true;
-
-        CanvasScaler scaler =
-            canvasObj.AddComponent<CanvasScaler>();
-
-        scaler.uiScaleMode =
-            CanvasScaler.ScaleMode.ScaleWithScreenSize;
-
-        scaler.referenceResolution =
-            new Vector2(1920, 1080);
-
-        scaler.screenMatchMode =
-            CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-
+        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = 0.5f;
 
         canvasObj.AddComponent<GraphicRaycaster>();
@@ -254,11 +266,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         if (Object.FindAnyObjectByType<EventSystem>() == null)
         {
-            GameObject eventSystem =
-                new GameObject("EventSystem");
-
+            GameObject eventSystem = new GameObject("EventSystem");
             eventSystem.AddComponent<EventSystem>();
-
             eventSystem.AddComponent<InputSystemUIInputModule>();
         }
 
@@ -267,661 +276,432 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         // 3. FONDO
         // ========================================================
 
-        GameObject fondoObj =
-            new GameObject("Fondo_Villa");
+        GameObject fondoObj = new GameObject(
+            "Fondo_Villa", typeof(RectTransform), typeof(Image));
+        fondoObj.transform.SetParent(canvasObj.transform, false);
 
-        fondoObj.transform.SetParent(
-            canvasObj.transform,
-            false
-        );
+        Image imgFondo = fondoObj.GetComponent<Image>();
+        imgFondo.raycastTarget = false;
+        RectTransform rtFondo = fondoObj.GetComponent<RectTransform>();
 
-        Image imgFondo =
-            fondoObj.AddComponent<Image>();
+        // Prioridad igual que antes: Resources/FondoMenu y, si no existe,
+        // la imagen asignada en el Inspector.
+        Sprite fondoAuto = Resources.Load<Sprite>("FondoMenu");
+        Sprite spriteFondo = fondoAuto != null ? fondoAuto : imagenFondoCustom;
 
-        Sprite fondoAuto =
-            Resources.Load<Sprite>("FondoMenu");
-
-        if (fondoAuto != null)
+        if (spriteFondo != null)
         {
-            imgFondo.sprite = fondoAuto;
-            imgFondo.color =
-                new Color(0.6f, 0.6f, 0.65f, 1f);
-
+            imgFondo.sprite = spriteFondo;
+            imgFondo.color = Color.white;
             imgFondo.preserveAspect = false;
-        }
-        else if (imagenFondoCustom != null)
-        {
-            imgFondo.sprite =
-                imagenFondoCustom;
 
-            imgFondo.preserveAspect = false;
+            // La imagen cubre toda la pantalla SIN deformarse
+            // (recorta lo que sobre según la relación de aspecto).
+            rtFondo.anchorMin = new Vector2(0.5f, 0.5f);
+            rtFondo.anchorMax = new Vector2(0.5f, 0.5f);
+            rtFondo.pivot = new Vector2(0.5f, 0.5f);
+            rtFondo.anchoredPosition = Vector2.zero;
+
+            AspectRatioFitter ajuste = fondoObj.AddComponent<AspectRatioFitter>();
+            ajuste.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            ajuste.aspectRatio = spriteFondo.rect.width / spriteFondo.rect.height;
         }
         else
         {
-            imgFondo.color =
-                new Color(0.04f, 0.02f, 0.03f, 1f);
+            imgFondo.color = new Color(0.04f, 0.045f, 0.05f, 1f);
+            Estirar(rtFondo);
         }
 
-        RectTransform rtFondo =
-            fondoObj.GetComponent<RectTransform>();
-
-        rtFondo.anchorMin =
-            Vector2.zero;
-
-        rtFondo.anchorMax =
-            Vector2.one;
-
-        rtFondo.offsetMin =
-            Vector2.zero;
-
-        rtFondo.offsetMax =
-            Vector2.zero;
-
 
         // ========================================================
-        // 4. VIÑETA
+        // 4. CAPAS DE OSCURECIDO (legibilidad del menú a la izquierda)
         // ========================================================
 
-        GameObject vinetaObj =
-            new GameObject("Sombra_Viñeta");
+        // Velo general suave
+        GameObject veloObj = new GameObject(
+            "Velo_General", typeof(RectTransform), typeof(Image));
+        veloObj.transform.SetParent(canvasObj.transform, false);
+        Image imgVelo = veloObj.GetComponent<Image>();
+        imgVelo.color = new Color(0f, 0f, 0f, 0.22f);
+        imgVelo.raycastTarget = false;
+        Estirar(veloObj.GetComponent<RectTransform>());
 
-        vinetaObj.transform.SetParent(
-            fondoObj.transform,
-            false
-        );
-
-        Image imgVineta =
-            vinetaObj.AddComponent<Image>();
-
-        imgVineta.color =
-            new Color(0.05f, 0.02f, 0.02f, 0.72f);
-
-        imgVineta.raycastTarget = false;
-
-        RectTransform rtVineta =
-            vinetaObj.GetComponent<RectTransform>();
-
-        rtVineta.anchorMin =
-            Vector2.zero;
-
-        rtVineta.anchorMax =
-            Vector2.one;
-
-        rtVineta.offsetMin =
-            Vector2.zero;
-
-        rtVineta.offsetMax =
-            Vector2.zero;
+        // Degradado fuerte desde el borde izquierdo
+        GameObject degObj = new GameObject(
+            "Degradado_Izquierda", typeof(RectTransform), typeof(Image));
+        degObj.transform.SetParent(canvasObj.transform, false);
+        Image imgDeg = degObj.GetComponent<Image>();
+        imgDeg.sprite = spriteDegradadoFuerte;
+        imgDeg.color = new Color(0.01f, 0.012f, 0.015f, 0.92f);
+        imgDeg.raycastTarget = false;
+        RectTransform rtDeg = degObj.GetComponent<RectTransform>();
+        rtDeg.anchorMin = new Vector2(0f, 0f);
+        rtDeg.anchorMax = new Vector2(0.78f, 1f);
+        rtDeg.offsetMin = Vector2.zero;
+        rtDeg.offsetMax = Vector2.zero;
 
 
         // ========================================================
         // 5. PANEL PRINCIPAL
         // ========================================================
 
-        panelPrincipal =
-            CrearPanelContenedor(
-                canvasObj,
-                "Panel_Principal"
-            );
+        panelPrincipal = CrearPanelContenedor(canvasObj, "Panel_Principal");
 
         CrearTitulo(
             panelPrincipal.transform,
             "ULTIMO TREN A RETIRO",
-            "— SOBREVIVE EN EL CONURBANO —"
+            "SOBREVIVE EN EL CONURBANO",
+            true
         );
 
-        GameObject contBotonesP =
-            CrearContenedorVertical(
-                panelPrincipal.transform,
-                new Vector2(0, -60),
-                new Vector2(500, 420)
-            );
-
-        CrearBotonZombieTMP(
-            contBotonesP.transform,
-            "JUGAR",
-            AbrirSeleccionRed,
-            colorRojoSangre
+        GameObject colPrincipal = CrearColumna(
+            panelPrincipal.transform,
+            margenIzquierdo,
+            InicioContenidoY + 10f,
+            520f,
+            8f
         );
 
-        CrearBotonZombieTMP(
-            contBotonesP.transform,
-            "LOGROS",
-            AbrirLogros,
-            new Color(0.2f, 0.22f, 0.25f)
-        );
-
-        CrearBotonZombieTMP(
-            contBotonesP.transform,
-            "OPCIONES",
-            AbrirOpciones,
-            new Color(0.2f, 0.22f, 0.25f)
-        );
-
-        CrearBotonZombieTMP(
-            contBotonesP.transform,
-            "SALIR",
-            Salir,
-            new Color(0.12f, 0.12f, 0.14f)
-        );
+        CrearBotonMenu(colPrincipal.transform, "JUGAR", AbrirSeleccionRed, EstiloBoton.Primario, true);
+        CrearBotonMenu(colPrincipal.transform, "LOGROS", AbrirLogros, EstiloBoton.Normal, true);
+        CrearBotonMenu(colPrincipal.transform, "OPCIONES", AbrirOpciones, EstiloBoton.Normal, true);
+        CrearBotonMenu(colPrincipal.transform, "SALIR", Salir, EstiloBoton.Secundario, true);
 
 
         // ========================================================
         // 6. SELECCIÓN DE RED
         // ========================================================
 
-        panelSeleccionRed =
-            CrearPanelContenedor(
-                canvasObj,
-                "Panel_SeleccionRed"
-            );
+        panelSeleccionRed = CrearPanelContenedor(canvasObj, "Panel_SeleccionRed");
 
         CrearTitulo(
             panelSeleccionRed.transform,
             "MULTIJUGADOR",
-            "— SELECCIONA UNA OPCIÓN —"
+            "SELECCIONA UNA OPCIÓN"
         );
 
-        GameObject contBotonesRed =
-            CrearContenedorVertical(
-                panelSeleccionRed.transform,
-                new Vector2(0, -60),
-                new Vector2(500, 420)
-            );
-
-        CrearBotonZombieTMP(
-            contBotonesRed.transform,
-            "CREAR SALA",
-            AbrirCrearSala,
-            colorRojoSangre
+        GameObject colRed = CrearColumna(
+            panelSeleccionRed.transform,
+            margenIzquierdo,
+            InicioContenidoY + 10f,
+            520f,
+            8f
         );
 
-        CrearBotonZombieTMP(
-            contBotonesRed.transform,
-            "UNIRSE A SALA",
-            AbrirUnirseSala,
-            new Color(0.2f, 0.22f, 0.25f)
-        );
-
-        CrearBotonZombieTMP(
-            contBotonesRed.transform,
-            "VOLVER",
-            VolverAMenuPrincipal,
-            new Color(0.12f, 0.12f, 0.14f)
-        );
+        CrearBotonMenu(colRed.transform, "CREAR SALA", AbrirCrearSala, EstiloBoton.Primario, true);
+        CrearBotonMenu(colRed.transform, "UNIRSE A SALA", AbrirUnirseSala, EstiloBoton.Normal, true);
+        CrearBotonMenu(colRed.transform, "VOLVER", VolverAMenuPrincipal, EstiloBoton.Secundario, true);
 
 
         // ========================================================
         // 7. CREAR SALA
         // ========================================================
-        
 
-        panelCrearSala =
-            CrearPanelContenedor(
-                canvasObj,
-                "Panel_CrearSala"
-            );
+        panelCrearSala = CrearPanelContenedor(canvasObj, "Panel_CrearSala");
 
         CrearTitulo(
             panelCrearSala.transform,
             "CREAR PARTIDA",
-            "— CONFIGURACIÓN DE LA SALA —"
+            "CONFIGURACIÓN DE LA SALA"
         );
 
-        GameObject marcoCrear =
-            CrearMarcoContenedor(
-                panelCrearSala.transform,
-                new Vector2(0, -50),
-                new Vector2(550, 520)
-            );
+        GameObject tarjetaCrear = CrearTarjeta(
+            panelCrearSala.transform,
+            margenIzquierdo,
+            InicioContenidoY,
+            anchoTarjeta
+        );
 
-        GameObject contCrear =
-            CrearContenedorVertical(
-                marcoCrear.transform,
-                Vector2.zero,
-                new Vector2(500, 480)
-            );
-
-        inputNombreHost =
-            CrearCampoTextoRetro(
-                contCrear.transform,
-                "NOMBRE DEL JUGADOR",
-                "Host_Zombie"
-            );
-
+        inputNombreHost = CrearCampoTexto(
+            tarjetaCrear.transform,
+            "NOMBRE DEL JUGADOR",
+            "Host_Zombie"
+        );
 
         // MAPA
+        txtBtnMapa = CrearBotonCiclico(
+            tarjetaCrear.transform,
+            "MAPA: SUBURBIO",
+            () =>
+            {
+                mapaSeleccionado = (mapaSeleccionado + 1) % 3;
 
-        txtBtnMapa =
-            CrearBotonOpcionCiclicaTMP(
-                contCrear.transform,
-                "MAPA: SUBURBIO",
-                () =>
+                string[] mapas =
                 {
-                    mapaSeleccionado =
-                        (mapaSeleccionado + 1) % 3;
+                    "MAPA: SUBURBIO",
+                    "MAPA: COMPLEJO DE OFICINAS",
+                    "MAPA: ESTACION DE TREN"
+                };
 
-                    string[] mapas =
-                    {
-                        "MAPA: SUBURBIO",
-                        "MAPA: COMPLEJO DE OFICINAS",
-                        "MAPA: ESTACION DE TREN"
-                    };
+                txtBtnMapa.text = mapas[mapaSeleccionado];
+                ActualizarObjetivoMapa();
+            }
+        );
 
-                    txtBtnMapa.text =
-                        mapas[mapaSeleccionado];
+        // PERSONAJE (la vista previa va a la derecha de la pantalla)
+        RawImage raw = CrearVistaPreviewPersonaje(panelCrearSala.transform);
 
-                    ActualizarObjetivoMapa();
-                }
-            );
-        // PERSONAJE
-        var raw = CrearVistaPreviewPersonaje(marcoCrear.transform);
-        characterPreview.Display = raw;
-        characterPreview.Show(personajeSeleccionado);
+        if (characterPreview != null)
+        {
+            characterPreview.Display = raw;
+            characterPreview.Show(personajeSeleccionado);
+        }
+
         PlayerModelChoice.SelectedIndex = personajeSeleccionado;   // la opcion mostrada al abrir tambien cuenta
 
-        txtBtnPersonajeC =
-            CrearBotonOpcionCiclicaTMP(
-                contCrear.transform,
-                "PERSONAJE: MASCARA GAS",
-                () =>
+        txtBtnPersonajeC = CrearBotonCiclico(
+            tarjetaCrear.transform,
+            "PERSONAJE: MASCARA GAS",
+            () =>
+            {
+                personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                PlayerModelChoice.SelectedIndex = personajeSeleccionado;
+
+                if (characterPreview != null)
+                    characterPreview.Show(personajeSeleccionado);
+
+                string[] personajes =
                 {
-                    personajeSeleccionado = (personajeSeleccionado + 1) % 4;
-                    PlayerModelChoice.SelectedIndex = personajeSeleccionado;
-                    characterPreview.Show(personajeSeleccionado);   // NUEVO
+                    "PERSONAJE: MASCARA GAS",
+                    "PERSONAJE: SWAT",
+                    "PERSONAJE: SOLDADO",
+                    "PERSONAJE: TRABAJADOR"
+                };
 
-                    string[] personajes =
-                    {
-                "PERSONAJE: MASCARA GAS",
-                "PERSONAJE: SWAT",
-                "PERSONAJE: SOLDADO",
-                "PERSONAJE: TRABAJADOR"
-                    };
+                if (txtBtnPersonajeU != null) txtBtnPersonajeU.text = personajes[personajeSeleccionado];
+                txtBtnPersonajeC.text = personajes[personajeSeleccionado];
+            }
+        );
 
-                    
-                    if (txtBtnPersonajeU != null) txtBtnPersonajeU.text = personajes[personajeSeleccionado];
-                    txtBtnPersonajeC.text = personajes[personajeSeleccionado];
-                }
-
-            );
-
-
-        // Objetivo del mapa seleccionado
+        // Tarjeta con el objetivo del mapa, a la derecha del formulario.
         txtObjetivoMapa = CrearTextoObjetivoMapa(
-            marcoCrear.transform
+            panelCrearSala.transform,
+            margenIzquierdo + anchoTarjeta + 40f,
+            InicioContenidoY
         );
 
         ActualizarObjetivoMapa();
 
-
         // DIFICULTAD
+        txtBtnDificultad = CrearBotonCiclico(
+            tarjetaCrear.transform,
+            "DIFICULTAD: NORMAL",
+            () =>
+            {
+                dificultadSeleccionada = (dificultadSeleccionada + 1) % 3;
 
-        txtBtnDificultad =
-            CrearBotonOpcionCiclicaTMP(
-                contCrear.transform,
-                "DIFICULTAD: NORMAL",
-                () =>
+                string[] difs =
                 {
-                    dificultadSeleccionada =
-                        (dificultadSeleccionada + 1) % 3;
+                    "DIFICULTAD: FÁCIL",
+                    "DIFICULTAD: NORMAL",
+                    "DIFICULTAD: DIFÍCIL"
+                };
 
-                    string[] difs =
-                    {
-                        "DIFICULTAD: FÁCIL",
-                        "DIFICULTAD: NORMAL",
-                        "DIFICULTAD: DIFÍCIL"
-                    };
-
-                    txtBtnDificultad.text =
-                        difs[dificultadSeleccionada];
-                }
-            );
-
-
-        CrearBotonZombieTMP(
-            contCrear.transform,
-            "CONFIRMAR Y CREAR",
-            ConfirmarCrearSala,
-            colorRojoSangre
+                txtBtnDificultad.text = difs[dificultadSeleccionada];
+            }
         );
 
-        CrearBotonZombieTMP(
-            contCrear.transform,
-            "VOLVER",
-            AbrirSeleccionRed,
-            new Color(0.12f, 0.12f, 0.14f)
-        );
+        CrearEspaciador(tarjetaCrear.transform, 6f);
 
+        CrearBotonMenu(tarjetaCrear.transform, "CONFIRMAR Y CREAR", ConfirmarCrearSala, EstiloBoton.Primario);
+        CrearBotonMenu(tarjetaCrear.transform, "VOLVER", AbrirSeleccionRed, EstiloBoton.Secundario);
 
 
         // ========================================================
         // 8. UNIRSE A SALA
         // ========================================================
 
-        panelUnirseSala =
-            CrearPanelContenedor(
-                canvasObj,
-                "Panel_UnirseSala"
-            );
+        panelUnirseSala = CrearPanelContenedor(canvasObj, "Panel_UnirseSala");
 
         CrearTitulo(
             panelUnirseSala.transform,
             "UNIRSE A SALA",
-            "— CONEXIÓN POR CÓDIGO DE SALA —"
+            "CONEXIÓN POR CÓDIGO DE SALA"
         );
 
-        GameObject marcoUnirse =
-            CrearMarcoContenedor(
-                panelUnirseSala.transform,
-                new Vector2(0, -50),
-                new Vector2(550, 540)
-            );
+        GameObject tarjetaUnirse = CrearTarjeta(
+            panelUnirseSala.transform,
+            margenIzquierdo,
+            InicioContenidoY,
+            anchoTarjeta
+        );
 
-        GameObject contUnirse =
-            CrearContenedorVertical(
-                marcoUnirse.transform,
-                Vector2.zero,
-                new Vector2(500, 500)
-            );
+        inputNombreCliente = CrearCampoTexto(
+            tarjetaUnirse.transform,
+            "TU NOMBRE",
+            "Sobreviviente"
+        );
 
-        inputNombreCliente =
-            CrearCampoTextoRetro(
-                contUnirse.transform,
-                "TU NOMBRE",
-                "Sobreviviente"
-            );
         // PERSONAJE
+        RawImage rawU = CrearVistaPreviewPersonaje(panelUnirseSala.transform);
 
-        var rawU = CrearVistaPreviewPersonaje(marcoUnirse.transform);   // el marco de ESTE panel
-        characterPreview.Display = rawU;
-        characterPreview.Show(personajeSeleccionado);
+        if (characterPreview != null)
+        {
+            characterPreview.Display = rawU;
+            characterPreview.Show(personajeSeleccionado);
+        }
+
         PlayerModelChoice.SelectedIndex = personajeSeleccionado;
 
-        txtBtnPersonajeU =
-            CrearBotonOpcionCiclicaTMP(
-                contUnirse.transform,
-                "PERSONAJE: MASCARA GAS",
-                () =>
-                {
-                    personajeSeleccionado = (personajeSeleccionado + 1) % 4;
-                    PlayerModelChoice.SelectedIndex = personajeSeleccionado;
+        txtBtnPersonajeU = CrearBotonCiclico(
+            tarjetaUnirse.transform,
+            "PERSONAJE: MASCARA GAS",
+            () =>
+            {
+                personajeSeleccionado = (personajeSeleccionado + 1) % 4;
+                PlayerModelChoice.SelectedIndex = personajeSeleccionado;
+
+                if (characterPreview != null)
                     characterPreview.Show(personajeSeleccionado);
 
-                    string[] personajes =
-                    {
-                "PERSONAJE: MASCARA GAS",
-                "PERSONAJE: SWAT",
-                "PERSONAJE: SOLDADO",
-                "PERSONAJE: TRABAJADOR"
-                    };
+                string[] personajes =
+                {
+                    "PERSONAJE: MASCARA GAS",
+                    "PERSONAJE: SWAT",
+                    "PERSONAJE: SOLDADO",
+                    "PERSONAJE: TRABAJADOR"
+                };
 
-                    txtBtnPersonajeU.text = personajes[personajeSeleccionado];
-                    if (txtBtnPersonajeC != null) txtBtnPersonajeC.text = personajes[personajeSeleccionado];
-                }
-            );
-
-        inputCodigoSala =
-            CrearCampoTextoRetro(
-                contUnirse.transform,
-                "CÓDIGO DE SALA",
-                ""
-            );
-
-        CrearBotonZombieTMP(
-            contUnirse.transform,
-            "CONECTARSE",
-            ConfirmarUnirseSala,
-            colorRojoSangre
+                txtBtnPersonajeU.text = personajes[personajeSeleccionado];
+                if (txtBtnPersonajeC != null) txtBtnPersonajeC.text = personajes[personajeSeleccionado];
+            }
         );
 
-        CrearBotonZombieTMP(
-            contUnirse.transform,
-            "VOLVER",
-            AbrirSeleccionRed,
-            new Color(0.12f, 0.12f, 0.14f)
+        inputCodigoSala = CrearCampoTexto(
+            tarjetaUnirse.transform,
+            "CÓDIGO DE SALA",
+            ""
         );
+
+        CrearEspaciador(tarjetaUnirse.transform, 6f);
+
+        CrearBotonMenu(tarjetaUnirse.transform, "CONECTARSE", ConfirmarUnirseSala, EstiloBoton.Primario);
+        CrearBotonMenu(tarjetaUnirse.transform, "VOLVER", AbrirSeleccionRed, EstiloBoton.Secundario);
 
 
         // ========================================================
         // 9. LOBBY
         // ========================================================
 
-        panelLobby =
-            CrearPanelContenedor(
-                canvasObj,
-                "Panel_Lobby"
-            );
+        panelLobby = CrearPanelContenedor(canvasObj, "Panel_Lobby");
 
         CrearTitulo(
             panelLobby.transform,
             "LOBBY DE ESPERA",
-            "— ESPERANDO SOBREVIVIENTES (MÁX 4) —"
+            "ESPERANDO SOBREVIVIENTES (MÁX 4)"
         );
 
-
-        // DETALLES
-
-        GameObject detallesObj =
-            new GameObject("Texto_DetallesLobby");
-
-        detallesObj.transform.SetParent(
+        // Un poco más ancha: la línea de detalles es larga.
+        GameObject tarjetaLobby = CrearTarjeta(
             panelLobby.transform,
-            false
+            margenIzquierdo,
+            InicioContenidoY,
+            anchoTarjeta + 80f
         );
 
-        txtDetallesLobby =
-            detallesObj.AddComponent<TextMeshProUGUI>();
-
-        txtDetallesLobby.text =
-            "ESPERANDO...";
-
-        txtDetallesLobby.fontSize =
-            24 * escalaFuenteRetro;
-
-        txtDetallesLobby.alignment =
-            TextAlignmentOptions.Center;
-
-        txtDetallesLobby.color =
-            new Color(0.95f, 0.85f, 0.3f);
-
-        txtDetallesLobby.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txtDetallesLobby
+        // DETALLES (código de sala + mapa / dificultad)
+        txtDetallesLobby = CrearTexto(
+            tarjetaLobby.transform,
+            "Texto_DetallesLobby",
+            "ESPERANDO...",
+            22f,
+            colorAmbar,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            1.5f
         );
 
-        RectTransform rtDetalles =
-            detallesObj.GetComponent<RectTransform>();
+        FijarAltura(txtDetallesLobby.gameObject, 64f);
 
-        rtDetalles.anchoredPosition =
-            new Vector2(0, 180);
-
-        // Dos líneas: código de sala + detalles de la partida.
-        rtDetalles.sizeDelta =
-            new Vector2(900, 90);
-
-
-        // MARCO
-
-        GameObject marcoLobby =
-            CrearMarcoContenedor(
-                panelLobby.transform,
-                new Vector2(0, -10),
-                new Vector2(650, 300)
-            );
-
-        GameObject contSlots =
-            CrearContenedorVertical(
-                marcoLobby.transform,
-                Vector2.zero,
-                new Vector2(600, 270)
-            );
-
+        CrearEspaciador(tarjetaLobby.transform, 4f);
 
         // SLOTS
-
         for (int i = 0; i < 4; i++)
         {
-            GameObject slotObj =
-                new GameObject(
-                    "Slot_Jugador_" + (i + 1)
-                );
+            GameObject slotObj = new GameObject(
+                "Slot_Jugador_" + (i + 1),
+                typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            slotObj.transform.SetParent(tarjetaLobby.transform, false);
+            FijarAltura(slotObj, 54f);
 
-            slotObj.transform.SetParent(
-                contSlots.transform,
-                false
-            );
+            Image imgSlot = slotObj.GetComponent<Image>();
+            imgSlot.sprite = spriteDegradadoSuave;
+            imgSlot.color = new Color(1f, 1f, 1f, 0.07f);
+            imgSlot.raycastTarget = false;
 
-            Image imgSlot =
-                slotObj.AddComponent<Image>();
+            GameObject marcaObj = new GameObject(
+                "Marca", typeof(RectTransform), typeof(Image));
+            marcaObj.transform.SetParent(slotObj.transform, false);
+            Image imgMarca = marcaObj.GetComponent<Image>();
+            imgMarca.color = new Color(1f, 1f, 1f, 0.28f);
+            imgMarca.raycastTarget = false;
+            RectTransform rtMarca = marcaObj.GetComponent<RectTransform>();
+            rtMarca.anchorMin = new Vector2(0f, 0f);
+            rtMarca.anchorMax = new Vector2(0f, 1f);
+            rtMarca.pivot = new Vector2(0f, 0.5f);
+            rtMarca.anchoredPosition = Vector2.zero;
+            rtMarca.sizeDelta = new Vector2(3f, -14f);
 
-            imgSlot.color =
-                new Color(
-                    0.12f,
-                    0.14f,
-                    0.18f,
-                    0.95f
-                );
-
-            RectTransform rtSlot =
-                slotObj.GetComponent<RectTransform>();
-
-            rtSlot.sizeDelta =
-                new Vector2(580, 52);
-
-
-            GameObject txtSlotObj =
-                new GameObject("Texto_Nombre");
-
-            txtSlotObj.transform.SetParent(
+            listaRanurasJugadores[i] = CrearTexto(
                 slotObj.transform,
-                false
+                "Texto_Nombre",
+                (i == 0) ? "1. Esperando Host..." : $"{i + 1}. [ Ranura Vacía ]",
+                24f,
+                (i == 0) ? colorVerdeZombie : new Color(0.5f, 0.5f, 0.5f),
+                TextAlignmentOptions.MidlineLeft,
+                false,
+                1f
             );
 
-            listaRanurasJugadores[i] =
-                txtSlotObj.AddComponent<TextMeshProUGUI>();
-
-            listaRanurasJugadores[i].text =
-                (i == 0)
-                ? "1. Esperando Host..."
-                : $"{i + 1}. [ Ranura Vacía ]";
-
-            listaRanurasJugadores[i].fontSize =
-                22 * escalaFuenteRetro;
-
-            listaRanurasJugadores[i].fontStyle =
-                FontStyles.Bold;
-
-            listaRanurasJugadores[i].alignment =
-                TextAlignmentOptions.Left;
-
-            listaRanurasJugadores[i].color =
-                (i == 0)
-                ? colorVerdeZombie
-                : new Color(0.5f, 0.5f, 0.5f);
-
-            AplicarEstiloRetro(
-                listaRanurasJugadores[i]
-            );
-
-            RectTransform rtTxtSlot =
-                txtSlotObj.GetComponent<RectTransform>();
-
-            rtTxtSlot.anchorMin =
-                Vector2.zero;
-
-            rtTxtSlot.anchorMax =
-                Vector2.one;
-
-            rtTxtSlot.offsetMin =
-                new Vector2(25, 0);
-
-            rtTxtSlot.offsetMax =
-                new Vector2(-25, 0);
+            RectTransform rtTxtSlot = listaRanurasJugadores[i].rectTransform;
+            rtTxtSlot.anchorMin = Vector2.zero;
+            rtTxtSlot.anchorMax = Vector2.one;
+            rtTxtSlot.offsetMin = new Vector2(24f, 0f);
+            rtTxtSlot.offsetMax = new Vector2(-16f, 0f);
         }
 
+        CrearEspaciador(tarjetaLobby.transform, 8f);
 
         // BOTONES LOBBY
-
-        GameObject contBotonesLobby =
-            new GameObject(
-                "Contenedor_BotonesLobby"
-            );
-
-        contBotonesLobby.transform.SetParent(
-            panelLobby.transform,
-            false
+        btnIniciarPartida = CrearBotonMenu(
+            tarjetaLobby.transform,
+            "INICIAR PARTIDA",
+            IniciarPartidaDesdeLobby,
+            EstiloBoton.Primario
         );
 
-        HorizontalLayoutGroup layoutH =
-            contBotonesLobby.AddComponent<
-                HorizontalLayoutGroup
-            >();
-
-        layoutH.spacing = 30;
-        layoutH.childAlignment =
-            TextAnchor.MiddleCenter;
-
-        layoutH.childControlWidth = false;
-        layoutH.childControlHeight = false;
-
-        RectTransform rtContLobby =
-            contBotonesLobby.GetComponent<RectTransform>();
-
-        rtContLobby.anchoredPosition =
-            new Vector2(0, -220);
-
-        rtContLobby.sizeDelta =
-            new Vector2(900, 80);
-
-        btnIniciarPartida =
-            CrearBotonZombieTMP(
-                contBotonesLobby.transform,
-                "INICIAR PARTIDA",
-                IniciarPartidaDesdeLobby,
-                colorRojoSangre
-            );
-
-        CrearBotonZombieTMP(
-            contBotonesLobby.transform,
+        CrearBotonMenu(
+            tarjetaLobby.transform,
             "SALIR DEL LOBBY",
             SalirDelLobby,
-            new Color(0.2f, 0.22f, 0.25f)
+            EstiloBoton.Secundario
         );
 
 
         // ========================================================
         // 10. OPCIONES
         // ========================================================
+
         InicializarOpcionesVideo();
 
-        panelOpciones =
-            CrearPanelContenedor(
-                canvasObj,
-                "Panel_Opciones"
-            );
+        panelOpciones = CrearPanelContenedor(canvasObj, "Panel_Opciones");
+
         CrearTitulo(
             panelOpciones.transform,
             "CONFIGURACIÓN",
-            "— AJUSTES DEL JUEGO —"
+            "AJUSTES DEL JUEGO"
         );
-        GameObject marcoOpciones =
-            CrearMarcoContenedor(
-                panelOpciones.transform,
-                new Vector2(0, -30),
-                new Vector2(550, 520)   // más alto para que entren las opciones nuevas
-            );
-        GameObject contOpciones =
-            CrearContenedorVertical(
-                marcoOpciones.transform,
-                Vector2.zero,
-                new Vector2(500, 480)
-            );
+
+        GameObject tarjetaOpciones = CrearTarjeta(
+            panelOpciones.transform,
+            margenIzquierdo,
+            InicioContenidoY,
+            anchoTarjeta
+        );
 
         // VOLUMEN
         CrearControlSlider(
-            contOpciones.transform,
+            tarjetaOpciones.transform,
             "VOLUMEN GENERAL",
             AudioListener.volume,
             (val) =>
@@ -935,19 +715,21 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             Screen.fullScreen
             ? "PANTALLA: COMPLETA"
             : "PANTALLA: VENTANA";
-        CrearBotonOpcionTMP(
-            contOpciones.transform,
+
+        CrearBotonOpcion(
+            tarjetaOpciones.transform,
             txtPantalla,
             (btnText) =>
             {
-                bool nuevoEstado =
-                    !Screen.fullScreen;
+                bool nuevoEstado = !Screen.fullScreen;
+
                 Screen.fullScreenMode =
                     nuevoEstado
                     ? FullScreenMode.ExclusiveFullScreen
                     : FullScreenMode.Windowed;
-                Screen.fullScreen =
-                    nuevoEstado;
+
+                Screen.fullScreen = nuevoEstado;
+
                 btnText.text =
                     nuevoEstado
                     ? "PANTALLA: COMPLETA"
@@ -955,84 +737,53 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             }
         );
 
-        // RESOLUCIÓN
-        CrearBotonOpcionTMP(
-            contOpciones.transform,
-            TextoResolucion(),
-            CambiarResolucion
-        );
+        // RESOLUCIÓN / CALIDAD / VSYNC / FPS
+        CrearBotonOpcion(tarjetaOpciones.transform, TextoResolucion(), CambiarResolucion);
+        CrearBotonOpcion(tarjetaOpciones.transform, TextoCalidad(), CambiarCalidad);
+        CrearBotonOpcion(tarjetaOpciones.transform, TextoVSync(), CambiarVSync);
+        CrearBotonOpcion(tarjetaOpciones.transform, TextoLimiteFps(), CambiarLimiteFps);
 
-        // CALIDAD GRÁFICA
-        CrearBotonOpcionTMP(
-            contOpciones.transform,
-            TextoCalidad(),
-            CambiarCalidad
-        );
+        CrearEspaciador(tarjetaOpciones.transform, 6f);
 
-        // VSYNC
-        CrearBotonOpcionTMP(
-            contOpciones.transform,
-            TextoVSync(),
-            CambiarVSync
-        );
-
-        // LÍMITE DE FPS
-        CrearBotonOpcionTMP(
-            contOpciones.transform,
-            TextoLimiteFps(),
-            CambiarLimiteFps
-        );
-
-        // VOLVER
-        CrearBotonZombieTMP(
-            contOpciones.transform,
-            "VOLVER AL MENU",
-            CerrarOpciones,
-            new Color(0.2f, 0.22f, 0.25f)
-        );
+        CrearBotonMenu(tarjetaOpciones.transform, "VOLVER AL MENU", CerrarOpciones, EstiloBoton.Secundario);
 
 
         // ========================================================
         // 11. LOGROS
         // ========================================================
 
-        panelLogros =
-            CrearPanelContenedor(
-                canvasObj,
-                "Panel_Logros"
-            );
+        panelLogros = CrearPanelContenedor(canvasObj, "Panel_Logros");
 
         CrearTitulo(
             panelLogros.transform,
             "LOGROS",
-            "— OBJETIVOS ADICIONALES —"
+            "OBJETIVOS ADICIONALES"
         );
 
-        GameObject marcoLogros =
-            CrearMarcoContenedor(
-                panelLogros.transform,
-                new Vector2(0, -45),
-                new Vector2(980, 470)
-            );
+        const float altoMarcoLogros = 480f;
+
+        GameObject marcoLogros = CrearMarcoFijo(
+            panelLogros.transform,
+            margenIzquierdo,
+            InicioContenidoY,
+            1000f,
+            altoMarcoLogros
+        );
 
         marcoLogros.AddComponent<AchievementListUI>().Build(
-            ObtenerFuenteRetro(),
-            escalaFuenteRetro
+            ObtenerFuenteTexto(),
+            escalaFuente
         );
 
-        GameObject contVolverLogros =
-            CrearContenedorVertical(
-                panelLogros.transform,
-                new Vector2(0, -360),
-                new Vector2(500, 70)
-            );
-
-        CrearBotonZombieTMP(
-            contVolverLogros.transform,
-            "VOLVER AL MENU",
-            CerrarLogros,
-            new Color(0.2f, 0.22f, 0.25f)
+        GameObject colVolverLogros = CrearColumna(
+            panelLogros.transform,
+            margenIzquierdo,
+            InicioContenidoY + altoMarcoLogros + 24f,
+            520f,
+            8f
         );
+
+        CrearBotonMenu(colVolverLogros.transform, "VOLVER AL MENU", CerrarLogros, EstiloBoton.Secundario);
 
 
         // ========================================================
@@ -1048,39 +799,50 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
 
     // ============================================================
-    // FUENTE RETRO
+    // FUENTES
     // ============================================================
 
-    private TMP_FontAsset ObtenerFuenteRetro()
+    // Fuente de TÍTULOS. Orden de búsqueda:
+    //   1) la asignada en el Inspector
+    //   2) Resources/Fonts/FuenteTitulo
+    //   3) la fuente de texto
+    private TMP_FontAsset ObtenerFuenteTitulo()
     {
-        // Primero usamos la asignada desde Inspector.
+        if (fuenteTitulo != null)
+            return fuenteTitulo;
 
-        if (fuenteRetro != null)
-            return fuenteRetro;
+        TMP_FontAsset deResources =
+            Resources.Load<TMP_FontAsset>("Fonts/FuenteTitulo");
 
+        if (deResources != null)
+            return deResources;
 
-        // Después intentamos buscarla automáticamente
-        // en Resources/Fonts/FuenteRetro.
-
-        TMP_FontAsset fuenteResources =
-            Resources.Load<TMP_FontAsset>(
-                "Fonts/FuenteRetro"
-            );
-
-        if (fuenteResources != null)
-            return fuenteResources;
+        return ObtenerFuenteTexto();
+    }
 
 
-        // Finalmente usamos la fuente predeterminada de TMP.
+    // Fuente de TEXTOS / BOTONES. Orden de búsqueda:
+    //   1) la asignada en el Inspector
+    //   2) Resources/Fonts/FuenteTexto
+    //   3) la fuente predeterminada de TMP
+    private TMP_FontAsset ObtenerFuenteTexto()
+    {
+        if (fuenteTexto != null)
+            return fuenteTexto;
+
+        TMP_FontAsset deResources =
+            Resources.Load<TMP_FontAsset>("Fonts/FuenteTexto");
+
+        if (deResources != null)
+            return deResources;
 
         if (TMP_Settings.defaultFontAsset != null)
             return TMP_Settings.defaultFontAsset;
 
-
         Debug.LogError(
             "NO SE ENCONTRÓ UNA FUENTE TMP. " +
             "Importá TMP Essential Resources y asigná " +
-            "una TMP_FontAsset en 'Fuente Retro'."
+            "una TMP_FontAsset en 'Fuente Texto' / 'Fuente Titulo'."
         );
 
         return null;
@@ -1088,227 +850,243 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
 
     // ============================================================
-    // ESTILO RETRO
+    // ESTILO DE TEXTO
     // ============================================================
 
-    private void AplicarEstiloRetro(
-        TextMeshProUGUI texto
+    // Llamar DESPUÉS de asignar fontSize (se usa como tamaño máximo
+    // del auto-size).
+    private void AplicarEstiloTexto(
+        TextMeshProUGUI texto,
+        bool esTitulo = false
     )
     {
         if (texto == null)
             return;
 
-
         TMP_FontAsset fuente =
-            ObtenerFuenteRetro();
+            esTitulo ? ObtenerFuenteTitulo() : ObtenerFuenteTexto();
 
         if (fuente != null)
-        {
-            texto.font =
-                fuente;
-        }
-
+            texto.font = fuente;
 
         texto.textWrappingMode = TextWrappingModes.NoWrap;
 
         texto.enableAutoSizing = true;
-        texto.fontSizeMin = 12f;
+        texto.fontSizeMin = Mathf.Max(10f, texto.fontSize * 0.5f);
         texto.fontSizeMax = texto.fontSize;
 
-        texto.overflowMode =
-            TextOverflowModes.Overflow;
+        texto.overflowMode = TextOverflowModes.Overflow;
+        texto.raycastTarget = false;
 
-        texto.raycastTarget =
-            false;
+        // Sin contorno: look limpio / moderno.
+        texto.outlineWidth = 0f;
 
+        // Sombra suave para que el texto se lea sobre cualquier fondo.
+        Material mat = texto.fontMaterial;
 
-        // Outline
-
-        texto.outlineWidth =
-            0.16f;
-
-        texto.outlineColor =
-            new Color32(
-                0,
-                0,
-                0,
-                255
-            );
-
-
-        // Sombra / Underlay
-
-        if (texto.fontMaterial != null)
+        if (mat != null)
         {
-            texto.fontMaterial.EnableKeyword(
-                "UNDERLAY_ON"
-            );
+            mat.EnableKeyword("UNDERLAY_ON");
 
-            texto.fontMaterial.SetColor(
+            mat.SetColor(
                 ShaderUtilities.ID_UnderlayColor,
-                new Color32(
-                    0,
-                    0,
-                    0,
-                    210
-                )
+                new Color32(0, 0, 0, 150)
             );
 
-            texto.fontMaterial.SetFloat(
-                ShaderUtilities.ID_UnderlayOffsetX,
-                0.8f
-            );
-
-            texto.fontMaterial.SetFloat(
-                ShaderUtilities.ID_UnderlayOffsetY,
-                -0.8f
-            );
-
-            texto.fontMaterial.SetFloat(
-                ShaderUtilities.ID_UnderlayDilate,
-                0.10f
-            );
-
-            texto.fontMaterial.SetFloat(
-                ShaderUtilities.ID_UnderlaySoftness,
-                0.05f
-            );
+            mat.SetFloat(ShaderUtilities.ID_UnderlayOffsetX, 0.6f);
+            mat.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, -0.6f);
+            mat.SetFloat(ShaderUtilities.ID_UnderlayDilate, 0.05f);
+            mat.SetFloat(ShaderUtilities.ID_UnderlaySoftness, 0.25f);
         }
     }
 
 
-    // ============================================================
-    // OBJETIVO DEL MAPA
-    // ============================================================
-
-    private TextMeshProUGUI CrearTextoObjetivoMapa(Transform padre)
+    private TextMeshProUGUI CrearTexto(
+        Transform padre,
+        string nombre,
+        string contenido,
+        float tamano,
+        Color color,
+        TextAlignmentOptions alineacion,
+        bool esTitulo = false,
+        float espaciadoLetras = 0f
+    )
     {
-        // ========================================================
-        // TARJETA LATERAL DE INFORMACIÓN DEL MAPA
-        // ========================================================
-        // Hija directa de panelCrearSala: no pertenece a ningún
-        // LayoutGroup y por lo tanto NO mueve los controles centrales.
+        GameObject go = new GameObject(nombre, typeof(RectTransform));
+        go.transform.SetParent(padre, false);
 
-        GameObject caja = new GameObject("Panel_Objetivo_Mapa");
-        caja.transform.SetParent(padre, false);
+        TextMeshProUGUI t = go.AddComponent<TextMeshProUGUI>();
+        t.text = contenido;
+        t.fontSize = tamano * escalaFuente;
+        t.alignment = alineacion;
+        t.color = color;
+        t.characterSpacing = espaciadoLetras;
 
-        Image imgCaja = caja.AddComponent<Image>();
-        imgCaja.color = new Color(0.045f, 0.05f, 0.06f, 0.97f);
-        imgCaja.raycastTarget = true;
+        AplicarEstiloTexto(t, esTitulo);
 
-        RectTransform rtCaja = caja.GetComponent<RectTransform>();
-        rtCaja.anchorMin = new Vector2(0.5f, 0.5f);
-        rtCaja.anchorMax = new Vector2(0.5f, 0.5f);
-        rtCaja.pivot = new Vector2(0.5f, 0.5f);
+        return t;
+    }
 
-        // Un poquito más ancha que la versión anterior.
-        rtCaja.anchoredPosition = new Vector2(545f, -45f);
-        rtCaja.sizeDelta = new Vector2(440f, 350f);
 
-        // ========================================================
-        // BORDE
-        // ========================================================
+    // ============================================================
+    // TÍTULO (arriba a la izquierda)
+    // ============================================================
 
-        GameObject borde = new GameObject("Borde_Objetivo_Mapa");
-        borde.transform.SetParent(caja.transform, false);
+    private void CrearTitulo(
+        Transform padre,
+        string tituloPrincipal,
+        string subtitulo,
+        bool principal = false
+    )
+    {
+        float tamano = principal ? 96f : 68f;
 
-        Image imgBorde = borde.AddComponent<Image>();
-        imgBorde.color = new Color(0.27f, 0.29f, 0.32f, 0.95f);
-        imgBorde.raycastTarget = false;
+        // En el menú principal la última palabra va en rojo.
+        string textoTitulo = tituloPrincipal;
 
-        RectTransform rtBorde = borde.GetComponent<RectTransform>();
-        rtBorde.anchorMin = Vector2.zero;
-        rtBorde.anchorMax = Vector2.one;
-        rtBorde.offsetMin = new Vector2(-1.5f, -1.5f);
-        rtBorde.offsetMax = new Vector2(1.5f, 1.5f);
-        borde.transform.SetAsFirstSibling();
+        if (principal)
+        {
+            int ultimoEspacio = tituloPrincipal.LastIndexOf(' ');
 
-        // ========================================================
-        // FRANJA SUPERIOR
-        // ========================================================
+            if (ultimoEspacio > 0)
+            {
+                textoTitulo =
+                    tituloPrincipal.Substring(0, ultimoEspacio + 1) +
+                    "<color=#" + ColorUtility.ToHtmlStringRGB(colorRojoSangre) + ">" +
+                    tituloPrincipal.Substring(ultimoEspacio + 1) +
+                    "</color>";
+            }
+        }
 
-        GameObject linea = new GameObject("Linea_Objetivo_Mapa");
-        linea.transform.SetParent(caja.transform, false);
+        TextMeshProUGUI txtTitulo = CrearTexto(
+            padre,
+            "Texto_Titulo",
+            textoTitulo,
+            tamano,
+            colorTexto,
+            TextAlignmentOptions.BottomLeft,
+            true,
+            principal ? 2f : 3f
+        );
 
-        Image imgLinea = linea.AddComponent<Image>();
-        imgLinea.color = new Color(0.55f, 0.57f, 0.60f, 0.75f);
+        AnclarArribaIzquierda(
+            txtTitulo.rectTransform,
+            margenIzquierdo,
+            margenSuperior,
+            1300f,
+            120f
+        );
+
+        // Línea de acento
+        GameObject lineaObj = new GameObject(
+            "Linea_Titulo", typeof(RectTransform), typeof(Image));
+        lineaObj.transform.SetParent(padre, false);
+
+        Image imgLinea = lineaObj.GetComponent<Image>();
+        imgLinea.color = colorRojoSangre;
         imgLinea.raycastTarget = false;
 
-        RectTransform rtLinea = linea.GetComponent<RectTransform>();
-        rtLinea.anchorMin = new Vector2(0f, 1f);
-        rtLinea.anchorMax = new Vector2(1f, 1f);
-        rtLinea.pivot = new Vector2(0.5f, 1f);
-        rtLinea.offsetMin = new Vector2(22f, -3f);
-        rtLinea.offsetMax = new Vector2(-22f, 0f);
+        AnclarArribaIzquierda(
+            lineaObj.GetComponent<RectTransform>(),
+            margenIzquierdo,
+            margenSuperior + 130f,
+            96f,
+            5f
+        );
 
-        // ========================================================
-        // VIEWPORT DEL SCROLL
-        // ========================================================
+        // Subtítulo (se quitan los guiones largos decorativos)
+        string sub = subtitulo.Trim().Trim('—').Trim();
 
-        GameObject viewport = new GameObject("Viewport_Objetivo_Mapa");
+        TextMeshProUGUI txtSub = CrearTexto(
+            padre,
+            "Texto_Subtitulo",
+            sub,
+            22f,
+            colorTextoSuave,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            6f
+        );
+
+        AnclarArribaIzquierda(
+            txtSub.rectTransform,
+            margenIzquierdo,
+            margenSuperior + 148f,
+            1000f,
+            34f
+        );
+    }
+
+
+    // ============================================================
+    // OBJETIVO DEL MAPA (tarjeta informativa)
+    // ============================================================
+
+    // IMPORTANTE: ActualizarObjetivoMapa() depende de esta jerarquía:
+    //   caja (ScrollRect) > viewport > contenido > texto
+    private TextMeshProUGUI CrearTextoObjetivoMapa(
+        Transform padre,
+        float x,
+        float y
+    )
+    {
+        GameObject caja = CrearMarcoFijo(padre, x, y, 460f, 360f);
+        caja.name = "Panel_Objetivo_Mapa";
+
+        // VIEWPORT
+        GameObject viewport = new GameObject(
+            "Viewport_Objetivo_Mapa",
+            typeof(RectTransform), typeof(Image), typeof(RectMask2D));
         viewport.transform.SetParent(caja.transform, false);
 
-        RectTransform rtViewport = viewport.AddComponent<RectTransform>();
+        RectTransform rtViewport = viewport.GetComponent<RectTransform>();
         rtViewport.anchorMin = Vector2.zero;
         rtViewport.anchorMax = Vector2.one;
-        rtViewport.offsetMin = new Vector2(20f, 20f);
-        rtViewport.offsetMax = new Vector2(-36f, -25f);
+        rtViewport.offsetMin = new Vector2(28f, 24f);
+        rtViewport.offsetMax = new Vector2(-36f, -30f);
 
-        Image imgViewport = viewport.AddComponent<Image>();
+        Image imgViewport = viewport.GetComponent<Image>();
         imgViewport.color = new Color(1f, 1f, 1f, 0f);
         imgViewport.raycastTarget = true;
+        imgViewport.canvasRenderer.cullTransparentMesh = false;
 
-        RectMask2D mascara = viewport.AddComponent<RectMask2D>();
-
-        // ========================================================
-        // CONTENIDO DEL SCROLL
-        // ========================================================
-
-        GameObject contenido = new GameObject("Contenido_Objetivo_Mapa");
+        // CONTENIDO
+        GameObject contenido = new GameObject(
+            "Contenido_Objetivo_Mapa", typeof(RectTransform));
         contenido.transform.SetParent(viewport.transform, false);
 
-        RectTransform rtContenido = contenido.AddComponent<RectTransform>();
+        RectTransform rtContenido = contenido.GetComponent<RectTransform>();
         rtContenido.anchorMin = new Vector2(0f, 1f);
         rtContenido.anchorMax = new Vector2(1f, 1f);
         rtContenido.pivot = new Vector2(0.5f, 1f);
         rtContenido.anchoredPosition = Vector2.zero;
-        rtContenido.sizeDelta = new Vector2(0f, 330f);
+        rtContenido.sizeDelta = new Vector2(0f, 300f);
 
-        // ========================================================
         // TEXTO
-        // ========================================================
+        TextMeshProUGUI txt = CrearTexto(
+            contenido.transform,
+            "Texto_Objetivo_Mapa",
+            "",
+            24f,
+            new Color(colorTexto.r, colorTexto.g, colorTexto.b, 0.92f),
+            TextAlignmentOptions.TopLeft
+        );
 
-        GameObject obj = new GameObject("Texto_Objetivo_Mapa");
-        obj.transform.SetParent(contenido.transform, false);
-
-        TextMeshProUGUI txt = obj.AddComponent<TextMeshProUGUI>();
-        txt.fontSize = 25f * escalaFuenteRetro;
-        txt.alignment = TextAlignmentOptions.TopLeft;
-        txt.color = new Color(0.92f, 0.92f, 0.89f, 1f);
-        txt.fontStyle = FontStyles.Normal;
-        txt.raycastTarget = false;
-
-        AplicarEstiloRetro(txt);
-
-        // La tarjeta necesita WRAP real, no NoWrap.
+        // Esta tarjeta necesita WRAP real, no NoWrap.
         txt.textWrappingMode = TextWrappingModes.Normal;
         txt.enableAutoSizing = false;
-        txt.fontSize = 25f * escalaFuenteRetro;
+        txt.fontSize = 24f * escalaFuente;
         txt.overflowMode = TextOverflowModes.Overflow;
-        txt.wordSpacing = 0f;
-        txt.characterSpacing = 0f;
+        txt.lineSpacing = 6f;
 
-        RectTransform rtTexto = obj.GetComponent<RectTransform>();
+        RectTransform rtTexto = txt.rectTransform;
         rtTexto.anchorMin = Vector2.zero;
-        rtTexto.anchorMax = new Vector2(1f, 1f);
+        rtTexto.anchorMax = Vector2.one;
         rtTexto.pivot = new Vector2(0.5f, 1f);
-        rtTexto.offsetMin = new Vector2(4f, 0f);
-        rtTexto.offsetMax = new Vector2(-4f, 0f);
+        rtTexto.offsetMin = new Vector2(0f, 0f);
+        rtTexto.offsetMax = new Vector2(0f, 0f);
 
-        // ========================================================
-        // SCROLL RECT
-        // ========================================================
-
+        // SCROLL
         ScrollRect scroll = caja.AddComponent<ScrollRect>();
         scroll.viewport = rtViewport;
         scroll.content = rtContenido;
@@ -1320,34 +1098,29 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         scroll.scrollSensitivity = 35f;
         scroll.verticalNormalizedPosition = 1f;
 
-        // ========================================================
-        // BARRA DE SCROLL
-        // ========================================================
-
-        GameObject barra = new GameObject("Scrollbar_Objetivo_Mapa");
+        // BARRA DE SCROLL (fina)
+        GameObject barra = new GameObject(
+            "Scrollbar_Objetivo_Mapa", typeof(RectTransform), typeof(Image));
         barra.transform.SetParent(caja.transform, false);
 
-        Image imgBarra = barra.AddComponent<Image>();
-        imgBarra.color = new Color(0.10f, 0.11f, 0.13f, 0.85f);
+        Image imgBarra = barra.GetComponent<Image>();
+        imgBarra.color = new Color(1f, 1f, 1f, 0.06f);
         imgBarra.raycastTarget = true;
 
         RectTransform rtBarra = barra.GetComponent<RectTransform>();
         rtBarra.anchorMin = new Vector2(1f, 0f);
         rtBarra.anchorMax = new Vector2(1f, 1f);
         rtBarra.pivot = new Vector2(1f, 0.5f);
-        rtBarra.offsetMin = new Vector2(-17f, 20f);
-        rtBarra.offsetMax = new Vector2(-7f, -25f);
+        rtBarra.offsetMin = new Vector2(-16f, 24f);
+        rtBarra.offsetMax = new Vector2(-10f, -30f);
 
-        GameObject handle = new GameObject("Handle");
+        GameObject handle = new GameObject(
+            "Handle", typeof(RectTransform), typeof(Image));
         handle.transform.SetParent(barra.transform, false);
 
-        Image imgHandle = handle.AddComponent<Image>();
-        imgHandle.color = new Color(0.42f, 0.44f, 0.47f, 0.95f);
+        Image imgHandle = handle.GetComponent<Image>();
+        imgHandle.color = new Color(1f, 1f, 1f, 0.38f);
         imgHandle.raycastTarget = true;
-
-        Scrollbar scrollbar = barra.AddComponent<Scrollbar>();
-        scrollbar.direction = Scrollbar.Direction.BottomToTop;
-        scrollbar.targetGraphic = imgHandle;
 
         RectTransform rtHandle = handle.GetComponent<RectTransform>();
         rtHandle.anchorMin = Vector2.zero;
@@ -1355,16 +1128,18 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         rtHandle.offsetMin = Vector2.zero;
         rtHandle.offsetMax = Vector2.zero;
 
+        Scrollbar scrollbar = barra.AddComponent<Scrollbar>();
+        scrollbar.direction = Scrollbar.Direction.BottomToTop;
+        scrollbar.targetGraphic = imgHandle;
+        scrollbar.handleRect = rtHandle;
+
         scroll.verticalScrollbar = scrollbar;
         scroll.verticalScrollbarVisibility =
             ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
         scroll.verticalScrollbarSpacing = -3f;
 
-        // La barra debe quedar por encima del contenido visual.
         barra.transform.SetAsLastSibling();
 
-        // El ScrollRect necesita seguir recibiendo rueda aunque el
-        // texto no sea clickeable.
         return txt;
     }
 
@@ -1401,9 +1176,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             .Trim();
 
         txtObjetivoMapa.text =
-            "\nINFORMACIÓN DEL MAPA\n\n" +
-            nombresMapas[indice] +
-            "\n\n" +
+            "<size=70%><color=#8C9490><cspace=0.15em>INFORMACIÓN DEL MAPA</cspace></color></size>\n" +
+            "<size=135%><color=#FFFFFF>" + nombresMapas[indice] + "</color></size>\n\n" +
             objetivo;
 
         txtObjetivoMapa.textWrappingMode =
@@ -1413,7 +1187,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             false;
 
         txtObjetivoMapa.fontSize =
-            25f * escalaFuenteRetro;
+            24f * escalaFuente;
 
         txtObjetivoMapa.overflowMode =
             TextOverflowModes.Overflow;
@@ -1529,7 +1303,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         LimpiarSeleccionUI();
     }
 
-   
+
     public void AbrirSeleccionRed()
     {
         OcultarTodosLosPaneles();
@@ -1803,7 +1577,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             $"DIFICULTAD: {nombresDifs[dificultadSeleccionada].ToUpper()}";
     }
 
-    
+
     private void OnEventoConexion(
     NetworkManager networkManager,
     ConnectionEventData data
@@ -2116,7 +1890,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     {
         public static int PersonajeSeleccionado = 0;
     }
-  
+
 
     public class CharacterSelectorUI : MonoBehaviour
     {
@@ -2184,9 +1958,106 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 #endif
     }
 
+    // ============================================================
+    // HELPERS DE LAYOUT
+    // ============================================================
+
+    private enum EstiloBoton
+    {
+        Primario,     // acción principal (JUGAR, CONFIRMAR...)
+        Normal,       // opciones comunes
+        Secundario    // volver / salir
+    }
+
+
+    private static void Estirar(RectTransform rt)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+    }
+
+
+    // Ancla el elemento a la esquina superior izquierda de su padre.
+    // x e y se miden hacia la derecha y hacia ABAJO.
+    private static void AnclarArribaIzquierda(
+        RectTransform rt,
+        float x,
+        float y,
+        float ancho,
+        float alto
+    )
+    {
+        rt.anchorMin = new Vector2(0f, 1f);
+        rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0f, 1f);
+        rt.anchoredPosition = new Vector2(x, -y);
+        rt.sizeDelta = new Vector2(ancho, alto);
+    }
+
+
+    private static LayoutElement FijarAltura(GameObject go, float alto)
+    {
+        LayoutElement le = go.GetComponent<LayoutElement>();
+
+        if (le == null)
+            le = go.AddComponent<LayoutElement>();
+
+        le.minHeight = alto;
+        le.preferredHeight = alto;
+
+        return le;
+    }
+
+
+    private void CrearEspaciador(Transform padre, float alto)
+    {
+        GameObject go = new GameObject(
+            "Espaciador", typeof(RectTransform), typeof(LayoutElement));
+        go.transform.SetParent(padre, false);
+        FijarAltura(go, alto);
+    }
+
+
+    // Sprite blanco de 256x1 con alpha que baja de 1 a 0 (izq -> der).
+    // 'potencia' > 1 concentra la opacidad cerca del borde izquierdo.
+    private Sprite CrearSpriteDegradadoHorizontal(float potencia)
+    {
+        const int ancho = 256;
+
+        Texture2D tex = new Texture2D(
+            ancho, 1, TextureFormat.RGBA32, false);
+
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color32[] pixeles = new Color32[ancho];
+
+        for (int i = 0; i < ancho; i++)
+        {
+            float u = i / (float)(ancho - 1);
+            float a = Mathf.Pow(1f - u, potencia);
+
+            pixeles[i] = new Color32(
+                255, 255, 255,
+                (byte)Mathf.RoundToInt(a * 255f));
+        }
+
+        tex.SetPixels32(pixeles);
+        tex.Apply();
+
+        return Sprite.Create(
+            tex,
+            new Rect(0, 0, ancho, 1),
+            new Vector2(0.5f, 0.5f),
+            100f
+        );
+    }
+
 
     // ============================================================
-    // CREAR PANEL
+    // PANEL / COLUMNA / TARJETA
     // ============================================================
 
     private GameObject CrearPanelContenedor(
@@ -2194,1064 +2065,770 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         string nombre
     )
     {
-        GameObject panel =
-            new GameObject(nombre);
+        GameObject panel = new GameObject(nombre);
+        panel.transform.SetParent(padre.transform, false);
 
-        panel.transform.SetParent(
-            padre.transform,
-            false
-        );
-
-        RectTransform rt =
-            panel.AddComponent<RectTransform>();
-
-        rt.anchorMin =
-            Vector2.zero;
-
-        rt.anchorMax =
-            Vector2.one;
-
-        rt.offsetMin =
-            Vector2.zero;
-
-        rt.offsetMax =
-            Vector2.zero;
+        RectTransform rt = panel.AddComponent<RectTransform>();
+        Estirar(rt);
 
         return panel;
     }
 
 
-    // ============================================================
-    // MARCO
-    // ============================================================
-
-    private GameObject CrearMarcoContenedor(
+    // Columna vertical alineada a la izquierda, sin fondo (menús de botones).
+    private GameObject CrearColumna(
         Transform padre,
-        Vector2 posicion,
-        Vector2 tamano
+        float x,
+        float y,
+        float ancho,
+        float espaciado
     )
     {
-        GameObject marco =
-            new GameObject("Marco_Fondo");
+        GameObject columna = new GameObject(
+            "Columna", typeof(RectTransform));
+        columna.transform.SetParent(padre, false);
 
-        marco.transform.SetParent(
-            padre,
-            false
-        );
+        AnclarArribaIzquierda(
+            columna.GetComponent<RectTransform>(), x, y, ancho, 0f);
 
-        Image imgMarco =
-            marco.AddComponent<Image>();
+        VerticalLayoutGroup layout =
+            columna.AddComponent<VerticalLayoutGroup>();
 
-        imgMarco.color =
-            colorGrisOscuro;
+        layout.spacing = espaciado;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
 
+        ContentSizeFitter fitter =
+            columna.AddComponent<ContentSizeFitter>();
 
-        RectTransform rtMarco =
-            marco.GetComponent<RectTransform>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        rtMarco.anchoredPosition =
-            posicion;
-
-        rtMarco.sizeDelta =
-            tamano;
-
-
-        // Borde
-
-        GameObject borde =
-            new GameObject("Borde_Marco");
-
-        borde.transform.SetParent(
-            marco.transform,
-            false
-        );
-
-        Image imgBorde =
-            borde.AddComponent<Image>();
-
-        imgBorde.color =
-            colorBordePanel;
-
-        imgBorde.raycastTarget =
-            false;
+        return columna;
+    }
 
 
-        RectTransform rtBorde =
-            borde.GetComponent<RectTransform>();
+    // Tarjeta "vidrio" que crece sola según su contenido.
+    // Todo lo que se agregue como hijo queda alineado y con el mismo ancho.
+    private GameObject CrearTarjeta(
+        Transform padre,
+        float x,
+        float y,
+        float ancho
+    )
+    {
+        GameObject tarjeta = new GameObject(
+            "Tarjeta", typeof(RectTransform), typeof(Image));
+        tarjeta.transform.SetParent(padre, false);
 
-        rtBorde.anchorMin =
-            Vector2.zero;
+        Image img = tarjeta.GetComponent<Image>();
+        img.color = colorVidrio;
 
-        rtBorde.anchorMax =
-            Vector2.one;
+        AnclarArribaIzquierda(
+            tarjeta.GetComponent<RectTransform>(), x, y, ancho, 0f);
 
-        rtBorde.offsetMin =
-            new Vector2(-3, -3);
+        VerticalLayoutGroup layout =
+            tarjeta.AddComponent<VerticalLayoutGroup>();
 
-        rtBorde.offsetMax =
-            new Vector2(3, 3);
+        layout.padding = new RectOffset(32, 32, 30, 30);
+        layout.spacing = 12f;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
 
-        borde.transform.SetAsFirstSibling();
+        ContentSizeFitter fitter =
+            tarjeta.AddComponent<ContentSizeFitter>();
 
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        AgregarBordeFino(tarjeta.transform);
+
+        return tarjeta;
+    }
+
+
+    // Marco "vidrio" de tamaño fijo (para contenido que se posiciona solo,
+    // como la lista de logros o la tarjeta del objetivo del mapa).
+    private GameObject CrearMarcoFijo(
+        Transform padre,
+        float x,
+        float y,
+        float ancho,
+        float alto
+    )
+    {
+        GameObject marco = new GameObject(
+            "Marco_Fondo", typeof(RectTransform), typeof(Image));
+        marco.transform.SetParent(padre, false);
+
+        Image img = marco.GetComponent<Image>();
+        img.color = colorVidrio;
+
+        AnclarArribaIzquierda(
+            marco.GetComponent<RectTransform>(), x, y, ancho, alto);
+
+        AgregarBordeFino(marco.transform);
 
         return marco;
     }
 
 
-    // ============================================================
-    // CONTENEDOR VERTICAL
-    // ============================================================
+    // Borde de 1.5px + pequeño acento rojo en la esquina superior izquierda.
+    private void AgregarBordeFino(Transform marco)
+    {
+        const float g = 1.5f;
 
-    private GameObject CrearContenedorVertical(
-        Transform padre,
-        Vector2 posicion,
-        Vector2 tamano
+        CrearLineaBorde(marco, "Borde_Sup",
+            new Vector2(0f, 1f), new Vector2(1f, 1f),
+            new Vector2(0.5f, 1f), new Vector2(0f, g), colorBordePanel);
+
+        CrearLineaBorde(marco, "Borde_Inf",
+            new Vector2(0f, 0f), new Vector2(1f, 0f),
+            new Vector2(0.5f, 0f), new Vector2(0f, g), colorBordePanel);
+
+        CrearLineaBorde(marco, "Borde_Izq",
+            new Vector2(0f, 0f), new Vector2(0f, 1f),
+            new Vector2(0f, 0.5f), new Vector2(g, 0f), colorBordePanel);
+
+        CrearLineaBorde(marco, "Borde_Der",
+            new Vector2(1f, 0f), new Vector2(1f, 1f),
+            new Vector2(1f, 0.5f), new Vector2(g, 0f), colorBordePanel);
+
+        CrearLineaBorde(marco, "Acento_Esquina",
+            new Vector2(0f, 1f), new Vector2(0f, 1f),
+            new Vector2(0f, 1f), new Vector2(72f, 3f), colorRojoSangre);
+    }
+
+
+    private void CrearLineaBorde(
+        Transform marco,
+        string nombre,
+        Vector2 anclaMin,
+        Vector2 anclaMax,
+        Vector2 pivote,
+        Vector2 tamano,
+        Color color
     )
     {
-        GameObject contenedor =
-            new GameObject(
-                "Contenedor_Vertical"
-            );
+        GameObject go = new GameObject(
+            nombre,
+            typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        go.transform.SetParent(marco, false);
 
-        contenedor.transform.SetParent(
-            padre,
-            false
-        );
+        // No participa del layout de la tarjeta.
+        go.GetComponent<LayoutElement>().ignoreLayout = true;
 
-        VerticalLayoutGroup layout =
-            contenedor.AddComponent<
-                VerticalLayoutGroup
-            >();
+        Image img = go.GetComponent<Image>();
+        img.color = color;
+        img.raycastTarget = false;
 
-        layout.spacing = 16;
-
-        layout.childAlignment =
-            TextAnchor.MiddleCenter;
-
-        layout.childControlWidth =
-            false;
-
-        layout.childControlHeight =
-            false;
-
-        RectTransform rt =
-            contenedor.GetComponent<RectTransform>();
-
-        rt.anchoredPosition =
-            posicion;
-
-        rt.sizeDelta =
-            tamano;
-
-        return contenedor;
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = anclaMin;
+        rt.anchorMax = anclaMax;
+        rt.pivot = pivote;
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = tamano;
     }
 
 
     // ============================================================
-    // TÍTULO
+    // BOTONES
     // ============================================================
 
-    private void CrearTitulo(
-        Transform padre,
-        string tituloPrincipal,
-        string subtitulo
-    )
-    {
-        // ========================================================
-        // SOMBRA
-        // ========================================================
+    private const float PaddingTextoBoton = 28f;
 
-        GameObject tituloSombraObj =
-            new GameObject(
-                "Texto_Titulo_Sombra"
-            );
-
-        tituloSombraObj.transform.SetParent(
-            padre,
-            false
-        );
-
-        TextMeshProUGUI txtSombra =
-            tituloSombraObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        txtSombra.text =
-            tituloPrincipal;
-
-        txtSombra.fontSize =
-            78 * escalaFuenteRetro;
-
-        txtSombra.alignment =
-            TextAlignmentOptions.Center;
-
-        txtSombra.color =
-            new Color(
-                0f,
-                0f,
-                0f,
-                0.95f
-            );
-
-        txtSombra.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txtSombra
-        );
-
-
-        RectTransform rtSombra =
-            tituloSombraObj.GetComponent<
-                RectTransform
-            >();
-
-        rtSombra.anchoredPosition =
-            new Vector2(5, 310);
-
-        rtSombra.sizeDelta =
-            new Vector2(1200, 150);
-
-
-        // ========================================================
-        // TÍTULO
-        // ========================================================
-
-        GameObject tituloObj =
-            new GameObject(
-                "Texto_Titulo"
-            );
-
-        tituloObj.transform.SetParent(
-            padre,
-            false
-        );
-
-        TextMeshProUGUI txtTitulo =
-            tituloObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        txtTitulo.text =
-            tituloPrincipal;
-
-        txtTitulo.fontSize =
-            78 * escalaFuenteRetro;
-
-        txtTitulo.alignment =
-            TextAlignmentOptions.Center;
-
-        txtTitulo.color =
-            colorRojoSangre;
-
-        txtTitulo.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txtTitulo
-        );
-
-
-        RectTransform rtTitulo =
-            tituloObj.GetComponent<
-                RectTransform
-            >();
-
-        rtTitulo.anchoredPosition =
-            new Vector2(0, 316);
-
-        rtTitulo.sizeDelta =
-            new Vector2(1200, 150);
-
-
-        // ========================================================
-        // SUBTÍTULO
-        // ========================================================
-
-        GameObject subTituloObj =
-            new GameObject(
-                "Texto_Subtitulo"
-            );
-
-        subTituloObj.transform.SetParent(
-            padre,
-            false
-        );
-
-        TextMeshProUGUI txtSub =
-            subTituloObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        txtSub.text =
-            subtitulo;
-
-        txtSub.fontSize =
-            22 * escalaFuenteRetro;
-
-        txtSub.alignment =
-            TextAlignmentOptions.Center;
-
-        txtSub.color =
-            new Color(
-                0.85f,
-                0.85f,
-                0.8f,
-                0.95f
-            );
-
-        txtSub.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txtSub
-        );
-
-
-        RectTransform rtSub =
-            subTituloObj.GetComponent<
-                RectTransform
-            >();
-
-        rtSub.anchoredPosition =
-            new Vector2(0, 245);
-
-        rtSub.sizeDelta =
-            new Vector2(1000, 50);
-    }
-
-
-    // ============================================================
-    // BOTÓN PRINCIPAL
-    // ============================================================
-
-    private Button CrearBotonZombieTMP(
+    // Botón principal de menú: transparente, texto a la izquierda,
+    // barra de acento + resalte con degradado al pasar el mouse.
+    private Button CrearBotonMenu(
         Transform padre,
         string texto,
         UnityEngine.Events.UnityAction accion,
-        Color colorBase
+        EstiloBoton estilo = EstiloBoton.Normal,
+        bool grande = false
     )
     {
-        GameObject btnObj =
-            new GameObject(
-                "Btn_" + texto
-            );
+        TextMeshProUGUI txt;
 
-        btnObj.transform.SetParent(
+        Button btn = CrearBotonBase(
             padre,
-            false
+            texto,
+            estilo,
+            grande ? 72f : 58f,
+            grande ? 38f : 28f,
+            false,
+            out txt
         );
-
-
-        Image imgBtn =
-            btnObj.AddComponent<Image>();
-
-        imgBtn.color =
-            colorBase;
-
-
-        Button btn =
-            btnObj.AddComponent<Button>();
-
-        Navigation navegacion = btn.navigation;
-        navegacion.mode = Navigation.Mode.None;
-        btn.navigation = navegacion;
-
 
         btn.onClick.AddListener(
             () =>
             {
-                ReproducirSFX(
-                    sfxClick
-                );
-
+                ReproducirSFX(sfxClick);
                 accion?.Invoke();
                 LimpiarSeleccionUI();
             }
         );
-
-
-        // Hover mejorado: color + escala + borde + texto
-        // Hover mejorado: color + escala + borde + texto
-        ConfigurarHoverBoton(
-            btnObj,
-            btn,
-            imgBtn,
-            colorBase
-        );
-
-
-        // Colores
-
-        ColorBlock cb =
-            btn.colors;
-
-        cb.normalColor =
-            colorBase;
-
-        cb.highlightedColor =
-            colorRojoHover;
-
-        cb.pressedColor =
-            new Color(
-                0.35f,
-                0.05f,
-                0.05f
-            );
-
-        cb.selectedColor =
-            cb.highlightedColor;
-
-        cb.fadeDuration =
-            0.08f;
-
-        btn.colors =
-            cb;
-
-
-        // Tamaño
-
-        RectTransform rtBtn =
-            btnObj.GetComponent<
-                RectTransform
-            >();
-
-        rtBtn.sizeDelta =
-            new Vector2(
-                440,
-                62
-            );
-
-
-        // ========================================================
-        // BORDE
-        // ========================================================
-
-        GameObject marcoObj =
-            new GameObject(
-                "Borde_Marco"
-            );
-
-        marcoObj.transform.SetParent(
-            btnObj.transform,
-            false
-        );
-
-        Image imgMarco =
-            marcoObj.AddComponent<Image>();
-
-        imgMarco.color =
-            new Color(
-                0.02f,
-                0.02f,
-                0.03f,
-                0.9f
-            );
-
-        imgMarco.raycastTarget =
-            false;
-
-
-        RectTransform rtMarco =
-            marcoObj.GetComponent<
-                RectTransform
-            >();
-
-        rtMarco.anchorMin =
-            Vector2.zero;
-
-        rtMarco.anchorMax =
-            Vector2.one;
-
-        rtMarco.offsetMin =
-            new Vector2(-3, -3);
-
-        rtMarco.offsetMax =
-            new Vector2(3, 3);
-
-        marcoObj.transform.SetAsFirstSibling();
-
-
-        // ========================================================
-        // TEXTO
-        // ========================================================
-
-        GameObject txtObj =
-            new GameObject(
-                "Texto_TMP"
-            );
-
-        txtObj.transform.SetParent(
-            btnObj.transform,
-            false
-        );
-
-        TextMeshProUGUI txt =
-            txtObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        txt.text =
-            texto;
-
-        txt.fontSize =
-            25 * escalaFuenteRetro;
-
-        txt.alignment =
-            TextAlignmentOptions.Center;
-
-        txt.color =
-            new Color(
-                0.98f,
-                0.98f,
-                0.95f
-            );
-
-        txt.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txt
-        );
-
-
-        RectTransform rtTxt =
-            txtObj.GetComponent<
-                RectTransform
-            >();
-
-        rtTxt.anchorMin =
-            Vector2.zero;
-
-        rtTxt.anchorMax =
-            Vector2.one;
-
-        rtTxt.offsetMin =
-            Vector2.zero;
-
-        rtTxt.offsetMax =
-            Vector2.zero;
 
         return btn;
     }
 
 
-    // ============================================================
-    // BOTÓN CÍCLICO
-    // ============================================================
-
-    private TextMeshProUGUI CrearBotonOpcionCiclicaTMP(
+    // Botón de opción: el callback recibe el texto para poder cambiarlo.
+    private TextMeshProUGUI CrearBotonOpcion(
         Transform padre,
         string textoInicial,
-        UnityEngine.Events.UnityAction accion
+        System.Action<TextMeshProUGUI> accionAlClic
     )
     {
-        GameObject btnObj =
-            new GameObject(
-                "Btn_Ciclico"
-            );
+        TextMeshProUGUI txt;
 
-        btnObj.transform.SetParent(
+        Button btn = CrearBotonBase(
             padre,
-            false
+            textoInicial,
+            EstiloBoton.Normal,
+            54f,
+            24f,
+            true,
+            out txt
         );
 
-
-        Image imgBtn =
-            btnObj.AddComponent<Image>();
-
-        imgBtn.color =
-            new Color(
-                0.2f,
-                0.22f,
-                0.26f
-            );
-
-
-        Button btn =
-            btnObj.AddComponent<Button>();
-
-        Navigation navegacion = btn.navigation;
-        navegacion.mode = Navigation.Mode.None;
-        btn.navigation = navegacion;
-
-
-        ColorBlock cb =
-            btn.colors;
-
-        cb.normalColor =
-            new Color(
-                0.2f,
-                0.22f,
-                0.26f
-            );
-
-        cb.highlightedColor =
-            colorRojoHover;
-
-        cb.pressedColor =
-            new Color(
-                0.35f,
-                0.05f,
-                0.05f
-            );
-
-        cb.selectedColor =
-            cb.highlightedColor;
-
-        cb.fadeDuration =
-            0.08f;
-
-        btn.colors =
-            cb;
-
-
-        RectTransform rtBtn =
-            btnObj.GetComponent<
-                RectTransform
-            >();
-
-        rtBtn.sizeDelta =
-            new Vector2(
-                440,
-                62
-            );
-
-
-        // Borde
-
-        GameObject marcoObj =
-            new GameObject(
-                "Borde_Marco"
-            );
-
-        marcoObj.transform.SetParent(
-            btnObj.transform,
-            false
-        );
-
-        Image imgMarco =
-            marcoObj.AddComponent<Image>();
-
-        imgMarco.color =
-            new Color(
-                0.02f,
-                0.02f,
-                0.03f,
-                0.9f
-            );
-
-        imgMarco.raycastTarget =
-            false;
-
-
-        RectTransform rtMarco =
-            marcoObj.GetComponent<
-                RectTransform
-            >();
-
-        rtMarco.anchorMin =
-            Vector2.zero;
-
-        rtMarco.anchorMax =
-            Vector2.one;
-
-        rtMarco.offsetMin =
-            new Vector2(-3, -3);
-
-        rtMarco.offsetMax =
-            new Vector2(3, 3);
-
-        marcoObj.transform.SetAsFirstSibling();
-
-
-        // Texto
-
-        GameObject txtObj =
-            new GameObject(
-                "Texto_TMP"
-            );
-
-        txtObj.transform.SetParent(
-            btnObj.transform,
-            false
-        );
-
-        TextMeshProUGUI txt =
-            txtObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        txt.text =
-            textoInicial;
-
-        txt.fontSize =
-            23 * escalaFuenteRetro;
-
-        txt.alignment =
-            TextAlignmentOptions.Center;
-
-        txt.color =
-            Color.white;
-
-        txt.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txt
-        );
-
-
-        RectTransform rtTxt =
-            txtObj.GetComponent<
-                RectTransform
-            >();
-
-        rtTxt.anchorMin =
-            Vector2.zero;
-
-        rtTxt.anchorMax =
-            Vector2.one;
-
-        rtTxt.offsetMin =
-            Vector2.zero;
-
-        rtTxt.offsetMax =
-            Vector2.zero;
-
+        TextMeshProUGUI txtLocal = txt;
 
         btn.onClick.AddListener(
             () =>
             {
-                ReproducirSFX(
-                    sfxClick
-                );
-
-                accion?.Invoke();
+                ReproducirSFX(sfxClick);
+                accionAlClic?.Invoke(txtLocal);
                 LimpiarSeleccionUI();
             }
         );
-
-
-        // Hover mejorado: color + escala + borde + texto
-        ConfigurarHoverBoton(
-            btnObj,
-            btn,
-            imgBtn,
-            new Color(0.2f, 0.22f, 0.26f)
-        );
-
 
         return txt;
     }
 
 
+    // Igual que CrearBotonOpcion, pero para callbacks sin parámetros.
+    private TextMeshProUGUI CrearBotonCiclico(
+        Transform padre,
+        string textoInicial,
+        System.Action accion
+    )
+    {
+        return CrearBotonOpcion(
+            padre,
+            textoInicial,
+            (t) => accion?.Invoke()
+        );
+    }
+
+
+    private Button CrearBotonBase(
+        Transform padre,
+        string texto,
+        EstiloBoton estilo,
+        float alto,
+        float tamanoTexto,
+        bool conIndicador,
+        out TextMeshProUGUI txt
+    )
+    {
+        GameObject btnObj = new GameObject(
+            "Btn_" + texto,
+            typeof(RectTransform), typeof(Image),
+            typeof(Button), typeof(LayoutElement));
+        btnObj.transform.SetParent(padre, false);
+
+        FijarAltura(btnObj, alto);
+
+        // ---------- colores según estilo ----------
+        Color rojo = colorRojoSangre;
+        Color rojoHover = colorRojoHover;
+
+        Color fondoReposo, fondoHover, barraReposo, barraHover, textoReposo;
+
+        switch (estilo)
+        {
+            case EstiloBoton.Primario:
+                fondoReposo = new Color(rojo.r, rojo.g, rojo.b, 0.30f);
+                fondoHover = new Color(rojoHover.r, rojoHover.g, rojoHover.b, 0.62f);
+                barraReposo = rojo;
+                barraHover = rojoHover;
+                textoReposo = Color.white;
+                break;
+
+            case EstiloBoton.Secundario:
+                fondoReposo = new Color(1f, 1f, 1f, 0.02f);
+                fondoHover = new Color(rojo.r, rojo.g, rojo.b, 0.30f);
+                barraReposo = new Color(1f, 1f, 1f, 0.10f);
+                barraHover = rojoHover;
+                textoReposo = colorTextoApagado;
+                break;
+
+            default:
+                fondoReposo = new Color(1f, 1f, 1f, 0.04f);
+                fondoHover = new Color(rojo.r, rojo.g, rojo.b, 0.40f);
+                barraReposo = new Color(1f, 1f, 1f, 0.28f);
+                barraHover = rojoHover;
+                textoReposo = colorTexto;
+                break;
+        }
+
+        // ---------- fondo (también es el área clickeable) ----------
+        Image fondo = btnObj.GetComponent<Image>();
+        fondo.sprite = spriteDegradadoSuave;
+        fondo.color = fondoReposo;
+        fondo.canvasRenderer.cullTransparentMesh = false;
+
+        // ---------- barra de acento ----------
+        GameObject barraObj = new GameObject(
+            "Barra_Acento", typeof(RectTransform), typeof(Image));
+        barraObj.transform.SetParent(btnObj.transform, false);
+
+        Image imgBarra = barraObj.GetComponent<Image>();
+        imgBarra.color = barraReposo;
+        imgBarra.raycastTarget = false;
+
+        RectTransform rtBarra = barraObj.GetComponent<RectTransform>();
+        rtBarra.anchorMin = new Vector2(0f, 0f);
+        rtBarra.anchorMax = new Vector2(0f, 1f);
+        rtBarra.pivot = new Vector2(0f, 0.5f);
+        rtBarra.anchoredPosition = Vector2.zero;
+        rtBarra.sizeDelta = new Vector2(3f, -18f);
+
+        // ---------- texto ----------
+        txt = CrearTexto(
+            btnObj.transform,
+            "Texto_TMP",
+            texto,
+            tamanoTexto,
+            textoReposo,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            2f
+        );
+
+        RectTransform rtTxt = txt.rectTransform;
+        rtTxt.anchorMin = Vector2.zero;
+        rtTxt.anchorMax = Vector2.one;
+        rtTxt.offsetMin = new Vector2(PaddingTextoBoton, 0f);
+        rtTxt.offsetMax = new Vector2(conIndicador ? -52f : -16f, 0f);
+
+        // ---------- indicador de opción cíclica ----------
+        TextMeshProUGUI indicador = null;
+
+        if (conIndicador)
+        {
+            indicador = CrearTexto(
+                btnObj.transform,
+                "Indicador",
+                ">",
+                tamanoTexto,
+                colorTextoApagado,
+                TextAlignmentOptions.MidlineRight,
+                false,
+                0f
+            );
+
+            RectTransform rtInd = indicador.rectTransform;
+            rtInd.anchorMin = Vector2.zero;
+            rtInd.anchorMax = Vector2.one;
+            rtInd.offsetMin = Vector2.zero;
+            rtInd.offsetMax = new Vector2(-20f, 0f);
+        }
+
+        // ---------- botón ----------
+        Button btn = btnObj.GetComponent<Button>();
+        btn.targetGraphic = fondo;
+        btn.transition = Selectable.Transition.None;
+
+        Navigation navegacion = btn.navigation;
+        navegacion.mode = Navigation.Mode.None;
+        btn.navigation = navegacion;
+
+        // ---------- animación de hover ----------
+        EfectoBotonMenu efecto = btnObj.AddComponent<EfectoBotonMenu>();
+
+        efecto.Configurar(
+            btn,
+            fondo,
+            imgBarra,
+            rtBarra,
+            txt,
+            rtTxt,
+            indicador,
+            fondoReposo,
+            fondoHover,
+            barraReposo,
+            barraHover,
+            textoReposo,
+            Color.white,
+            () => ReproducirSFX(sfxHover)
+        );
+
+        return btn;
+    }
+
+
+    // Anima el hover: resalte con degradado, barra de acento que se
+    // ensancha y texto que se corre un poco a la derecha.
+    // También atenúa el botón cuando está desactivado (interactable = false).
+    private sealed class EfectoBotonMenu :
+        MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        private const float Desplazamiento = 14f;
+        private const float Velocidad = 9f;
+
+        private Button boton;
+        private Image fondo;
+        private Image barra;
+        private RectTransform rtBarra;
+        private TextMeshProUGUI texto;
+        private RectTransform rtTexto;
+        private TextMeshProUGUI indicador;
+
+        private Color fondoReposo, fondoHover;
+        private Color barraReposo, barraHover;
+        private Color textoReposo, textoHover;
+
+        private System.Action alEntrar;
+
+        private float paddingBase;
+        private float t;
+        private bool encima;
+        private float ultimoK = -1f;
+        private bool ultimoHabilitado = true;
+
+
+        public void Configurar(
+            Button boton,
+            Image fondo,
+            Image barra,
+            RectTransform rtBarra,
+            TextMeshProUGUI texto,
+            RectTransform rtTexto,
+            TextMeshProUGUI indicador,
+            Color fondoReposo,
+            Color fondoHover,
+            Color barraReposo,
+            Color barraHover,
+            Color textoReposo,
+            Color textoHover,
+            System.Action alEntrar
+        )
+        {
+            this.boton = boton;
+            this.fondo = fondo;
+            this.barra = barra;
+            this.rtBarra = rtBarra;
+            this.texto = texto;
+            this.rtTexto = rtTexto;
+            this.indicador = indicador;
+            this.fondoReposo = fondoReposo;
+            this.fondoHover = fondoHover;
+            this.barraReposo = barraReposo;
+            this.barraHover = barraHover;
+            this.textoReposo = textoReposo;
+            this.textoHover = textoHover;
+            this.alEntrar = alEntrar;
+
+            paddingBase = rtTexto.offsetMin.x;
+
+            Aplicar(0f, boton.interactable);
+        }
+
+
+        private void OnEnable()
+        {
+            // Si el panel se oculta con el mouse encima, no queda "pegado".
+            encima = false;
+            t = 0f;
+            ultimoK = -1f;
+
+            if (boton != null)
+                Aplicar(0f, boton.interactable);
+        }
+
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (boton == null || !boton.interactable)
+                return;
+
+            encima = true;
+            alEntrar?.Invoke();
+        }
+
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            encima = false;
+        }
+
+
+        private void Update()
+        {
+            if (boton == null)
+                return;
+
+            bool habilitado = boton.interactable;
+            float objetivo = (encima && habilitado) ? 1f : 0f;
+
+            t = Mathf.MoveTowards(
+                t, objetivo, Time.unscaledDeltaTime * Velocidad);
+
+            if (Mathf.Approximately(t, ultimoK) &&
+                habilitado == ultimoHabilitado)
+                return;
+
+            ultimoK = t;
+            ultimoHabilitado = habilitado;
+
+            Aplicar(Mathf.SmoothStep(0f, 1f, t), habilitado);
+        }
+
+
+        private void Aplicar(float k, bool habilitado)
+        {
+            float alfa = habilitado ? 1f : 0.35f;
+
+            Color cf = Color.Lerp(fondoReposo, fondoHover, k);
+            cf.a *= alfa;
+            fondo.color = cf;
+
+            Color cb = Color.Lerp(barraReposo, barraHover, k);
+            cb.a *= alfa;
+            barra.color = cb;
+
+            rtBarra.sizeDelta = new Vector2(
+                Mathf.Lerp(3f, 6f, k), rtBarra.sizeDelta.y);
+
+            Color ct = Color.Lerp(textoReposo, textoHover, k);
+            ct.a *= alfa;
+            texto.color = ct;
+
+            Vector2 min = rtTexto.offsetMin;
+            min.x = paddingBase + Desplazamiento * k;
+            rtTexto.offsetMin = min;
+
+            if (indicador != null)
+            {
+                Color ci = Color.Lerp(
+                    new Color(0.52f, 0.55f, 0.54f, 1f), barraHover, k);
+                ci.a *= alfa;
+                indicador.color = ci;
+            }
+        }
+    }
+
+
     // ============================================================
-    // INPUT FIELD TMP
+    // CAMPO DE TEXTO
     // ============================================================
 
-    private TMP_InputField CrearCampoTextoRetro(
+    // Etiqueta pequeña arriba + campo con línea inferior que se
+    // ilumina en rojo al enfocarlo.
+    private TMP_InputField CrearCampoTexto(
         Transform padre,
         string etiqueta,
         string valorPorDefecto
     )
     {
-        // ========================================================
-        // CONTENEDOR
-        // ========================================================
+        const float altoEtiqueta = 22f;
+        const float altoInput = 52f;
+        const float separacion = 6f;
 
-        GameObject contenedor =
-            new GameObject(
-                "Campo_" + etiqueta
-            );
+        // ---------- contenedor ----------
+        GameObject contenedor = new GameObject(
+            "Campo_" + etiqueta,
+            typeof(RectTransform), typeof(VerticalLayoutGroup),
+            typeof(LayoutElement));
+        contenedor.transform.SetParent(padre, false);
 
-        contenedor.transform.SetParent(
-            padre,
-            false
-        );
+        FijarAltura(
+            contenedor, altoEtiqueta + separacion + altoInput);
 
-        RectTransform rtCont =
-            contenedor.AddComponent<
-                RectTransform
-            >();
+        VerticalLayoutGroup layout =
+            contenedor.GetComponent<VerticalLayoutGroup>();
 
-        rtCont.sizeDelta =
-            new Vector2(
-                440,
-                72
-            );
+        layout.spacing = separacion;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
 
-
-        // ========================================================
-        // ETIQUETA
-        // ========================================================
-
-        GameObject etiquetaObj =
-            new GameObject(
-                "Etiqueta"
-            );
-
-        etiquetaObj.transform.SetParent(
+        // ---------- etiqueta ----------
+        TextMeshProUGUI txtEtiqueta = CrearTexto(
             contenedor.transform,
-            false
+            "Etiqueta",
+            etiqueta,
+            18f,
+            colorTextoSuave,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            3f
         );
 
-        TextMeshProUGUI txtEtiqueta =
-            etiquetaObj.AddComponent<
-                TextMeshProUGUI
-            >();
+        FijarAltura(txtEtiqueta.gameObject, altoEtiqueta);
 
-        txtEtiqueta.text =
-            etiqueta;
+        // ---------- input ----------
+        GameObject inputObj = new GameObject(
+            "Input_TMP",
+            typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        inputObj.transform.SetParent(contenedor.transform, false);
 
-        txtEtiqueta.fontSize =
-            17 * escalaFuenteRetro;
+        FijarAltura(inputObj, altoInput);
 
-        txtEtiqueta.alignment =
-            TextAlignmentOptions.Left;
+        Image imgInput = inputObj.GetComponent<Image>();
+        Color fondoReposo = new Color(0f, 0f, 0f, 0.38f);
+        Color fondoFoco = new Color(0f, 0f, 0f, 0.58f);
+        imgInput.color = fondoReposo;
 
-        txtEtiqueta.color =
-            new Color(
-                0.85f,
-                0.85f,
-                0.8f
-            );
+        // Línea inferior
+        GameObject lineaObj = new GameObject(
+            "Linea", typeof(RectTransform), typeof(Image));
+        lineaObj.transform.SetParent(inputObj.transform, false);
 
-        txtEtiqueta.fontStyle =
-            FontStyles.Bold;
+        Image imgLinea = lineaObj.GetComponent<Image>();
+        Color lineaReposo = new Color(1f, 1f, 1f, 0.25f);
+        imgLinea.color = lineaReposo;
+        imgLinea.raycastTarget = false;
 
-        AplicarEstiloRetro(
-            txtEtiqueta
+        RectTransform rtLinea = lineaObj.GetComponent<RectTransform>();
+        rtLinea.anchorMin = new Vector2(0f, 0f);
+        rtLinea.anchorMax = new Vector2(1f, 0f);
+        rtLinea.pivot = new Vector2(0.5f, 0f);
+        rtLinea.anchoredPosition = Vector2.zero;
+        rtLinea.sizeDelta = new Vector2(0f, 2f);
+
+        // Área de texto (viewport con máscara)
+        GameObject areaObj = new GameObject(
+            "Area_Texto", typeof(RectTransform), typeof(RectMask2D));
+        areaObj.transform.SetParent(inputObj.transform, false);
+
+        RectTransform rtArea = areaObj.GetComponent<RectTransform>();
+        rtArea.anchorMin = Vector2.zero;
+        rtArea.anchorMax = Vector2.one;
+        rtArea.offsetMin = new Vector2(16f, 4f);
+        rtArea.offsetMax = new Vector2(-16f, -4f);
+
+        // Texto del input
+        TextMeshProUGUI texto = CrearTexto(
+            areaObj.transform,
+            "Texto_Input",
+            valorPorDefecto,
+            24f,
+            Color.white,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            1f
         );
 
+        texto.enableAutoSizing = false;
+        texto.fontSize = 24f * escalaFuente;
+        Estirar(texto.rectTransform);
 
-        RectTransform rtEtiqueta =
-            etiquetaObj.GetComponent<
-                RectTransform
-            >();
-
-        rtEtiqueta.anchorMin =
-            new Vector2(0, 0.5f);
-
-        rtEtiqueta.anchorMax =
-            new Vector2(1, 0.5f);
-
-        rtEtiqueta.pivot =
-            new Vector2(0.5f, 0.5f);
-
-        rtEtiqueta.anchoredPosition =
-            new Vector2(0, 23);
-
-        rtEtiqueta.sizeDelta =
-            new Vector2(0, 24);
-
-
-        // ========================================================
-        // OBJETO INPUT
-        // ========================================================
-
-        GameObject inputObj =
-            new GameObject(
-                "Input_TMP"
-            );
-
-        inputObj.transform.SetParent(
-            contenedor.transform,
-            false
+        // Placeholder
+        TextMeshProUGUI placeholder = CrearTexto(
+            areaObj.transform,
+            "Placeholder",
+            "Escribí aquí...",
+            22f,
+            new Color(1f, 1f, 1f, 0.30f),
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            1f
         );
 
+        placeholder.enableAutoSizing = false;
+        placeholder.fontSize = 22f * escalaFuente;
+        Estirar(placeholder.rectTransform);
 
-        Image imgInput =
-            inputObj.AddComponent<Image>();
+        // ---------- TMP_InputField ----------
+        TMP_InputField input = inputObj.AddComponent<TMP_InputField>();
 
-        imgInput.color =
-            new Color(
-                0.035f,
-                0.035f,
-                0.05f,
-                0.97f
-            );
+        input.textViewport = rtArea;
+        input.textComponent = texto;
+        input.placeholder = placeholder;
+        input.text = valorPorDefecto;
+        input.fontAsset = ObtenerFuenteTexto();
+        input.pointSize = 24f * escalaFuente;
+        input.characterValidation = TMP_InputField.CharacterValidation.None;
+        input.lineType = TMP_InputField.LineType.SingleLine;
+        input.interactable = true;
 
+        input.targetGraphic = imgInput;
+        input.transition = Selectable.Transition.None;
 
-        TMP_InputField input =
-            inputObj.AddComponent<
-                TMP_InputField
-            >();
+        input.customCaretColor = true;
+        input.caretColor = colorRojoHover;
+        input.caretWidth = 2;
+        input.selectionColor = new Color(
+            colorRojoSangre.r, colorRojoSangre.g, colorRojoSangre.b, 0.45f);
 
+        // Efecto de foco
+        EfectoCampoMenu efecto = inputObj.AddComponent<EfectoCampoMenu>();
 
-        RectTransform rtInput =
-            inputObj.GetComponent<
-                RectTransform
-            >();
-
-        rtInput.anchorMin =
-            new Vector2(0, 0);
-
-        rtInput.anchorMax =
-            new Vector2(1, 0);
-
-        rtInput.pivot =
-            new Vector2(0.5f, 0);
-
-        rtInput.anchoredPosition =
-            new Vector2(0, -3);
-
-        rtInput.sizeDelta =
-            new Vector2(0, 40);
-
-
-        // ========================================================
-        // TEXTO DEL INPUT
-        // ========================================================
-
-        GameObject textoObj =
-            new GameObject(
-                "Texto_Input"
-            );
-
-        textoObj.transform.SetParent(
-            inputObj.transform,
-            false
+        efecto.Configurar(
+            input,
+            imgInput,
+            imgLinea,
+            fondoReposo,
+            fondoFoco,
+            lineaReposo,
+            colorRojoHover
         );
-
-        TextMeshProUGUI texto =
-            textoObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        texto.text =
-            valorPorDefecto;
-
-        texto.fontSize =
-            20 * escalaFuenteRetro;
-
-        texto.alignment =
-            TextAlignmentOptions.Left;
-
-        texto.color =
-            Color.white;
-
-        texto.raycastTarget =
-            false;
-
-        AplicarEstiloRetro(
-            texto
-        );
-
-
-        RectTransform rtTexto =
-            textoObj.GetComponent<
-                RectTransform
-            >();
-
-        rtTexto.anchorMin =
-            Vector2.zero;
-
-        rtTexto.anchorMax =
-            Vector2.one;
-
-        rtTexto.offsetMin =
-            new Vector2(12, 0);
-
-        rtTexto.offsetMax =
-            new Vector2(-12, 0);
-
-
-        // ========================================================
-        // PLACEHOLDER
-        // ========================================================
-
-        GameObject placeholderObj =
-            new GameObject(
-                "Placeholder"
-            );
-
-        placeholderObj.transform.SetParent(
-            inputObj.transform,
-            false
-        );
-
-        TextMeshProUGUI placeholder =
-            placeholderObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        placeholder.text =
-            "Escribí aquí...";
-
-        placeholder.fontSize =
-            19 * escalaFuenteRetro;
-
-        placeholder.alignment =
-            TextAlignmentOptions.Left;
-
-        placeholder.color =
-            new Color(
-                0.35f,
-                0.35f,
-                0.38f,
-                1f
-            );
-
-        placeholder.raycastTarget =
-            false;
-
-        AplicarEstiloRetro(
-            placeholder
-        );
-
-
-        RectTransform rtPlaceholder =
-            placeholderObj.GetComponent<
-                RectTransform
-            >();
-
-        rtPlaceholder.anchorMin =
-            Vector2.zero;
-
-        rtPlaceholder.anchorMax =
-            Vector2.one;
-
-        rtPlaceholder.offsetMin =
-            new Vector2(12, 0);
-
-        rtPlaceholder.offsetMax =
-            new Vector2(-12, 0);
-
-
-        // ========================================================
-        // CONFIGURAR TMP INPUT FIELD
-        // ========================================================
-
-        input.textViewport =
-            rtInput;
-
-        input.textComponent =
-            texto;
-
-        input.placeholder =
-            placeholder;
-
-        input.text =
-            valorPorDefecto;
-
-        input.fontAsset =
-            ObtenerFuenteRetro();
-
-        input.pointSize =
-            20 * escalaFuenteRetro;
-
-        input.characterValidation =
-            TMP_InputField.CharacterValidation.None;
-
-        input.lineType =
-            TMP_InputField.LineType.SingleLine;
-
-        input.interactable =
-            true;
-
 
         return input;
+    }
+
+
+    private sealed class EfectoCampoMenu : MonoBehaviour
+    {
+        private TMP_InputField campo;
+        private Image fondo;
+        private Image linea;
+        private Color fondoReposo, fondoFoco;
+        private Color lineaReposo, lineaFoco;
+        private float t;
+
+        public void Configurar(
+            TMP_InputField campo,
+            Image fondo,
+            Image linea,
+            Color fondoReposo,
+            Color fondoFoco,
+            Color lineaReposo,
+            Color lineaFoco
+        )
+        {
+            this.campo = campo;
+            this.fondo = fondo;
+            this.linea = linea;
+            this.fondoReposo = fondoReposo;
+            this.fondoFoco = fondoFoco;
+            this.lineaReposo = lineaReposo;
+            this.lineaFoco = lineaFoco;
+        }
+
+        private void Update()
+        {
+            if (campo == null)
+                return;
+
+            float objetivo = campo.isFocused ? 1f : 0f;
+
+            t = Mathf.MoveTowards(
+                t, objetivo, Time.unscaledDeltaTime * 10f);
+
+            fondo.color = Color.Lerp(fondoReposo, fondoFoco, t);
+            linea.color = Color.Lerp(lineaReposo, lineaFoco, t);
+        }
     }
 
 
@@ -3266,445 +2843,141 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         System.Action<float> alCambiarValor
     )
     {
-        GameObject contenedor =
-            new GameObject(
-                "Control_Slider_" + etiqueta
-            );
+        // ---------- contenedor ----------
+        GameObject contenedor = new GameObject(
+            "Control_Slider_" + etiqueta,
+            typeof(RectTransform), typeof(LayoutElement));
+        contenedor.transform.SetParent(padre, false);
 
-        contenedor.transform.SetParent(
-            padre,
-            false
-        );
+        FijarAltura(contenedor, 66f);
 
-        RectTransform rtCont =
-            contenedor.AddComponent<
-                RectTransform
-            >();
-
-        rtCont.sizeDelta =
-            new Vector2(
-                440,
-                65
-            );
-
-
-        // Etiqueta
-
-        GameObject txtObj =
-            new GameObject(
-                "Etiqueta"
-            );
-
-        txtObj.transform.SetParent(
+        // ---------- etiqueta (izquierda) ----------
+        TextMeshProUGUI txtEtiqueta = CrearTexto(
             contenedor.transform,
-            false
+            "Etiqueta",
+            etiqueta,
+            24f,
+            colorTexto,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            2f
         );
 
-        TextMeshProUGUI txt =
-            txtObj.AddComponent<
-                TextMeshProUGUI
-            >();
+        RectTransform rtEt = txtEtiqueta.rectTransform;
+        rtEt.anchorMin = new Vector2(0f, 1f);
+        rtEt.anchorMax = new Vector2(1f, 1f);
+        rtEt.pivot = new Vector2(0f, 1f);
+        rtEt.anchoredPosition = new Vector2(0f, 0f);
+        rtEt.sizeDelta = new Vector2(-90f, 30f);
 
-        txt.text =
-            etiqueta;
-
-        txt.fontSize =
-            20 * escalaFuenteRetro;
-
-        txt.alignment =
-            TextAlignmentOptions.Center;
-
-        txt.color =
-            new Color(
-                0.9f,
-                0.9f,
-                0.85f
-            );
-
-        txt.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txt
-        );
-
-
-        RectTransform rtTxt =
-            txtObj.GetComponent<
-                RectTransform
-            >();
-
-        rtTxt.anchoredPosition =
-            new Vector2(0, 20);
-
-        rtTxt.sizeDelta =
-            new Vector2(
-                440,
-                25
-            );
-
-
-        // Slider
-
-        DefaultControls.Resources res =
-            new DefaultControls.Resources();
-
-        GameObject sliderObj =
-            DefaultControls.CreateSlider(
-                res
-            );
-
-        sliderObj.transform.SetParent(
+        // ---------- valor en % (derecha) ----------
+        TextMeshProUGUI txtValor = CrearTexto(
             contenedor.transform,
-            false
+            "Valor",
+            Mathf.RoundToInt(valorInicial * 100f) + "%",
+            24f,
+            colorRojoHover,
+            TextAlignmentOptions.MidlineRight,
+            false,
+            1f
         );
 
+        RectTransform rtVal = txtValor.rectTransform;
+        rtVal.anchorMin = new Vector2(1f, 1f);
+        rtVal.anchorMax = new Vector2(1f, 1f);
+        rtVal.pivot = new Vector2(1f, 1f);
+        rtVal.anchoredPosition = new Vector2(0f, 0f);
+        rtVal.sizeDelta = new Vector2(80f, 30f);
 
-        Slider slider =
-            sliderObj.GetComponent<
-                Slider
-            >();
+        // ---------- slider ----------
+        DefaultControls.Resources res = new DefaultControls.Resources();
 
-        slider.value =
-            valorInicial;
+        GameObject sliderObj = DefaultControls.CreateSlider(res);
+        sliderObj.transform.SetParent(contenedor.transform, false);
+
+        Slider slider = sliderObj.GetComponent<Slider>();
+        slider.value = valorInicial;
+
+        EstilizarSlider(sliderObj);
 
         slider.onValueChanged.AddListener(
             (v) =>
             {
+                txtValor.text = Mathf.RoundToInt(v * 100f) + "%";
                 alCambiarValor?.Invoke(v);
             }
         );
 
-
-        RectTransform rtSlider =
-            sliderObj.GetComponent<
-                RectTransform
-            >();
-
-        rtSlider.anchoredPosition =
-            new Vector2(0, -12);
-
-        rtSlider.sizeDelta =
-            new Vector2(
-                400,
-                22
-            );
+        RectTransform rtSlider = sliderObj.GetComponent<RectTransform>();
+        rtSlider.anchorMin = new Vector2(0f, 0f);
+        rtSlider.anchorMax = new Vector2(1f, 0f);
+        rtSlider.pivot = new Vector2(0.5f, 0f);
+        rtSlider.anchoredPosition = new Vector2(0f, 2f);
+        rtSlider.sizeDelta = new Vector2(0f, 26f);
     }
 
 
-    // ============================================================
-    // BOTÓN DE OPCIÓN
-    // ============================================================
-
-    private void CrearBotonOpcionTMP(
-        Transform padre,
-        string textoInicial,
-        System.Action<TextMeshProUGUI> accionAlClic
-    )
+    // Reemplaza el look por defecto de Unity: línea fina, relleno rojo
+    // y selector rectangular.
+    private void EstilizarSlider(GameObject sliderObj)
     {
-        GameObject btnObj =
-            new GameObject(
-                "Btn_Opcion"
-            );
+        Transform tFondo = sliderObj.transform.Find("Background");
+        Transform tAreaRelleno = sliderObj.transform.Find("Fill Area");
+        Transform tAreaSelector = sliderObj.transform.Find("Handle Slide Area");
 
-        btnObj.transform.SetParent(
-            padre,
-            false
-        );
-
-
-        Image imgBtn =
-            btnObj.AddComponent<Image>();
-
-        imgBtn.color =
-            new Color(
-                0.2f,
-                0.22f,
-                0.26f
-            );
-
-
-        Button btn =
-            btnObj.AddComponent<Button>();
-
-        Navigation navegacion = btn.navigation;
-        navegacion.mode = Navigation.Mode.None;
-        btn.navigation = navegacion;
-
-
-        ColorBlock cb =
-            btn.colors;
-
-        cb.normalColor =
-            new Color(
-                0.2f,
-                0.22f,
-                0.26f
-            );
-
-        cb.highlightedColor =
-            colorRojoHover;
-
-        cb.pressedColor =
-            new Color(
-                0.35f,
-                0.05f,
-                0.05f
-            );
-
-        cb.selectedColor =
-            cb.highlightedColor;
-
-        cb.fadeDuration =
-            0.08f;
-
-        btn.colors =
-            cb;
-
-
-        RectTransform rtBtn =
-            btnObj.GetComponent<
-                RectTransform
-            >();
-
-        rtBtn.sizeDelta =
-            new Vector2(
-                440,
-                62
-            );
-
-
-        // Borde
-
-        GameObject marcoObj =
-            new GameObject(
-                "Borde_Marco"
-            );
-
-        marcoObj.transform.SetParent(
-            btnObj.transform,
-            false
-        );
-
-        Image imgMarco =
-            marcoObj.AddComponent<Image>();
-
-        imgMarco.color =
-            new Color(
-                0.02f,
-                0.02f,
-                0.03f,
-                0.9f
-            );
-
-        imgMarco.raycastTarget =
-            false;
-
-
-        RectTransform rtMarco =
-            marcoObj.GetComponent<
-                RectTransform
-            >();
-
-        rtMarco.anchorMin =
-            Vector2.zero;
-
-        rtMarco.anchorMax =
-            Vector2.one;
-
-        rtMarco.offsetMin =
-            new Vector2(-3, -3);
-
-        rtMarco.offsetMax =
-            new Vector2(3, 3);
-
-        marcoObj.transform.SetAsFirstSibling();
-
-
-        // Texto
-
-        GameObject txtObj =
-            new GameObject(
-                "Texto_TMP"
-            );
-
-        txtObj.transform.SetParent(
-            btnObj.transform,
-            false
-        );
-
-        TextMeshProUGUI txt =
-            txtObj.AddComponent<
-                TextMeshProUGUI
-            >();
-
-        txt.text =
-            textoInicial;
-
-        txt.fontSize =
-            23 * escalaFuenteRetro;
-
-        txt.alignment =
-            TextAlignmentOptions.Center;
-
-        txt.color =
-            Color.white;
-
-        txt.fontStyle =
-            FontStyles.Bold;
-
-        AplicarEstiloRetro(
-            txt
-        );
-
-
-        RectTransform rtTxt =
-            txtObj.GetComponent<
-                RectTransform
-            >();
-
-        rtTxt.anchorMin =
-            Vector2.zero;
-
-        rtTxt.anchorMax =
-            Vector2.one;
-
-        rtTxt.offsetMin =
-            Vector2.zero;
-
-        rtTxt.offsetMax =
-            Vector2.zero;
-
-
-        // Click
-
-        btn.onClick.AddListener(
-            () =>
-            {
-                ReproducirSFX(
-                    sfxClick
-                );
-
-                accionAlClic?.Invoke(
-                    txt
-                );
-
-                LimpiarSeleccionUI();
-            }
-        );
-
-
-        // Hover mejorado: color + escala + borde + texto
-        ConfigurarHoverBoton(
-            btnObj,
-            btn,
-            imgBtn,
-            new Color(0.2f, 0.22f, 0.26f)
-        );
-    }
-
-
-    // ============================================================
-    // HOVER VISUAL DE BOTONES
-    // ============================================================
-
-    private void ConfigurarHoverBoton(
-    GameObject btnObj,
-    Button btn,
-    Image imgBtn,
-    Color colorBase
-)
-    {
-        // Desactivamos la transición automática del Button
-        // para que el hover lo controlemos nosotros.
-        btn.transition = Selectable.Transition.None;
-
-        // Buscar el marco y el texto dentro del botón
-        Image imgMarco = null;
-        TextMeshProUGUI txt = null;
-
-        Image[] imagenes = btnObj.GetComponentsInChildren<Image>(true);
-
-        foreach (Image img in imagenes)
+        if (tFondo != null)
         {
-            if (img != imgBtn)
+            Image img = tFondo.GetComponent<Image>();
+            img.color = new Color(1f, 1f, 1f, 0.16f);
+
+            RectTransform rt = tFondo.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0.5f);
+            rt.anchorMax = new Vector2(1f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(0f, 6f);
+        }
+
+        if (tAreaRelleno != null)
+        {
+            RectTransform rtArea = tAreaRelleno.GetComponent<RectTransform>();
+            rtArea.anchorMin = new Vector2(0f, 0.5f);
+            rtArea.anchorMax = new Vector2(1f, 0.5f);
+            rtArea.pivot = new Vector2(0.5f, 0.5f);
+            rtArea.anchoredPosition = Vector2.zero;
+            rtArea.sizeDelta = new Vector2(-14f, 6f);
+
+            Transform tRelleno = tAreaRelleno.Find("Fill");
+
+            if (tRelleno != null)
             {
-                imgMarco = img;
-                break;
+                tRelleno.GetComponent<Image>().color = colorRojoSangre;
+                tRelleno.GetComponent<RectTransform>().sizeDelta =
+                    Vector2.zero;
             }
         }
 
-        txt = btnObj.GetComponentInChildren<TextMeshProUGUI>(true);
-
-        EventTrigger trigger = btnObj.GetComponent<EventTrigger>();
-
-        if (trigger == null)
-            trigger = btnObj.AddComponent<EventTrigger>();
-
-        // =========================
-        // POINTER ENTER
-        // =========================
-
-        EventTrigger.Entry entryHover =
-            new EventTrigger.Entry
-            {
-                eventID = EventTriggerType.PointerEnter
-            };
-
-        entryHover.callback.AddListener((data) =>
+        if (tAreaSelector != null)
         {
-            ReproducirSFX(sfxHover);
+            RectTransform rtArea = tAreaSelector.GetComponent<RectTransform>();
+            rtArea.anchorMin = new Vector2(0f, 0f);
+            rtArea.anchorMax = new Vector2(1f, 1f);
+            rtArea.offsetMin = new Vector2(7f, 0f);
+            rtArea.offsetMax = new Vector2(-7f, 0f);
 
-            btnObj.transform.localScale =
-                new Vector3(1.045f, 1.045f, 1f);
+            Transform tSelector = tAreaSelector.Find("Handle");
 
-            imgBtn.color = colorRojoHover;
-
-            if (imgMarco != null)
+            if (tSelector != null)
             {
-                imgMarco.color =
-                    new Color(1f, 0.16f, 0.08f, 1f);
+                tSelector.GetComponent<Image>().color =
+                    new Color(0.95f, 0.95f, 0.93f, 1f);
+
+                tSelector.GetComponent<RectTransform>().sizeDelta =
+                    new Vector2(14f, 0f);
             }
-
-            if (txt != null)
-            {
-                txt.color =
-                    new Color(1f, 0.9f, 0.72f, 1f);
-            }
-        });
-
-        trigger.triggers.Add(entryHover);
-
-        // =========================
-        // POINTER EXIT
-        // =========================
-
-        EventTrigger.Entry entryExit =
-            new EventTrigger.Entry
-            {
-                eventID = EventTriggerType.PointerExit
-            };
-
-        entryExit.callback.AddListener((data) =>
-        {
-            btnObj.transform.localScale = Vector3.one;
-
-            imgBtn.color = colorBase;
-
-            if (imgMarco != null)
-            {
-                imgMarco.color =
-                    new Color(0.02f, 0.02f, 0.03f, 0.9f);
-            }
-
-            if (txt != null)
-            {
-                txt.color = Color.white;
-            }
-        });
-
-        trigger.triggers.Add(entryExit);
+        }
     }
+
     // ========================================================
     // OPCIONES DE VIDEO (sin persistencia)
     // ========================================================
@@ -3805,19 +3078,21 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         Application.targetFrameRate = limitesFps[indiceLimiteFps];
         btnText.text = TextoLimiteFps();
     }
+
+    // Vista previa 3D del personaje: a la DERECHA de la pantalla,
+    // para no tapar el menú alineado a la izquierda.
     private RawImage CrearVistaPreviewPersonaje(Transform parent)
     {
-        var go = new GameObject("PreviewPersonaje",
-            typeof(RectTransform), typeof(RawImage), typeof(LayoutElement));
+        var go = new GameObject(
+            "PreviewPersonaje", typeof(RectTransform), typeof(RawImage));
         go.transform.SetParent(parent, false);
 
-        go.GetComponent<LayoutElement>().ignoreLayout = true;   // fuera del layout
-
         var rect = (RectTransform)go.transform;
-        rect.anchorMin = rect.anchorMax = new Vector2(0f, 0.5f);  // borde izquierdo del panel
-        rect.pivot = new Vector2(1f, 0.5f);                       // crece hacia la izquierda
-        rect.sizeDelta = new Vector2(300f, 450f);                 // mantiene la proporcion 2:3 de la textura
-        rect.anchoredPosition = new Vector2(-40f, 0f);            // separacion del panel
+        rect.anchorMin = new Vector2(1f, 0.5f);
+        rect.anchorMax = new Vector2(1f, 0.5f);
+        rect.pivot = new Vector2(1f, 0.5f);                    // crece hacia la izquierda
+        rect.sizeDelta = new Vector2(440f, 660f);              // mantiene la proporcion 2:3 de la textura
+        rect.anchoredPosition = new Vector2(-140f, -10f);      // separacion del borde derecho
 
         var raw = go.GetComponent<RawImage>();
         raw.raycastTarget = false;
