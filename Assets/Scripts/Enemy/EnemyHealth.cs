@@ -14,11 +14,19 @@ public class EnemyHealth : NetworkBehaviour
 
     [Header("Muerte")]
     [SerializeField] private AnimationClip deathClip;
+    [SerializeField] private AnimationClip[] extraDeathClips;
     [SerializeField] private AudioClip[] deathSounds;
     [SerializeField, Range(0f, 1f)] private float deathVolume = 1f;
 
     private NetworkVariable<float> currentHealth = new NetworkVariable<float>(
         0f,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    // Tiene que declararse ANTES de isDead: asi el cliente ya conoce la variante cuando le llega isDead = true.
+    private NetworkVariable<int> deathVariant = new NetworkVariable<int>(
+        0,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
@@ -33,8 +41,10 @@ public class EnemyHealth : NetworkBehaviour
     public static readonly List<EnemyHealth> All = new List<EnemyHealth>();
 
     private Ai ai;
+    private EnemyCombat enemyCombat;
     private PlayableGraph deathGraph;
     private AnimationClipPlayable deathPlayable;
+    private AnimationClip activeDeathClip;
     private Animator deathAnimator;
     private GameObject deathModel;
     private float groundY;
@@ -43,7 +53,60 @@ public class EnemyHealth : NetworkBehaviour
 
     public float MaxHealth => maxHealth;
     public EnemyVariant Variant => variant;
-    public float DeathDuration => deathClip != null ? deathClip.length : 0f;
+    public float DeathDuration
+    {
+        get
+        {
+            AnimationClip clip = CurrentDeathClip();
+            return clip != null ? clip.length : 0f;
+        }
+    }
+
+    // Variantes de muerte validas: deathClip primero y despues las extra que no esten vacias.
+    private int DeathClipCount()
+    {
+        int count = deathClip != null ? 1 : 0;
+        if (extraDeathClips != null)
+        {
+            foreach (AnimationClip clip in extraDeathClips)
+            {
+                if (clip != null)
+                    count++;
+            }
+        }
+
+        return count;
+    }
+
+    private AnimationClip DeathClipAt(int index)
+    {
+        int i = 0;
+        if (deathClip != null)
+        {
+            if (index == 0)
+                return deathClip;
+            i = 1;
+        }
+
+        if (extraDeathClips != null)
+        {
+            foreach (AnimationClip clip in extraDeathClips)
+            {
+                if (clip == null)
+                    continue;
+                if (i == index)
+                    return clip;
+                i++;
+            }
+        }
+
+        return deathClip;
+    }
+
+    private AnimationClip CurrentDeathClip()
+    {
+        return DeathClipAt(deathVariant.Value);
+    }
 
     private void PlayDeathSound()
     {
@@ -54,9 +117,11 @@ public class EnemyHealth : NetworkBehaviour
         if (clip != null)
             AudioSource.PlayClipAtPoint(clip, transform.position, deathVolume);
     }
+
     public override void OnNetworkSpawn()
     {
         ai = GetComponent<Ai>();
+        enemyCombat = GetComponent<EnemyCombat>();
         All.Add(this);
         isDead.OnValueChanged += OnDeadChanged;
 
@@ -118,6 +183,13 @@ public class EnemyHealth : NetworkBehaviour
             AchievementService.NotifyEnemyKilled(attacker, variant);
             Die();
         }
+        else if (enemyCombat != null)
+        {
+            // Reaccion al golpe: el zombie se queda quieto mientras dura el clip (no corta un ataque en curso).
+            if (attacker != null)
+                enemyCombat.ApplyKnockback(attacker.position);
+            enemyCombat.TryStagger();
+        }
     }
 
     [ContextMenu("Debug: recibir 25 de dano")]
@@ -130,7 +202,14 @@ public class EnemyHealth : NetworkBehaviour
     {
         if (!IsServer || isDead.Value) return;
 
+        // Primero la variante y despues isDead, para que lleguen juntas y en ese orden.
+        int count = DeathClipCount();
+        deathVariant.Value = count > 1 ? Random.Range(0, count) : 0;
         isDead.Value = true;
+
+        // Si estaba mordiendo a un jugador, lo suelta.
+        if (enemyCombat != null)
+            enemyCombat.ReleaseBiteTarget();
 
         if (ai != null)
             ai.enabled = false;
@@ -160,7 +239,8 @@ public class EnemyHealth : NetworkBehaviour
     // El mismo clip humanoid se retargetea al modelo visible (fragil, normal o resistente).
     private void PlayDeath()
     {
-        if (deathStarted || deathClip == null)
+        AnimationClip clip = CurrentDeathClip();
+        if (deathStarted || clip == null)
             return;
 
         GameObject model = ActiveModel();
@@ -173,7 +253,8 @@ public class EnemyHealth : NetworkBehaviour
 
         animator.applyRootMotion = true;
         animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-        deathClip.wrapMode = WrapMode.ClampForever;
+        clip.wrapMode = WrapMode.ClampForever;
+        activeDeathClip = clip;
 
         // Los pies en la pose de pie marcan el piso. La caja del mesh no sigue los huesos al caer.
         deathAnimator = animator;
@@ -182,9 +263,9 @@ public class EnemyHealth : NetworkBehaviour
         pinToGround = !float.IsPositiveInfinity(groundY);
 
         deathGraph = PlayableGraph.Create("EnemyDeath");
-        deathPlayable = AnimationClipPlayable.Create(deathGraph, deathClip);
+        deathPlayable = AnimationClipPlayable.Create(deathGraph, clip);
         deathPlayable.SetApplyFootIK(false);
-        deathPlayable.SetDuration(deathClip.length);
+        deathPlayable.SetDuration(clip.length);
         AnimationPlayableOutput output = AnimationPlayableOutput.Create(deathGraph, "Death", animator);
         output.SetSourcePlayable(deathPlayable);
         deathGraph.Play();
@@ -198,10 +279,10 @@ public class EnemyHealth : NetworkBehaviour
         if (!pinToGround || deathModel == null)
             return;
 
-        if (deathPlayable.IsValid() && deathClip != null && deathPlayable.GetTime() >= deathClip.length)
+        if (deathPlayable.IsValid() && activeDeathClip != null && deathPlayable.GetTime() >= activeDeathClip.length)
         {
             deathPlayable.SetSpeed(0);
-            deathPlayable.SetTime(deathClip.length);
+            deathPlayable.SetTime(activeDeathClip.length);
             if (deathGraph.IsValid())
                 deathGraph.Evaluate(0);
         }
@@ -259,8 +340,10 @@ public class EnemyHealth : NetworkBehaviour
 
     private IEnumerator RemoveAfterDeath()
     {
-        if (deathClip != null)
-            yield return new WaitForSeconds(deathClip.length);
+        // La duracion depende de la variante elegida (Death y Death2 pueden durar distinto).
+        float duration = DeathDuration;
+        if (duration > 0f)
+            yield return new WaitForSeconds(duration);
 
         if (NetworkObject != null && NetworkObject.IsSpawned)
         {
@@ -284,6 +367,7 @@ public class EnemyHealth : NetworkBehaviour
             Destroy(gameObject);
         }
     }
+
     private void StopDeathGraph()
     {
         pinToGround = false;

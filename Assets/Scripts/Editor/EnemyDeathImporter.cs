@@ -1,12 +1,19 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// Asigna Zombie Death al prefab Enemy. Las tres variantes lo usan al morir.
+// Asigna las animaciones de muerte al prefab Enemy. Al morir, cada enemigo elige una al azar.
+// La primera va en deathClip y las demas en extraDeathClips de EnemyHealth.
 [InitializeOnLoad]
 public static class EnemyDeathImporter
 {
-    public const string ClipPath = "Assets/Models/Enemy/Zombie Death.fbx";
+    public static readonly string[] ClipPaths =
+    {
+        "Assets/Models/Enemy/Zombie Death.fbx",
+        "Assets/Models/Enemy/Zombie Death2.fbx"
+    };
+
     private const string PrefabPath = "Assets/Prefabs/Enemy/Enemy.prefab";
 
     static EnemyDeathImporter()
@@ -22,11 +29,18 @@ public static class EnemyDeathImporter
         if (EnsureFallReachesGround())
             return;
 
-        AnimationClip clip = AssetDatabase.LoadAllAssetsAtPath(ClipPath)
-            .OfType<AnimationClip>()
-            .FirstOrDefault(candidate => !candidate.name.StartsWith("__preview__"));
+        List<AnimationClip> clips = new List<AnimationClip>();
+        foreach (string path in ClipPaths)
+        {
+            AnimationClip clip = AssetDatabase.LoadAllAssetsAtPath(path)
+                .OfType<AnimationClip>()
+                .FirstOrDefault(candidate => !candidate.name.StartsWith("__preview__"));
 
-        if (clip == null)
+            if (clip != null)
+                clips.Add(clip);
+        }
+
+        if (clips.Count == 0)
             return;
 
         GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
@@ -37,15 +51,42 @@ public static class EnemyDeathImporter
                 return;
 
             SerializedObject serialized = new SerializedObject(health);
-            SerializedProperty property = serialized.FindProperty("deathClip");
-            if (property == null || property.objectReferenceValue == clip)
+            SerializedProperty main = serialized.FindProperty("deathClip");
+            SerializedProperty extras = serialized.FindProperty("extraDeathClips");
+            if (main == null || extras == null)
                 return;
 
-            property.objectReferenceValue = clip;
+            bool dirty = false;
+            if (main.objectReferenceValue != clips[0])
+            {
+                main.objectReferenceValue = clips[0];
+                dirty = true;
+            }
+
+            int extraCount = clips.Count - 1;
+            if (extras.arraySize != extraCount)
+            {
+                extras.arraySize = extraCount;
+                dirty = true;
+            }
+
+            for (int i = 0; i < extraCount; i++)
+            {
+                SerializedProperty element = extras.GetArrayElementAtIndex(i);
+                if (element.objectReferenceValue != clips[i + 1])
+                {
+                    element.objectReferenceValue = clips[i + 1];
+                    dirty = true;
+                }
+            }
+
+            if (!dirty)
+                return;
+
             serialized.ApplyModifiedPropertiesWithoutUndo();
             PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
             AssetDatabase.SaveAssets();
-            Debug.Log("EnemyDeathImporter: clip '" + clip.name + "' asignado a los enemigos.");
+            Debug.Log("EnemyDeathImporter: " + clips.Count + " animaciones de muerte asignadas a los enemigos.");
         }
         finally
         {
@@ -53,46 +94,57 @@ public static class EnemyDeathImporter
         }
     }
 
+    public static bool IsDeathPath(string path)
+    {
+        return path != null && ClipPaths.Contains(path);
+    }
+
     // La caída tiene que quedar como root motion. Si Unity la hornea en la pose, el cuerpo no baja.
     private static bool EnsureFallReachesGround()
     {
-        ModelImporter importer = AssetImporter.GetAtPath(ClipPath) as ModelImporter;
-        if (importer == null)
-            return false;
-
-        ModelImporterClipAnimation[] clips = importer.clipAnimations;
-        if (clips == null || clips.Length == 0)
-            clips = importer.defaultClipAnimations;
-        if (clips == null || clips.Length == 0)
-            return false;
-
-        bool changed = false;
-        for (int i = 0; i < clips.Length; i++)
+        bool reimported = false;
+        foreach (string path in ClipPaths)
         {
-            ModelImporterClipAnimation clip = clips[i];
-            if (!clip.keepOriginalPositionY && !clip.keepOriginalPositionXZ && !clip.keepOriginalOrientation
-                && !clip.lockRootHeightY && !clip.lockRootPositionXZ && !clip.lockRootRotation
-                && !clip.loopTime && !clip.heightFromFeet)
+            ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
+            if (importer == null)
                 continue;
 
-            clip.keepOriginalPositionY = false;
-            clip.keepOriginalPositionXZ = false;
-            clip.keepOriginalOrientation = false;
-            clip.lockRootHeightY = false;
-            clip.lockRootPositionXZ = false;
-            clip.lockRootRotation = false;
-            clip.loopTime = false;
-            clip.heightFromFeet = false;
-            clips[i] = clip;
-            changed = true;
+            ModelImporterClipAnimation[] clips = importer.clipAnimations;
+            if (clips == null || clips.Length == 0)
+                clips = importer.defaultClipAnimations;
+            if (clips == null || clips.Length == 0)
+                continue;
+
+            bool changed = false;
+            for (int i = 0; i < clips.Length; i++)
+            {
+                ModelImporterClipAnimation clip = clips[i];
+                if (!clip.keepOriginalPositionY && !clip.keepOriginalPositionXZ && !clip.keepOriginalOrientation
+                    && !clip.lockRootHeightY && !clip.lockRootPositionXZ && !clip.lockRootRotation
+                    && !clip.loopTime && !clip.heightFromFeet)
+                    continue;
+
+                clip.keepOriginalPositionY = false;
+                clip.keepOriginalPositionXZ = false;
+                clip.keepOriginalOrientation = false;
+                clip.lockRootHeightY = false;
+                clip.lockRootPositionXZ = false;
+                clip.lockRootRotation = false;
+                clip.loopTime = false;
+                clip.heightFromFeet = false;
+                clips[i] = clip;
+                changed = true;
+            }
+
+            if (!changed)
+                continue;
+
+            importer.clipAnimations = clips;
+            importer.SaveAndReimport();
+            reimported = true;
         }
 
-        if (!changed)
-            return false;
-
-        importer.clipAnimations = clips;
-        importer.SaveAndReimport();
-        return true;
+        return reimported;
     }
 }
 
@@ -106,7 +158,7 @@ public class EnemyDeathPostprocessor : AssetPostprocessor
     {
         foreach (string path in importedAssets)
         {
-            if (path == EnemyDeathImporter.ClipPath)
+            if (EnemyDeathImporter.IsDeathPath(path))
             {
                 EditorApplication.delayCall += EnemyDeathImporter.Setup;
                 return;

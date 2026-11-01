@@ -51,6 +51,15 @@ public class PMovement : NetworkBehaviour
     private Coroutine hitSlowRoutine;
     private int hitSlowToken;
 
+    private readonly NetworkVariable<bool> frozen = new NetworkVariable<bool>(
+    false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public bool IsFrozen => frozen.Value;
+
+    public void SetFrozen(bool value)
+    {
+        if (IsServer) frozen.Value = value;
+    }
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -86,6 +95,8 @@ public class PMovement : NetworkBehaviour
 
     public void TryJump()
     {
+        if (frozen.Value)
+            return;
         if (IsGrounded)
         {
             verticalVelocity =
@@ -111,6 +122,12 @@ public class PMovement : NetworkBehaviour
         if (controller == null)
             return;
 
+        if (frozen.Value)
+        {
+            velocity = Vector3.zero;
+            controller.Move(new Vector3(0f, verticalVelocity * Time.deltaTime, 0f));
+            return;
+        }
         Vector3 wishDir =
         (transform.right * moveInput.x +
         transform.forward * moveInput.y).normalized;
@@ -190,7 +207,7 @@ public class PMovement : NetworkBehaviour
     {
         if (animator == null)
             return;
-
+        Vector2 input = frozen.Value ? Vector2.zero : moveInput;
         animator.SetFloat("velX", moveInput.x, 0.1f, Time.deltaTime);
         animator.SetFloat("velZ", moveInput.y, 0.1f, Time.deltaTime);
         bool isActuallySprinting = isSprinting && moveInput.magnitude > 0.1f;
