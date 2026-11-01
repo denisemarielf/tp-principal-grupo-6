@@ -12,6 +12,8 @@ using UnityEngine.UI;
 // y se desliza junto con los paneles: entra primero y sale al final.
 public class ObjectivePanelToggle : NetworkBehaviour
 {
+    [Header("Input")]
+    [SerializeField] private InputActionReference viewObjective;
     [Header("Paneles")]
     [SerializeField] private RectTransform[] panels;
     [SerializeField] private bool holdToShow = true; // false = Tab alterna
@@ -96,27 +98,15 @@ public class ObjectivePanelToggle : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // La UI es del jugador local: en los demas jugadores no se muestra nunca.
         if (!IsOwner)
             enabled = false;
     }
 
+  
+
     private void Update()
     {
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null)
-        {
-            if (holdToShow)
-            {
-                bool held = keyboard.tabKey.isPressed;
-                if (held != visible)
-                    SetVisible(held);
-            }
-            else if (keyboard.tabKey.wasPressedThisFrame)
-            {
-                SetVisible(!visible);
-            }
-        }
+      
 
         float target = visible ? 1f : 0f;
         float step = Time.unscaledDeltaTime / Mathf.Max(duration, 0.01f);
@@ -160,7 +150,17 @@ public class ObjectivePanelToggle : NetworkBehaviour
             }
         }
     }
-
+    public void SetHeld(bool pressed)
+    {
+        if (holdToShow)
+        {
+            if (pressed != visible) SetVisible(pressed);
+        }
+        else if (pressed)
+        {
+            SetVisible(!visible);
+        }
+    }
     private void SetVisible(bool value)
     {
         visible = value;

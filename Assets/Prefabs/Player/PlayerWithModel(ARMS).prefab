@@ -1646,7 +1646,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 375657675
+  GlobalObjectIdHash: 2480460361
   InScenePlacedSourceGlobalObjectIdHash: 2480460361
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -2249,6 +2249,22 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: b54b2039-8978-4638-9092-bdaca6352d8d
     m_ActionName: 'Player/InventoryPrev[/Keyboard/z]'
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 3614970389573475868}
+        m_TargetAssemblyTypeName: Character, Game
+        m_MethodName: OnViewObjetive
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 57f1e4ae-fe15-4653-8627-41081e9bf248
+    m_ActionName: 'Player/ViewObjetive[/Keyboard/tab]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
@@ -2297,6 +2313,7 @@ MonoBehaviour:
   pickupLayer:
     serializedVersion: 2
     m_Bits: 256
+  objectivePanel: {fileID: 2319105055433980074}
   playerNameText: {fileID: 872479686743807261}
 --- !u!114 &7712562877563550526
 MonoBehaviour:
@@ -2628,6 +2645,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::ObjectivePanelToggle
   ShowTopMostFoldoutHeaderGroup: 1
+  viewObjective: {fileID: 0}
   panels:
   - {fileID: 5126750679733583358}
   - {fileID: 8970824900411270292}
