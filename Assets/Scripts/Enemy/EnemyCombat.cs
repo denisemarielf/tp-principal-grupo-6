@@ -6,14 +6,38 @@ public class EnemyCombat : NetworkBehaviour
 {
     [Header("Ataque")]
     public float attackDamage = 15f;
-    public float attackRange = 2.5f;
-    public float attackCooldown = 0.8f;
+    public float attackRange = 15.5f;
+    public float attackDuration = 1.2f; // solo de respaldo: la duracion real es la del clip de ataque elegido
+
+    [Header("Mordida")]
+    [Range(0f, 1f)] public float biteChance = 0.25f;     // probabilidad de morder en cada ciclo (solo contra jugadores)
+    public float biteDamageMultiplier = 1.5f;
+
+    [Header("Empuje al recibir disparos")]
+    public float knockbackSpeed = 5f;        // 0 = sin empuje. Distancia aprox = velocidad x duracion / 2
+    public float knockbackDuration = 0.18f;
+    public float knockbackCooldown = 0.4f;   // pausa entre empujes: con fuego automatico no lo clava en el lugar
+    private Vector3 knockbackDirection;
+    private float knockbackStart;
+    private float knockbackUntil;
+    private float nextKnockbackTime;
+
+    private float attackEndTime;
+    private float stunUntil;
+    private bool biteCycle;
+    private PMovement frozenTarget;
+    private bool IsCommitted => Time.time < attackEndTime;
+
+    // Aturdido por la reaccion al golpe: no se mueve mientras dura el clip.
+    public bool IsStunned => Time.time < stunUntil;
+    // Atacando (clip completo) o aturdido: ni Ai ni nadie lo mueve.
+    public bool IsKnockedBack => Time.time < knockbackUntil;
+    public bool IsBusy => IsStunned || IsCommitted || IsKnockedBack;
 
     [Header("Frenado")]
-    public float hitSlowMultiplier = 0.7f;
+    public float hitSlowMultiplier = 1.7f;
     public float hitSlowDuration = 1.25f;
 
-    private float lastAttackTime;
     private NavMeshAgent navMeshAgent;
     private Ai ai;
     private EnemyHealth enemyHealth;
@@ -28,13 +52,85 @@ public class EnemyCombat : NetworkBehaviour
         enemyAnimation = GetComponent<EnemyAnimation>();
     }
 
+    public override void OnNetworkDespawn()
+    {
+        ReleaseBiteTarget();
+    }
+
+    // Suelta al jugador que estaba inmovilizado por la mordida (termino el clip, murio el zombie o se despawneo).
+    public void ReleaseBiteTarget()
+    {
+        if (frozenTarget != null)
+            frozenTarget.SetFrozen(false);
+
+        frozenTarget = null;
+        biteCycle = false;
+    }
+
+    // Lo llama EnemyHealth cuando un jugador lo golpea y sigue vivo. No empuja a un zombie que esta atacando.
+    public void ApplyKnockback(Vector3 sourcePosition)
+    {
+        if (!IsServer || knockbackSpeed <= 0f) return;
+        if (IsCommitted || Time.time < nextKnockbackTime) return;
+        if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
+
+        Vector3 direction = transform.position - sourcePosition;
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.0001f) return;
+
+        knockbackDirection = direction.normalized;
+        knockbackStart = Time.time;
+        knockbackUntil = Time.time + knockbackDuration;
+        nextKnockbackTime = knockbackUntil + knockbackCooldown;
+        navMeshAgent.velocity = Vector3.zero;
+    }
+
+    // Lo llama EnemyHealth cuando recibe dano y sigue vivo. Si esta en medio de un ataque no lo corta.
+    public void TryStagger()
+    {
+        if (!IsServer || enemyAnimation == null) return;
+        if (IsCommitted) return;
+
+        float duration = enemyAnimation.PlayHit();
+        if (duration <= 0f) return;
+
+        stunUntil = Time.time + duration;
+        enemyAnimation.SetAttacking(false);
+
+        if (navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.isOnNavMesh)
+        {
+            navMeshAgent.isStopped = true;
+            navMeshAgent.velocity = Vector3.zero;
+        }
+    }
+
     private void Update()
     {
         if (!IsServer) return;
+
+        // Termino el clip de mordida: el jugador queda libre aunque el resto del Update se corte antes.
+        if (frozenTarget != null && !IsCommitted)
+            ReleaseBiteTarget();
+
         if (enemyHealth != null && enemyHealth.IsDead()) return;
         if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
         if (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished) return;
         if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
+
+        // Empuje: se desliza hacia atras con velocidad decreciente (NavMeshAgent.Move respeta los bordes del NavMesh).
+        if (IsKnockedBack)
+        {
+            float remaining = 1f - (Time.time - knockbackStart) / Mathf.Max(knockbackDuration, 0.01f);
+            navMeshAgent.isStopped = true;
+            navMeshAgent.Move(knockbackDirection * (knockbackSpeed * Mathf.Clamp01(remaining) * Time.deltaTime));
+            return;
+        }
+
+        if (IsStunned)
+        {
+            navMeshAgent.isStopped = true;
+            return;
+        }
 
         Transform player = ai != null ? ai.CurrentPlayer : null;
         if (player != null && player.TryGetComponent(out PlayerHealth targetHealth) && targetHealth.IsDead)
@@ -45,16 +141,40 @@ public class EnemyCombat : NetworkBehaviour
             ? Vector3.Distance(transform.position, player.position)
             : Mathf.Infinity;
 
+        if (IsCommitted)
+        {
+            // Termina el golpe completo aunque el jugador se haya movido: no apuntar ni cancelar.
+            navMeshAgent.isStopped = true;
+            return;
+        }
         if (distanceToPlayer <= attackRange)
         {
             currentTarget = player;
             navMeshAgent.isStopped = true;
             FaceTarget(player);
-            if (enemyAnimation != null)
-                enemyAnimation.SetAttacking(true);
 
-            if (Time.time >= lastAttackTime + attackCooldown)
-                Attack();
+            float duration = attackDuration;
+            PMovement movement = player.GetComponent<PMovement>();
+            bool bite = enemyAnimation != null && enemyAnimation.HasBite
+                && movement != null && Random.value < biteChance;
+
+            if (bite)
+            {
+                // La mordida agarra al jugador: queda totalmente quieto mientras dura el clip.
+                duration = enemyAnimation.StartBite();
+                biteCycle = true;
+                frozenTarget = movement;
+                frozenTarget.SetFrozen(true);
+            }
+            else
+            {
+                // La ventana dura lo mismo que el clip sorteado, asi nunca se corta a la mitad.
+                biteCycle = false;
+                if (enemyAnimation != null)
+                    duration = enemyAnimation.StartAttackCycle();
+            }
+
+            attackEndTime = Time.time + duration;
         }
         else
         {
@@ -65,22 +185,19 @@ public class EnemyCombat : NetworkBehaviour
         }
     }
 
-    private void Attack()
-    {
-        lastAttackTime = Time.time;
-        DealDamage();
-    }
-
     public void DealDamage()
     {
         if (!IsServer || currentTarget == null) return;
+        if (Vector3.Distance(transform.position, currentTarget.position) > attackRange * 1.2f) return;
+
+        float damage = biteCycle ? attackDamage * biteDamageMultiplier : attackDamage;
 
         PlayerHealth playerHealth = currentTarget.GetComponent<PlayerHealth>();
         if (playerHealth != null)
         {
             if (playerHealth.IsDead) return;
 
-            playerHealth.TakeDamage(attackDamage);
+            playerHealth.TakeDamage(damage);
             if (playerHealth.IsDead) return;
 
             PMovement movement = currentTarget.GetComponent<PMovement>();
@@ -91,7 +208,7 @@ public class EnemyCombat : NetworkBehaviour
 
         RescuableNpc npc = currentTarget.GetComponent<RescuableNpc>();
         if (npc != null)
-            npc.TakeDamage(attackDamage);
+            npc.TakeDamage(damage);
     }
 
     private void FaceTarget(Transform target)

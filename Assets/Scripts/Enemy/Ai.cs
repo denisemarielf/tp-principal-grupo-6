@@ -84,6 +84,10 @@ public class Ai : NetworkBehaviour
             }
         }
 
+        // Mientras ataca (clip completo) o esta aturdido por un golpe no se mueve ni cambia de ruta.
+        if (enemyCombat != null && enemyCombat.IsBusy)
+            return;
+
         Transform target = CurrentPlayer;
         if (target == null)
         {

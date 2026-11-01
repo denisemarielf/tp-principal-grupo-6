@@ -162,7 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3945232058
+  GlobalObjectIdHash: 3745137013
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -258,6 +258,8 @@ MonoBehaviour:
   variant: 1
   maxHealth: 100
   deathClip: {fileID: -203655887218126122, guid: 6d4b8e2a1c9f4735a0e6b7d3c5f81920, type: 3}
+  extraDeathClips:
+  - {fileID: -203655887218126122, guid: 89228512ec4afe74685be1af38df80fd, type: 3}
   deathSounds:
   - {fileID: 8300000, guid: 352872183567db6459913a60f8a6f518, type: 3}
   - {fileID: 8300000, guid: a8ea40b806c40b14896b1f00aef07328, type: 3}
@@ -276,10 +278,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyCombat
   ShowTopMostFoldoutHeaderGroup: 1
   attackDamage: 15
-  attackRange: 2.5
-  attackCooldown: 0.8
-  hitSlowMultiplier: 0.7
-  hitSlowDuration: 1.25
+  attackRange: 3
+  attackDuration: 1.2
+  biteChance: 0.25
+  biteDamageMultiplier: 1.5
+  hitSlowMultiplier: 0.05
+  hitSlowDuration: 2
 --- !u!114 &100012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -307,6 +311,21 @@ MonoBehaviour:
   runStepInterval: 0.3
   pitchRange: {x: 0.92, y: 1.08}
   locomotion: {fileID: 9100000, guid: 5907893d885104949b74a88593f002ce, type: 2}
+  walkVariants: 2
+  attackVariants: 2
+  hitVariants: 2
+  attackLengths:
+  - 2.6333334
+  - 2.766667
+  hitLengths:
+  - 2
+  - 2.1666667
+  biteLength: 2.766667
+  attackCycleMargin: 0.05
+  defaultAttackLength: 1.2
+  debugLogs: 0
+  defaultHitLength: 0.7
+  hitCooldown: 1
 --- !u!114 &7521268938438895098
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -215,10 +215,14 @@ MonoBehaviour:
     para escapar del complejo de oficinas.
   objetivoMapa3: 'Estacion de tren. Modo Supervivencia: defende el refugio frente
     a oleadas. La victoria es sobrevivir el tiempo con al menos un civil vivo.'
-  imagenFondoCustom: {fileID: 21300000, guid: 34541b0fae9e8f947a907f04d80646a8, type: 3}
-  fuenteRetro: {fileID: 11400000, guid: 53230108c3499c740971b1b865711c22, type: 2}
-  escalaFuenteRetro: 1
-  musicaFondo: {fileID: 8300000, guid: 74f5ee4fa87c57349b6b180e3f9ed16c, type: 3}
+  imagenFondoCustom: {fileID: 21300000, guid: afc2ce6cd823bcc4bbd8447f61407446, type: 3}
+  fuenteTitulo: {fileID: 11400000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
+  fuenteTexto: {fileID: 11400000, guid: 8a89fa14b10d46a99122fd4f73fca9a2, type: 2}
+  escalaFuente: 1
+  margenIzquierdo: 120
+  margenSuperior: 70
+  anchoTarjeta: 600
+  musicaFondo: {fileID: 8300000, guid: 8533b9572b0d01545aaa99fe0e500e84, type: 3}
   sfxHover: {fileID: 8300000, guid: 82fc8621ceeb7f145ba58c8dfe63cdaa, type: 3}
   sfxClick: {fileID: 8300000, guid: f39c4a040d83b6848bb01f993fc14bf3, type: 3}
   characterPreview: {fileID: 416137082}
@@ -311,6 +315,73 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1037504296
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1037504298}
+  - component: {fileID: 1037504297}
+  m_Layer: 0
+  m_Name: _PantallaCarga
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1037504297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1037504296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6862b72907105744ba80690d1a7a3256, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::LoadingScreen
+  fondos:
+  - {fileID: 21300000, guid: 2593c777e4ccc3e438b344884814f2f6, type: 3}
+  - {fileID: 21300000, guid: 940e86f9f7198944a8718129b0081e47, type: 3}
+  - {fileID: 21300000, guid: 6928b99af7da2794e82141c39ddadb06, type: 3}
+  consejos:
+  - "Mant\xE9n al grupo unido: un sobreviviente aislado dura poco."
+  - Presiona la tecla H para interactuar con los consumibles del inventario
+  - "Guarda munici\xF3n para los momentos cr\xEDticos."
+  segundosPorConsejo: 7
+  mapas:
+  - nombreEscena: SampleScene
+    nombreMostrado: SUBURBIO
+  - nombreEscena: MapaOficina
+    nombreMostrado: COMPLEJO DE OFICINAS
+  - nombreEscena: ExtraccionScene
+    nombreMostrado: ESTACION DE TREN
+  fuenteTitulo: {fileID: 11400000, guid: 125cb55b44b24c4393181402bc6200e6, type: 2}
+  fuenteTexto: {fileID: 11400000, guid: 8a89fa14b10d46a99122fd4f73fca9a2, type: 2}
+  tiempoMinimo: 2
+  tiempoMaximo: 90
+  velocidadBarra: 1
+  fundidoEntrada: 0.25
+  fundidoSalida: 0.5
+--- !u!4 &1037504298
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1037504296}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -40.59381, y: 13.4209, z: 241.81316}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -741,3 +812,4 @@ SceneRoots:
   - {fileID: 956903569}
   - {fileID: 1147689531}
   - {fileID: 416137083}
+  - {fileID: 1037504298}

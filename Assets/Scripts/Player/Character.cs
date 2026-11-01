@@ -29,7 +29,9 @@ public class Character : NetworkBehaviour
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
     private PlayerInventory inventory;
-    
+
+    [SerializeField] private ObjectivePanelToggle objectivePanel;
+
 
     [Header("Nombre del jugador")] //nuevo
     [SerializeField] private TextMeshPro playerNameText;
@@ -133,7 +135,15 @@ public class Character : NetworkBehaviour
     }
     //aca termina
 
+    public void OnViewObjetive(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || objectivePanel == null) return;
 
+        if (context.performed)
+            objectivePanel.SetHeld(true);
+        else if (context.canceled)
+            objectivePanel.SetHeld(false);
+    }
     public void OnMove(InputAction.CallbackContext context)
     {
         if (!IsOwner || IsDead()) return;
