@@ -188,6 +188,13 @@ public class EnemyCombat : NetworkBehaviour
     public void DealDamage()
     {
         if (!IsServer || currentTarget == null) return;
+
+        // Un zombie muerto no hace dano: la animacion de ataque puede seguir disparando el evento mientras cae.
+        if (enemyHealth != null && enemyHealth.IsDead()) return;
+
+        // Solo cuenta el evento que llega dentro de un ataque (o un instante despues). Un evento suelto no pega.
+        if (Time.time > attackEndTime + 0.15f) return;
+
         if (Vector3.Distance(transform.position, currentTarget.position) > attackRange * 1.2f) return;
 
         float damage = biteCycle ? attackDamage * biteDamageMultiplier : attackDamage;
@@ -198,6 +205,7 @@ public class EnemyCombat : NetworkBehaviour
             if (playerHealth.IsDead) return;
 
             playerHealth.TakeDamage(damage);
+            HitLandedClientRpc(biteCycle);
             if (playerHealth.IsDead) return;
 
             PMovement movement = currentTarget.GetComponent<PMovement>();
@@ -208,7 +216,18 @@ public class EnemyCombat : NetworkBehaviour
 
         RescuableNpc npc = currentTarget.GetComponent<RescuableNpc>();
         if (npc != null)
+        {
             npc.TakeDamage(damage);
+            HitLandedClientRpc(biteCycle);
+        }
+    }
+
+    // Suena en todos los clientes solo cuando el golpe conecta (no cuando falla o lo esquivan).
+    [ClientRpc]
+    private void HitLandedClientRpc(bool bite)
+    {
+        if (enemyAnimation != null)
+            enemyAnimation.PlayLandedSound(bite);
     }
 
     private void FaceTarget(Transform target)

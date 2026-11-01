@@ -2283,7 +2283,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PMovement
   ShowTopMostFoldoutHeaderGroup: 1
-  moveSpeed: 7
+  moveSpeed: 6
   acceleration: 10
   airAcceleration: 2
   friction: 6
@@ -2415,7 +2415,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.656
   m_Pitch: 1
   Loop: 0
   Mute: 0
