@@ -76,6 +76,8 @@ public class EnemyAnimation : NetworkBehaviour
         NetworkVariableWritePermission.Server);
 
     private EnemyHealth health;
+    private EnemyVoice voice;
+    private int lastState = -1;
     private Vector3 lastPosition;
     private int hitIndex;
     private float hitUntil;
@@ -168,6 +170,7 @@ public class EnemyAnimation : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         health = GetComponent<EnemyHealth>();
+        voice = GetComponent<EnemyVoice>();
         lastPosition = transform.position;
 
         if (IsServer && debugLogs)
@@ -204,6 +207,14 @@ public class EnemyAnimation : NetworkBehaviour
             state = Hit;
         else if (HorizontalSpeed() > MoveThreshold)
             state = ActiveModelIsFragil() ? Run : Walk;
+
+        // Voz al empezar a atacar o morder (EnemyVoice decide si hay "lugar" para que suene).
+        if (state != lastState)
+        {
+            if (voice != null && (state == Attack || state == Bite))
+                voice.TryPlay(EnemyVoice.Kind.Attack);
+            lastState = state;
+        }
 
         if (state == Walk || state == Run)
         {

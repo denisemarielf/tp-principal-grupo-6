@@ -200,6 +200,10 @@ public class EnemyHealth : NetworkBehaviour
         EnemyAnimation animation = GetComponent<EnemyAnimation>();
         if (animation != null)
             animation.PlayImpactSound();
+
+        EnemyVoice voice = GetComponent<EnemyVoice>();
+        if (voice != null)
+            voice.TryPlay(EnemyVoice.Kind.Hurt);
     }
 
     [ContextMenu("Debug: recibir 25 de dano")]
@@ -281,6 +285,10 @@ public class EnemyHealth : NetworkBehaviour
         deathGraph.Play();
         deathStarted = true;
         PlayDeathSound();
+
+        EnemyVoice voice = GetComponent<EnemyVoice>();
+        if (voice != null)
+            voice.TryPlay(EnemyVoice.Kind.Death);
     }
 
     // Mantiene el último frame y apoya el hueso más bajo en el piso donde estaba parado.
