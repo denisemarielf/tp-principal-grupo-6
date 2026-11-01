@@ -73,6 +73,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private TMP_Text txtBtnPersonajeU;
     [SerializeField] private CharacterPreview characterPreview;
 
+    [Tooltip("Logo de la universidad para los créditos. Si queda vacío se busca Resources/LogoUniversidad.")]
+    public Sprite logoUniversidad;
+
     // ============================================================
     // PANELES
     // ============================================================
@@ -84,6 +87,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private GameObject panelUnirseSala;
     private GameObject panelLobby;
     private GameObject panelLogros;
+
+    private GameObject panelCreditos;
 
 
     // ============================================================
@@ -372,6 +377,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         CrearBotonMenu(colPrincipal.transform, "JUGAR", AbrirSeleccionRed, EstiloBoton.Primario, true);
         CrearBotonMenu(colPrincipal.transform, "LOGROS", AbrirLogros, EstiloBoton.Normal, true);
         CrearBotonMenu(colPrincipal.transform, "OPCIONES", AbrirOpciones, EstiloBoton.Normal, true);
+        CrearBotonMenu(colPrincipal.transform, "CRÉDITOS", AbrirCreditos, EstiloBoton.Normal, true);   // NUEVO
         CrearBotonMenu(colPrincipal.transform, "SALIR", Salir, EstiloBoton.Secundario, true);
 
 
@@ -791,6 +797,37 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         );
 
         CrearBotonMenu(colVolverLogros.transform, "VOLVER AL MENU", CerrarLogros, EstiloBoton.Secundario);
+
+
+        // ========================================================
+        // 12. CRÉDITOS (pantalla completa con scroll)
+        // ========================================================
+
+        panelCreditos = CrearPanelContenedor(canvasObj, "Panel_Creditos");
+
+        Sprite logo = logoUniversidad != null
+            ? logoUniversidad
+            : Resources.Load<Sprite>("LogoUniversidad");
+
+        panelCreditos.AddComponent<CreditosUI>().Build(
+            ObtenerFuenteTitulo(),
+            ObtenerFuenteTexto(),
+            escalaFuente,
+            logo,
+            CerrarCreditos
+        );
+
+        // Se crea DESPUÉS de CreditosUI para que quede por encima.
+        GameObject colVolverCreditos = CrearColumna(
+         panelCreditos.transform,
+         48f,      // distancia al borde izquierdo
+         40f,      // distancia al borde superior
+         260f,     // ancho del botón
+         8f
+     );
+
+        CrearBotonMenu(colVolverCreditos.transform, "VOLVER", CerrarCreditos, EstiloBoton.Secundario);
+
 
 
         // ========================================================
@@ -1296,6 +1333,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         if (panelLobby)
             panelLobby.SetActive(false);
+
+        if (panelCreditos)
+            panelCreditos.SetActive(false);
 
         if (panelLogros)
             panelLogros.SetActive(false);
@@ -1910,6 +1950,20 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         panelOpciones.SetActive(true);
 
+        LimpiarSeleccionUI();
+    }
+
+    public void AbrirCreditos()
+    {
+        OcultarTodosLosPaneles();
+        panelCreditos.SetActive(true);
+        LimpiarSeleccionUI();
+    }
+
+    public void CerrarCreditos()
+    {
+        OcultarTodosLosPaneles();
+        panelPrincipal.SetActive(true);
         LimpiarSeleccionUI();
     }
 
