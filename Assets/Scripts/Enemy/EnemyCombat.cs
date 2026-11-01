@@ -11,7 +11,6 @@ public class EnemyCombat : NetworkBehaviour
 
     [Header("Mordida")]
     [Range(0f, 1f)] public float biteChance = 0.25f;     // probabilidad de morder en cada ciclo (solo contra jugadores)
-    public float biteDamageMultiplier = 1.5f;
 
     [Header("Empuje al recibir disparos")]
     public float knockbackSpeed = 5f;        // 0 = sin empuje. Distancia aprox = velocidad x duracion / 2
@@ -188,9 +187,11 @@ public class EnemyCombat : NetworkBehaviour
     public void DealDamage()
     {
         if (!IsServer || currentTarget == null) return;
+        // La mordida solo inmoviliza. Ese zombie no vuelve a sacar vida mientras te tiene agarrado.
+        if (biteCycle) return;
         if (Vector3.Distance(transform.position, currentTarget.position) > attackRange * 1.2f) return;
 
-        float damage = biteCycle ? attackDamage * biteDamageMultiplier : attackDamage;
+        float damage = attackDamage;
 
         PlayerHealth playerHealth = currentTarget.GetComponent<PlayerHealth>();
         if (playerHealth != null)

@@ -3,7 +3,8 @@ using Unity.Netcode;
 using UnityEngine;
 
 // Persistencia en memoria entre Suburbio y Oficinas (US 4.10).
-// - El server guarda salud, inventario y tipos de arma (NetworkVariables).
+// - El server guarda inventario y tipos de arma (NetworkVariables).
+// - La vida no se arrastra: en el nivel siguiente todos aparecen vivos y al máximo.
 // - Cada owner guarda munición e índice de arma localmente (AmmoManager no es de red).
 // Los estáticos sobreviven al LoadScene Single porque no viven en la escena.
 public static class PlayerCarryOver
@@ -21,7 +22,6 @@ public static class PlayerCarryOver
 
     private struct ServerSnapshot
     {
-        public float health;
         public InventorySlot[] inventory;
         public int weaponSlot0Type;
         public int weaponSlot1Type;
@@ -80,7 +80,7 @@ public static class PlayerCarryOver
             && loadout.GetSlotType(1) == snap.weaponSlot1Type;
     }
 
-    // Solo server: salud, inventario y loadout de todos los jugadores conectados.
+    // Solo server: inventario y loadout de todos los jugadores conectados.
     public static void CaptureServerState()
     {
         NetworkManager networkManager = NetworkManager.Singleton;
@@ -94,7 +94,6 @@ public static class PlayerCarryOver
             if (playerObj == null) continue;
 
             GameObject player = playerObj.gameObject;
-            PlayerHealth health = player.GetComponent<PlayerHealth>();
             PlayerInventory inventory = player.GetComponent<PlayerInventory>();
             WeaponLoadout loadout = player.GetComponentInChildren<WeaponLoadout>();
 
@@ -108,7 +107,6 @@ public static class PlayerCarryOver
 
             serverByClientId[clientId] = new ServerSnapshot
             {
-                health = health != null ? health.CurrentHealth : 100f,
                 inventory = slots,
                 weaponSlot0Type = loadout != null ? loadout.GetSlotType(0) : -1,
                 weaponSlot1Type = loadout != null ? loadout.GetSlotType(1) : -1
@@ -124,9 +122,10 @@ public static class PlayerCarryOver
         if (!serverPending || player == null) return;
         if (!serverByClientId.TryGetValue(clientId, out ServerSnapshot snap)) return;
 
+        // El spawn deja la vida al máximo. Si el jugador murió o llegó lastimado, no se copia eso.
         PlayerHealth health = player.GetComponent<PlayerHealth>();
         if (health != null)
-            health.ApplyCarryOver(snap.health);
+            health.ApplyCarryOver(health.MaxHealth);
 
         PlayerInventory inventory = player.GetComponent<PlayerInventory>();
         if (inventory != null && snap.inventory != null)
