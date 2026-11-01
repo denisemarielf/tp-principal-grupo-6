@@ -242,9 +242,14 @@ MonoBehaviour:
   navMeshAgent: {fileID: 100006}
   destination1: {fileID: 0}
   followPlayer: 1
-  distanceToFollowPlayer: 60
-  distanceToLosePlayer: 80
-  aggroDuration: 6
+  distanceToFollowPlayer: 40
+  distanceToLosePlayer: 45
+  aggroDuration: 7
+  wanderWhenIdle: 1
+  wanderRadius: 12
+  wanderSpeedMultiplier: 0.35
+  wanderPause: {x: 2, y: 6}
+  maxWanderTravelTime: 15
 --- !u!114 &100010
 MonoBehaviour:
   m_ObjectHideFlags: 0

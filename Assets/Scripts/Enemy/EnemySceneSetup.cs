@@ -36,6 +36,7 @@ public class EnemySceneSetup : MonoBehaviour
     private bool hasRoad;
     private float streamTimer;
     private bool streaming;
+    private NavMeshDataInstance navMeshInstance;
 
     private class PlannedEnemy
     {
@@ -48,6 +49,13 @@ public class EnemySceneSetup : MonoBehaviour
     private void Start()
     {
         StartCoroutine(SetupWhenServer());
+    }
+
+    // El NavMesh agregado es global: si no se quita, queda cargado al cambiar de escena.
+    private void OnDestroy()
+    {
+        if (navMeshInstance.valid)
+            navMeshInstance.Remove();
     }
 
     private void Update()
@@ -78,6 +86,13 @@ public class EnemySceneSetup : MonoBehaviour
         if (FindAnyObjectByType<SurvivalMatchBootstrap>() != null)
         {
             Debug.Log("EnemySceneSetup: modo Supervivencia, no se planifican enemigos de mapa abierto.");
+            yield break;
+        }
+
+        // Si hay un AIDirector en la escena, el controla los spawns.
+        if (FindAnyObjectByType<AIDirector>() != null)
+        {
+            Debug.Log("EnemySceneSetup: el AIDirector controla los spawns.");
             yield break;
         }
 
@@ -352,7 +367,7 @@ public class EnemySceneSetup : MonoBehaviour
         while (!bake.isDone)
             yield return null;
 
-        NavMesh.AddNavMeshData(data);
+        navMeshInstance = NavMesh.AddNavMeshData(data);
     }
 
     private Bounds MapBounds()
