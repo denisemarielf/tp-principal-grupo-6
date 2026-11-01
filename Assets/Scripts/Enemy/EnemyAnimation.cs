@@ -22,6 +22,8 @@ public class EnemyAnimation : NetworkBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip[] stepClips;
     [SerializeField] private AudioClip[] attackClips;
+    [SerializeField] private AudioClip[] impactClips;   // sonidos de impacto cuando un jugador le pega
+    [SerializeField, Range(0f, 1f)] private float impactVolume = 1f;
     [SerializeField] private float stepInterval = 0.5f;
     [SerializeField] private float runStepInterval = 0.3f;
     [SerializeField] private Vector2 pitchRange = new Vector2(0.92f, 1.08f);
@@ -257,5 +259,19 @@ public class EnemyAnimation : NetworkBehaviour
     public void PlayAttackHitSound()
     {
         PlayRandom(attackClips);
+    }
+
+    // Se reproduce en todos los clientes cuando el enemigo recibe un impacto (ver EnemyHealth).
+    public void PlayImpactSound()
+    {
+        if (audioSource == null || impactClips == null || impactClips.Length == 0)
+            return;
+
+        AudioClip clip = impactClips[Random.Range(0, impactClips.Length)];
+        if (clip == null)
+            return;
+
+        audioSource.pitch = Random.Range(pitchRange.x, pitchRange.y);
+        audioSource.PlayOneShot(clip, impactVolume);
     }
 }

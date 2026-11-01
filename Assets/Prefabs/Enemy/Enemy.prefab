@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 2468940960144033097}
   - component: {fileID: 6309892309131484528}
   - component: {fileID: 4649518264364464301}
+  - component: {fileID: 4653288201055986905}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -282,6 +283,9 @@ MonoBehaviour:
   attackDuration: 1.2
   biteChance: 0.25
   biteDamageMultiplier: 1.5
+  knockbackSpeed: 5
+  knockbackDuration: 0.18
+  knockbackCooldown: 0.4
   hitSlowMultiplier: 0.05
   hitSlowDuration: 2
 --- !u!114 &100012
@@ -307,6 +311,20 @@ MonoBehaviour:
   - {fileID: 8300000, guid: a49badae4c77d9d4083f22f3b7ad60b0, type: 3}
   - {fileID: 8300000, guid: 67366a76a45d1564a91151821b86668d, type: 3}
   - {fileID: 8300000, guid: 272fae3a5a8407c49b97992ebd8b865b, type: 3}
+  impactClips:
+  - {fileID: 8300000, guid: 6c4a823ec04a12f44993f61a58e1a389, type: 3}
+  - {fileID: 8300000, guid: c18fc985ccf6cc446953930e54c4c3b8, type: 3}
+  - {fileID: 8300000, guid: 010214d0af48f044bacb9a74e74925ad, type: 3}
+  - {fileID: 8300000, guid: d9256b58d59db1d41817bfbb6e36c9ad, type: 3}
+  - {fileID: 8300000, guid: 9d2ef0648ca75a046b3dc8d015d2ec63, type: 3}
+  - {fileID: 8300000, guid: 376021d18f1b9f14186f01a47b23e062, type: 3}
+  - {fileID: 8300000, guid: df680404926938047a70a47cd0f50caa, type: 3}
+  - {fileID: 8300000, guid: 19b5e0e865580044798e1b9ea1cd3673, type: 3}
+  - {fileID: 8300000, guid: 2bfd024fb270b9749b8fb54fb44cec93, type: 3}
+  - {fileID: 8300000, guid: 4c42495e213590e47843cee320739830, type: 3}
+  - {fileID: 8300000, guid: c15d3dc8d5efaef4980154c504a0c34a, type: 3}
+  - {fileID: 8300000, guid: 7269ca48ce018064a864469aecd2ade4, type: 3}
+  impactVolume: 1
   stepInterval: 0.5
   runStepInterval: 0.3
   pitchRange: {x: 0.92, y: 1.08}
@@ -477,6 +495,23 @@ MonoBehaviour:
   farDistance: 60
   midInterval: 2
   farInterval: 4
+--- !u!114 &4653288201055986905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcbe0c7a41b43c64e838da0d0efd5a54, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::ZombieDismember
+  headRadius: 0.3
+  closeRange: 8
+  closeRangeChance: 0.911
+  gibPrefab: {fileID: 0}
+  gibSize: 0.22
 --- !u!1001 &2256151907660744541
 PrefabInstance:
   m_ObjectHideFlags: 0

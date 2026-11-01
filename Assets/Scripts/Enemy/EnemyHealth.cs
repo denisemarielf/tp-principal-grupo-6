@@ -174,6 +174,7 @@ public class EnemyHealth : NetworkBehaviour
         if (isDead.Value) return;
 
         currentHealth.Value -= amount;
+        ImpactClientRpc();
 
         if (attacker != null && ai != null)
             ai.SetAggroTarget(attacker);
@@ -190,6 +191,15 @@ public class EnemyHealth : NetworkBehaviour
                 enemyCombat.ApplyKnockback(attacker.position);
             enemyCombat.TryStagger();
         }
+    }
+
+    // El server avisa y cada cliente reproduce el sonido en su copia del zombie (incluido el golpe que lo mata).
+    [ClientRpc]
+    private void ImpactClientRpc()
+    {
+        EnemyAnimation animation = GetComponent<EnemyAnimation>();
+        if (animation != null)
+            animation.PlayImpactSound();
     }
 
     [ContextMenu("Debug: recibir 25 de dano")]
