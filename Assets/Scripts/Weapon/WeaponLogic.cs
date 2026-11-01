@@ -30,6 +30,7 @@ public class WeaponLogic : NetworkBehaviour
     public CameraRecoil cameraRecoil;
     [SerializeField] private CrosshairController crosshairController;
     private WeaponWorldLink worldLink;
+    [SerializeField] private bool closeRangeDismember = false;
 
     private void Start()
     {
@@ -130,29 +131,66 @@ public class WeaponLogic : NetworkBehaviour
         Vector3 hitPoint;
         Vector3 hitNormal;
         bool hitEnemy = false;
+        NetworkObjectReference enemyRef = default;
+
+        bool dismember = false;
+        HumanBodyBones boneToRemove = HumanBodyBones.Head;
+        EnemyHealth targetHealth = null;
 
         if (Physics.Raycast(origin, direction, out RaycastHit hit, hitscanRange, hitscanLayers))
         {
             hitPoint = hit.point;
             hitNormal = hit.normal;
-            hitEnemy = ApplyHitscanDamage(hit.collider);
+
+            // Se decide ANTES de hacer daño: al morir, el zombie puede despawnearse.
+            targetHealth = hit.collider.GetComponentInParent<EnemyHealth>();
+            ZombieDismember dism = hit.collider.GetComponentInParent<ZombieDismember>();
+            if (dism != null)
+                dismember = dism.TryChooseBone(hit.point, hit.distance, closeRangeDismember, out boneToRemove);
+
+            hitEnemy = ApplyHitscanDamage(hit.collider, out enemyRef);
         }
         else
         {
-          
             hitPoint = origin + direction.normalized * hitscanRange;
             hitNormal = -direction;
         }
 
-        PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy);
-        PlayShootEffectsClientRpc(); 
+        PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy, enemyRef);
+
+        // Solo si este disparo mato al zombie.
+        if (hitEnemy && dismember && (targetHealth == null || targetHealth.IsDead()))
+        {
+            Vector3 force = direction.normalized * 4f + Vector3.up * 2f;
+            DismemberClientRpc(enemyRef, (int)boneToRemove, force);
+        }
+
+        PlayShootEffectsClientRpc();
     }
 
-    private bool ApplyHitscanDamage(Collider hitCollider)
+    [ClientRpc]
+    private void DismemberClientRpc(NetworkObjectReference enemyRef, int bone, Vector3 force)
     {
+        if (!enemyRef.TryGet(out NetworkObject enemyObj)) return;
+
+        ZombieDismember dism = enemyObj.GetComponentInChildren<ZombieDismember>();
+        if (dism != null)
+            dism.Dismember((HumanBodyBones)bone, force);
+    }
+
+    private bool ApplyHitscanDamage(Collider hitCollider, out NetworkObjectReference enemyRef)
+    {
+        enemyRef = default;
+
         EnemyHealth enemyHealth = hitCollider.GetComponentInParent<EnemyHealth>();
         if (enemyHealth == null)
             return false;
+
+        // La referencia se crea ANTES de hacer daño: si el zombie muere y se despawnea,
+        // crearla despues tira una excepcion.
+        NetworkObject enemyObj = enemyHealth.GetComponentInParent<NetworkObject>();
+        if (enemyObj != null && enemyObj.IsSpawned)
+            enemyRef = enemyObj;
 
         float finalDamage = damageAmount;
         PlayerDamageBoost boost = GetComponentInParent<PlayerDamageBoost>();
@@ -163,11 +201,15 @@ public class WeaponLogic : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy)
+    private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy, NetworkObjectReference enemyRef)
     {
         if (hitEnemy)
         {
-            BloodSplatter.Play(hitPoint, hitNormal);
+            Transform woundParent = null;
+            if (enemyRef.TryGet(out NetworkObject enemyObj))
+                woundParent = enemyObj.transform;
+
+            BloodSplatter.Play(hitPoint, hitNormal, woundParent);
         }
         else if (hitscanImpactEffect != null)
         {
@@ -182,6 +224,8 @@ public class WeaponLogic : NetworkBehaviour
 
         bulletTracer?.PlayTracer(VisualMuzzlePosition, hitPoint);
     }
+
+
 
     // ---------- Efectos compartidos ----------
 

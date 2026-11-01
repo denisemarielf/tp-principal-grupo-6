@@ -16,6 +16,13 @@ public class AchievementToastUI : MonoBehaviour
     private TextMeshProUGUI nameLabel;
     private TextMeshProUGUI descriptionLabel;
     private bool showing;
+    [Header("Audio")]
+   
+    [SerializeField, Range(0f, 1f)] private float soundVolume = 0.8f;
+
+  
+    private AudioSource audioSource;
+    private AudioClip achievementSound;
 
     public static void Show(AchievementDef def)
     {
@@ -39,6 +46,8 @@ public class AchievementToastUI : MonoBehaviour
         while (pending.Count > 0)
         {
             AchievementDef def = pending.Dequeue();
+            if (achievementSound != null)
+                audioSource.PlayOneShot(achievementSound);
             nameLabel.text = def.Title;
             descriptionLabel.text = def.Description;
 
@@ -63,6 +72,13 @@ public class AchievementToastUI : MonoBehaviour
 
     private void BuildUi()
     {
+        audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.volume = 0.8f;
+
+        achievementSound = Resources.Load<AudioClip>("Audio/achievement_unlocked");
+
         Canvas canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 90; // por debajo del menu de pausa (100)

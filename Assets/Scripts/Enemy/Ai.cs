@@ -15,6 +15,17 @@ public class Ai : NetworkBehaviour
     [Header("Aggro")]
     [SerializeField] private float aggroDuration = 6f;
 
+    [Header("Deambular")]
+    [Tooltip("Mientras no persigue a nadie, camina sin rumbo cerca de donde aparecio. Si hay destination1 asignado, se usa ese comportamiento en vez de este.")]
+    [SerializeField] private bool wanderWhenIdle = true;
+    [SerializeField] private float wanderRadius = 12f;
+    [Tooltip("Fraccion de la velocidad normal al deambular.")]
+    [SerializeField, Range(0.1f, 1f)] private float wanderSpeedMultiplier = 0.35f;
+    [Tooltip("Segundos quieto entre caminata y caminata.")]
+    [SerializeField] private Vector2 wanderPause = new Vector2(2f, 6f);
+    [Tooltip("Si no llega en este tiempo, elige otro punto.")]
+    [SerializeField] private float maxWanderTravelTime = 15f;
+
     private Transform player;
     private EnemyCombat enemyCombat;
     private Vector3 lastPlayerPosition;
@@ -25,6 +36,14 @@ public class Ai : NetworkBehaviour
     private Transform aggroTarget;
     private float aggroTimer;
 
+    // Hordas: persiguen sin importar la distancia (lo activa el AIDirector).
+    private bool alwaysChase;
+
+    private float baseSpeed;
+    private Vector3 homePosition;
+    private bool isWanderMoving;
+    private float wanderTimer;
+
     public Transform CurrentPlayer => (aggroTimer > 0f && aggroTarget != null) ? aggroTarget : player;
 
     // US 7.2: normal 4, fragil 7 y duro 3. El jugador camina a 7.
@@ -33,7 +52,10 @@ public class Ai : NetworkBehaviour
         if (navMeshAgent == null)
             navMeshAgent = GetComponent<NavMeshAgent>();
         if (navMeshAgent != null)
-            navMeshAgent.speed = SpeedFor(variant);
+        {
+            baseSpeed = SpeedFor(variant);
+            navMeshAgent.speed = baseSpeed;
+        }
     }
 
     public static float SpeedFor(EnemyVariant variant)
@@ -59,6 +81,12 @@ public class Ai : NetworkBehaviour
                 navMeshAgent.enabled = false;
             return;
         }
+
+        if (baseSpeed <= 0f && navMeshAgent != null)
+            baseSpeed = navMeshAgent.speed;
+
+        homePosition = transform.position;
+        wanderTimer = Random.Range(0f, wanderPause.y);
 
         RefreshNearestPlayer();
         PlaceOnNavMesh();
@@ -96,19 +124,26 @@ public class Ai : NetworkBehaviour
                 GoToDestination();
                 isFollowingPlayer = false;
             }
+            else
+            {
+                Wander();
+            }
             return;
         }
 
         float distanceToPlayer = Vector3.Distance(transform.position, target.position);
         bool isInAttackRange = enemyCombat != null && distanceToPlayer <= enemyCombat.attackRange;
-        bool withinFollowRange = isFollowingPlayer
+        bool withinFollowRange = alwaysChase || (isFollowingPlayer
             ? distanceToPlayer < distanceToLosePlayer
-            : distanceToPlayer < distanceToFollowPlayer;
+            : distanceToPlayer < distanceToFollowPlayer);
 
         bool shouldFollow = (aggroTimer > 0f || withinFollowRange) && followPlayer && !isInAttackRange;
 
         if (shouldFollow)
         {
+            if (!isFollowingPlayer || isWanderMoving)
+                StopWandering();
+
             FollowTarget(target);
             isFollowingPlayer = true;
         }
@@ -117,6 +152,10 @@ public class Ai : NetworkBehaviour
             GoToDestination();
             isFollowingPlayer = false;
         }
+        else if (!isFollowingPlayer && !isInAttackRange)
+        {
+            Wander();
+        }
     }
 
     public void SetAggroTarget(Transform attacker)
@@ -124,6 +163,12 @@ public class Ai : NetworkBehaviour
         if (attacker == null) return;
         aggroTarget = attacker;
         aggroTimer = aggroDuration;
+    }
+
+    // Lo llama el AIDirector en las hordas: persiguen sin importar la distancia.
+    public void StartHorde()
+    {
+        alwaysChase = true;
     }
 
     private void ClearAggro()
@@ -179,6 +224,67 @@ public class Ai : NetworkBehaviour
     {
         if (destination1 == null || navMeshAgent == null || !navMeshAgent.isOnNavMesh) return;
         navMeshAgent.destination = destination1.transform.position;
+    }
+
+    // Camina sin rumbo cerca del punto donde aparecio: se mueve un rato, para, y vuelve a elegir.
+    private void Wander()
+    {
+        if (!wanderWhenIdle || destination1 != null) return;
+        if (navMeshAgent == null || !navMeshAgent.isOnNavMesh) return;
+
+        SetWalkingSpeed(true);
+        wanderTimer -= Time.deltaTime;
+
+        if (isWanderMoving)
+        {
+            bool arrived = !navMeshAgent.pathPending
+                && navMeshAgent.remainingDistance <= navMeshAgent.stoppingDistance + 0.3f;
+
+            if (arrived || wanderTimer <= 0f)
+            {
+                isWanderMoving = false;
+                navMeshAgent.ResetPath();
+                wanderTimer = Random.Range(wanderPause.x, wanderPause.y);
+            }
+
+            return;
+        }
+
+        if (wanderTimer > 0f)
+            return;
+
+        for (int i = 0; i < 5; i++)
+        {
+            Vector2 offset = Random.insideUnitCircle * wanderRadius;
+            Vector3 candidate = homePosition + new Vector3(offset.x, 0f, offset.y);
+            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+                continue;
+
+            navMeshAgent.isStopped = false;
+            navMeshAgent.destination = hit.position;
+            isWanderMoving = true;
+            wanderTimer = maxWanderTravelTime;
+            return;
+        }
+
+        wanderTimer = 1f;
+    }
+
+    private void StopWandering()
+    {
+        isWanderMoving = false;
+        SetWalkingSpeed(false);
+
+        // Fuerza a FollowTarget a trazar la ruta aunque el jugador no se haya movido.
+        lastPlayerPosition = Vector3.one * 1000000f;
+    }
+
+    private void SetWalkingSpeed(bool walking)
+    {
+        if (baseSpeed <= 0f)
+            return;
+
+        navMeshAgent.speed = walking ? baseSpeed * wanderSpeedMultiplier : baseSpeed;
     }
 
     private void PlaceOnNavMesh()

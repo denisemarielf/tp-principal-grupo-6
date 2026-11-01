@@ -22,6 +22,11 @@ public class EnemyAnimation : NetworkBehaviour
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip[] stepClips;
     [SerializeField] private AudioClip[] attackClips;
+    [SerializeField] private AudioClip[] landedClips;      // el golpe del zombie conecta con un jugador o civil
+    [SerializeField] private AudioClip[] biteLandedClips;  // idem para la mordida (si esta vacio usa landedClips)
+    [SerializeField, Range(0f, 1f)] private float landedVolume = 1f;
+    [SerializeField] private AudioClip[] impactClips;   // sonidos de impacto cuando un jugador le pega
+    [SerializeField, Range(0f, 1f)] private float impactVolume = 1f;
     [SerializeField] private float stepInterval = 0.5f;
     [SerializeField] private float runStepInterval = 0.3f;
     [SerializeField] private Vector2 pitchRange = new Vector2(0.92f, 1.08f);
@@ -71,6 +76,8 @@ public class EnemyAnimation : NetworkBehaviour
         NetworkVariableWritePermission.Server);
 
     private EnemyHealth health;
+    private EnemyVoice voice;
+    private int lastState = -1;
     private Vector3 lastPosition;
     private int hitIndex;
     private float hitUntil;
@@ -163,6 +170,7 @@ public class EnemyAnimation : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         health = GetComponent<EnemyHealth>();
+        voice = GetComponent<EnemyVoice>();
         lastPosition = transform.position;
 
         if (IsServer && debugLogs)
@@ -199,6 +207,14 @@ public class EnemyAnimation : NetworkBehaviour
             state = Hit;
         else if (HorizontalSpeed() > MoveThreshold)
             state = ActiveModelIsFragil() ? Run : Walk;
+
+        // Voz al empezar a atacar o morder (EnemyVoice decide si hay "lugar" para que suene).
+        if (state != lastState)
+        {
+            if (voice != null && (state == Attack || state == Bite))
+                voice.TryPlay(EnemyVoice.Kind.Attack);
+            lastState = state;
+        }
 
         if (state == Walk || state == Run)
         {
@@ -257,5 +273,37 @@ public class EnemyAnimation : NetworkBehaviour
     public void PlayAttackHitSound()
     {
         PlayRandom(attackClips);
+    }
+
+    // Se reproduce en todos los clientes cuando el golpe del zombie conecta (ver EnemyCombat.DealDamage).
+    public void PlayLandedSound(bool bite)
+    {
+        AudioClip[] clips = bite && biteLandedClips != null && biteLandedClips.Length > 0
+            ? biteLandedClips
+            : landedClips;
+
+        if (audioSource == null || clips == null || clips.Length == 0)
+            return;
+
+        AudioClip clip = clips[Random.Range(0, clips.Length)];
+        if (clip == null)
+            return;
+
+        audioSource.pitch = Random.Range(pitchRange.x, pitchRange.y);
+        audioSource.PlayOneShot(clip, landedVolume);
+    }
+
+    // Se reproduce en todos los clientes cuando el enemigo recibe un impacto (ver EnemyHealth).
+    public void PlayImpactSound()
+    {
+        if (audioSource == null || impactClips == null || impactClips.Length == 0)
+            return;
+
+        AudioClip clip = impactClips[Random.Range(0, impactClips.Length)];
+        if (clip == null)
+            return;
+
+        audioSource.pitch = Random.Range(pitchRange.x, pitchRange.y);
+        audioSource.PlayOneShot(clip, impactVolume);
     }
 }
