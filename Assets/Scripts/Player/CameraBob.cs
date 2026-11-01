@@ -11,10 +11,12 @@ public class CameraBob : MonoBehaviour
     private Vector3 startPos;
 
     private PMovement movement;
+    private CameraControllerFPS view;
 
     private void Awake()
     {
         movement = GetComponentInParent<PMovement>();
+        view = GetComponent<CameraControllerFPS>();
     }
     private void Start()
     {
@@ -23,7 +25,7 @@ public class CameraBob : MonoBehaviour
 
     private void Update()
     {
-        if (movement == null) return;
+        if (movement == null || (view != null && view.IsThirdPerson)) return;
 
         Vector2 input = movement.MoveInput;
         bool isMoving = input.magnitude > 0.1f;
