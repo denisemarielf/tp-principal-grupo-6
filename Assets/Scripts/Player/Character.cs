@@ -239,12 +239,21 @@ public class Character : NetworkBehaviour
             }
         }
 
+        ExtractionPhone phone = ExtractionPhone.FindNearestAvailable(transform.position);
+        float phoneDist = phone != null
+            ? Vector3.Distance(transform.position, phone.transform.position)
+            : float.MaxValue;
+
         RescuableNpc npc = RescuableNpc.FindNearestWaiting(transform.position);
         float npcDist = npc != null
             ? Vector3.Distance(transform.position, npc.transform.position)
             : float.MaxValue;
 
-        if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
+        if (phone != null && phoneDist <= npcDist && phoneDist <= itemDist && phoneDist <= nearestWeaponDist)
+        {
+            phone.RequestExtraction();
+        }
+        else if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
         {
             npc.RequestRescue();
         }
