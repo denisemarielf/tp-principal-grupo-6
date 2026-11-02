@@ -38,10 +38,12 @@ public static class BloodSplatter
                       sizeMin = 0.05f, sizeMax = 0.1f, lifeMin = 0.35f, lifeMax = 0.55f, gravity = 3.5f },
     };
 
+
     private static Material material;
+    
     private static Texture2D atlasTexture;
 
-    public static void Play(Vector3 point, Vector3 normal)
+    public static void Play(Vector3 point, Vector3 normal, Transform woundParent = null)
     {
         if (normal.sqrMagnitude < 0.001f)
             normal = Vector3.up;
@@ -131,11 +133,15 @@ public static class BloodSplatter
         renderer.shadowCastingMode = ShadowCastingMode.Off;
         renderer.receiveShadows = false;
 
+        BloodDecal.Spray(point, normal, v.angle, Scale);
+        if (woundParent != null)
+            BloodWound.Begin(woundParent, point, normal, Scale);
+
         particles.Play();
         Object.Destroy(splatter, 1.2f);
     }
 
-    private static Material DropletMaterial()
+    public static Material DropletMaterial()
     {
         if (material != null)
             return material;

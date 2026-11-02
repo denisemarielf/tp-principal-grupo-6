@@ -72,6 +72,32 @@ public class SafeZone : NetworkBehaviour
     public bool IsCompleted => completed.Value;
     public bool AllAlivePlayersInside => alivePlayers.Value > 0 && playersInside.Value >= alivePlayers.Value;
 
+    [Tooltip("Si está marcado, la zona no cuenta jugadores ni completa el nivel hasta que se llame a Unlock().")]
+    [SerializeField] private bool startLocked = true;
+    [Tooltip("Objetos que se activan al desbloquear (ej: el cilindro verde del helipuerto). Se aplica en todos los clientes.")]
+    [SerializeField] private GameObject[] unlockVisuals;
+    private NetworkVariable<bool> unlocked = new NetworkVariable<bool>(
+    false,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
+    public bool IsUnlocked => unlocked.Value;
+
+    public void Unlock()
+    {
+        if (!IsServer) return;
+        unlocked.Value = true;
+    }
+
+    private void OnUnlockedChanged(bool previous, bool current) => ApplyUnlockVisuals(current);
+
+    private void ApplyUnlockVisuals(bool value)
+    {
+        if (unlockVisuals == null) return;
+        foreach (var go in unlockVisuals)
+            if (go != null) go.SetActive(value);
+    }
+
     // Solo el server. Lo usa el guardado de partida (US 3.6) para saber si el host esta en la zona.
     public bool IsPlayerInside(PlayerHealth player)
     {
@@ -87,6 +113,10 @@ public class SafeZone : NetworkBehaviour
     {
         Current = this;
         completed.OnValueChanged += OnCompletedChanged;
+        unlocked.OnValueChanged += OnUnlockedChanged;
+
+        if (IsServer) unlocked.Value = !startLocked;
+        ApplyUnlockVisuals(unlocked.Value);
 
         if (!GetComponent<Collider>().isTrigger)
         {
@@ -97,6 +127,7 @@ public class SafeZone : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         completed.OnValueChanged -= OnCompletedChanged;
+        unlocked.OnValueChanged -= OnUnlockedChanged;
         if (Current == this) Current = null;
     }
 
@@ -120,7 +151,7 @@ public class SafeZone : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsServer || !IsSpawned || completed.Value) return;
+        if (!IsServer || !IsSpawned || completed.Value || !unlocked.Value) return;
 
         checkTimer -= Time.deltaTime;
         if (checkTimer > 0f) return;
