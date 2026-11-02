@@ -27,6 +27,9 @@ public class CameraBob : MonoBehaviour
     {
         if (movement == null || (view != null && view.IsThirdPerson)) return;
 
+        PlayerHealth health = GetComponentInParent<PlayerHealth>();
+        if (health != null && health.IsDead) return;
+
         Vector2 input = movement.MoveInput;
         bool isMoving = input.magnitude > 0.1f;
 
@@ -43,7 +46,7 @@ public class CameraBob : MonoBehaviour
         }
         else
         {
-            // Volver suavemente a la posición inicial
+            // Volver suavemente a la posiciï¿½n inicial
             transform.localPosition = Vector3.Lerp(transform.localPosition, startPos, Time.deltaTime * 5f);
             timer = 0f;
         }

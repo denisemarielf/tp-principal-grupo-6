@@ -57,6 +57,15 @@ public class CameraControllerFPS : NetworkBehaviour
             }
             weaponCameras = named != null ? new[] { named } : new Camera[0];
         }
+
+        if (GetComponent<SpectatorMode>() == null)
+            gameObject.AddComponent<SpectatorMode>();
+    }
+
+    private bool OwnerIsDead()
+    {
+        PlayerHealth health = GetComponentInParent<PlayerHealth>();
+        return health != null && health.IsSpawned && health.IsDead && (!IsSpawned || IsOwner);
     }
 
     public override void OnNetworkSpawn()
@@ -116,7 +125,7 @@ public class CameraControllerFPS : NetworkBehaviour
         bool isLocal = !IsSpawned || IsOwner;
         Vector3 recoilOffset = Vector3.zero;
 
-        if (isLocal)
+        if (isLocal && !OwnerIsDead())
         {
             if (!PauseMenuUI.IsOpen
                 && Mouse.current != null
@@ -179,6 +188,10 @@ public class CameraControllerFPS : NetworkBehaviour
     private void LateUpdate()
     {
         if (IsSpawned && !IsOwner)
+            return;
+
+        // Muerto: SpectatorMode ubica la cámara. Si la reubicamos acá, vuelve al cuerpo.
+        if (OwnerIsDead())
             return;
 
         // CameraBob corre en Update y, al caminar, devuelve la cámara a los ojos.
