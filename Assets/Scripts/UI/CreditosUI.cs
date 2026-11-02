@@ -13,14 +13,16 @@ public class CreditosUI : MonoBehaviour
     private const string NombreJuego = "ÚLTIMO TREN A RETIRO";
 
     // Si querés roles: "Nombre  —  Programación"
-    private static readonly string[] Integrantes =
-    {
-        "Jeremías Nehuén Nieva",
-        "Brenda Nicole Martinez",
-        "Denise Mariel Fernandez",
-        "Morena Arias",
-        "Felipe Monsegur"
-    };
+    private static readonly (string rol, string nombre)[] Equipo =
+{
+    ("Product Owner (PO)",                    "Francisco Orozco De La Hoz"),
+    ("Scrum Master",                          "Denise Mariel Fernandez"),
+    ("Desarrollador (Lead Netcode)",          "Jeremías Nehuén Nieva"),
+    ("Desarrollador (Gameplay)",              "Leandro Ariel Alegre"),
+    ("Desarrollador (Sistemas e IA)",         "Felipe Monsegur"),
+    ("Diseño Gráfico (Arte y Escenarios)",    "Morena Arias"),
+    ("Tester (Control de Calidad - QA)",      "Brenda Nicole Martinez"),
+};
 
     private const string Materia = "Proyecto Profesional 1";
     private const string Universidad = "Universidad Nacional de General Sarmiento";
@@ -108,10 +110,15 @@ public class CreditosUI : MonoBehaviour
 
         Espaciador(120f);
 
-        Texto("DESARROLLADO POR", 22f, ColorEtiqueta, false, 34f, 6f);
-        Espaciador(8f);
-        foreach (string nombre in Integrantes)
-            Texto(nombre, 38f, ColorTexto, false, 54f, 1f);
+        Texto("EQUIPO DE DESARROLLO", 22f, ColorEtiqueta, false, 34f, 6f);
+        Espaciador(28f);
+
+        foreach (var miembro in Equipo)
+        {
+            Texto(miembro.rol.ToUpper(), 20f, ColorEtiqueta, false, 30f, 5f);
+            Texto(miembro.nombre, 42f, ColorTexto, false, 58f, 1f);
+            Espaciador(36f);
+        }
 
         Espaciador(110f);
 
