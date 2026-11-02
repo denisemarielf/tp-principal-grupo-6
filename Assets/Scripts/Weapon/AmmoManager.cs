@@ -26,6 +26,12 @@ public class AmmoManager : MonoBehaviour
     public bool IsReloading => isReloading;
     public bool HasAmmo => currentAmmo > 0;
 
+    [SerializeField] private int maxReserveAmmo = 120;
+
+    public bool IsReserveFull => reserveAmmo >= maxReserveAmmo;
+
+  
+
     private void Awake()
     {
         currentAmmo = magazineSize;
@@ -83,9 +89,8 @@ public class AmmoManager : MonoBehaviour
 
     public void AddReserveAmmo(int amount)
     {
-        reserveAmmo += amount;
+        reserveAmmo = Mathf.Min(reserveAmmo + amount, maxReserveAmmo);
     }
-
     public void SetAmmoState(int current, int reserve)
     {
         currentAmmo = Mathf.Clamp(current, 0, magazineSize);
