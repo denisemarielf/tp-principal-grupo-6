@@ -5,6 +5,12 @@ public class WeaponVisuals : MonoBehaviour
 {
     [SerializeField] private WeaponCatalog catalog;
     private bool isOwner;
+    private bool ownerThirdPerson;
+
+    public void SetOwnerThirdPerson(bool thirdPerson)
+    {
+        ownerThirdPerson = thirdPerson;
+    }
 
     public void SetupCatalog(bool isOwner)
     {
@@ -92,7 +98,8 @@ public class WeaponVisuals : MonoBehaviour
         link.worldModel.SetActive(visible);
         if (!visible) return;
 
-        var mode = isOwner ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+        bool shadowsOnly = isOwner && !ownerThirdPerson;
+        var mode = shadowsOnly ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
         foreach (Renderer r in link.worldModel.GetComponentsInChildren<Renderer>(true))
             r.shadowCastingMode = mode;
     }

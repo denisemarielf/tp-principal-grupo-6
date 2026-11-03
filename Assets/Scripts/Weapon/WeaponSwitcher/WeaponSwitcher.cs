@@ -37,6 +37,15 @@ public class WeaponSwitcher : NetworkBehaviour
         currentWeapon != null ? currentWeapon.GetComponent<AmmoManager>() : null;
 
     public int CurrentWeaponIndex => networkWeaponIndex.Value;
+
+    // El dueño ve el arma del cuerpo cuando está en tercera persona. El modelo nuevo vuelve a pedir los visuals.
+    public void SetThirdPersonView(bool thirdPerson)
+    {
+        if (visuals == null) return;
+        visuals.SetOwnerThirdPerson(thirdPerson);
+        if (loadout != null && loadout.Weapons != null)
+            visuals.UpdateWeaponVisuals(loadout.Weapons, networkWeaponIndex.Value);
+    }
     public int WeaponCount => loadout.Count;
 
   

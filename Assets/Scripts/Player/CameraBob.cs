@@ -11,10 +11,12 @@ public class CameraBob : MonoBehaviour
     private Vector3 startPos;
 
     private PMovement movement;
+    private CameraControllerFPS view;
 
     private void Awake()
     {
         movement = GetComponentInParent<PMovement>();
+        view = GetComponent<CameraControllerFPS>();
     }
     private void Start()
     {
@@ -23,7 +25,10 @@ public class CameraBob : MonoBehaviour
 
     private void Update()
     {
-        if (movement == null) return;
+        if (movement == null || (view != null && view.IsThirdPerson)) return;
+
+        PlayerHealth health = GetComponentInParent<PlayerHealth>();
+        if (health != null && health.IsDead) return;
 
         Vector2 input = movement.MoveInput;
         bool isMoving = input.magnitude > 0.1f;
@@ -41,7 +46,7 @@ public class CameraBob : MonoBehaviour
         }
         else
         {
-            // Volver suavemente a la posición inicial
+            // Volver suavemente a la posiciï¿½n inicial
             transform.localPosition = Vector3.Lerp(transform.localPosition, startPos, Time.deltaTime * 5f);
             timer = 0f;
         }

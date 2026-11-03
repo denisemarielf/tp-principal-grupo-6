@@ -40155,9 +40155,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::WorldWeaponSway
   source: {fileID: 0}
+  meleeSource: {fileID: 0}
   referenceFrame: {fileID: 0}
   positionScale: 1
   rotationScale: 0.5
+  meleePositionScale: 1
+  meleeRotationScale: 1
+  leftHandPoint: {fileID: 0}
+  keepLeftHandStill: 0
 --- !u!1 &1532455054101082185
 GameObject:
   m_ObjectHideFlags: 0
@@ -90255,9 +90260,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::WorldWeaponSway
   source: {fileID: 0}
+  meleeSource: {fileID: 0}
   referenceFrame: {fileID: 0}
   positionScale: 1
   rotationScale: 0.5
+  meleePositionScale: 1
+  meleeRotationScale: 1
+  leftHandPoint: {fileID: 0}
+  keepLeftHandStill: 0
 --- !u!1 &3750072352926130536
 GameObject:
   m_ObjectHideFlags: 0
@@ -96095,9 +96105,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::WorldWeaponSway
   source: {fileID: 0}
+  meleeSource: {fileID: 0}
   referenceFrame: {fileID: 0}
   positionScale: 1
   rotationScale: 0.5
+  meleePositionScale: 1
+  meleeRotationScale: 1
+  leftHandPoint: {fileID: 0}
+  keepLeftHandStill: 0
 --- !u!1 &4650153534031565709
 GameObject:
   m_ObjectHideFlags: 0
@@ -136006,9 +136021,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::WorldWeaponSway
   source: {fileID: 0}
+  meleeSource: {fileID: 0}
   referenceFrame: {fileID: 0}
   positionScale: 1
   rotationScale: 1
+  meleePositionScale: 1
+  meleeRotationScale: 1
+  leftHandPoint: {fileID: 0}
+  keepLeftHandStill: 0
 --- !u!1 &7363990910114715341
 GameObject:
   m_ObjectHideFlags: 0
@@ -142080,9 +142100,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::WorldWeaponSway
   source: {fileID: 0}
+  meleeSource: {fileID: 0}
   referenceFrame: {fileID: 0}
   positionScale: 1
   rotationScale: 0.5
+  meleePositionScale: 1
+  meleeRotationScale: 1
+  leftHandPoint: {fileID: 0}
+  keepLeftHandStill: 0
 --- !u!1 &8504544521917205762
 GameObject:
   m_ObjectHideFlags: 0
@@ -152901,7 +152926,21 @@ MonoBehaviour:
   NetworkAnimatorExpanded: 0
   AuthorityMode: 1
   m_Animator: {fileID: 857315327880440159}
-  TransitionStateInfoList: []
+  TransitionStateInfoList:
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: 765711723
+    DestinationState: 125937960
+    TransitionDuration: 0.08
+    TriggerNameHash: 125937960
+    TransitionIndex: 1
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: 1748754976
+    DestinationState: 125937960
+    TransitionDuration: 0.08
+    TriggerNameHash: 125937960
+    TransitionIndex: 1
   AnimatorParameterEntries:
     ParameterEntries:
     - name: Blend
@@ -152920,6 +152959,10 @@ MonoBehaviour:
       NameHash: 1125312739
       Synchronize: 1
       ParameterType: 4
+    - name: Jump
+      NameHash: 125937960
+      Synchronize: 1
+      ParameterType: 9
   AnimatorParametersExpanded: 0
 --- !u!114 &6034323132489608190
 MonoBehaviour:

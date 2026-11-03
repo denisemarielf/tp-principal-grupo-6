@@ -8,8 +8,19 @@ public class CameraControllerFPS : NetworkBehaviour
     public float sensitivity = 2f;
     [SerializeField] private Transform weaponPivot; // el objeto que agrupa WeaponCamera + las armas
     [SerializeField] private WeaponSwitcher weaponSwitcher; // asignalo a mano: vive en un hermano de esta camara (Player), no en un ancestro
+    [SerializeField] private float thirdPersonDistance = 3.2f;
+    [SerializeField] private Vector3 thirdPersonOffset = new Vector3(0.45f, 0.35f, 0f);
 
     private float xRotation = 0f;
+    private bool thirdPerson;
+
+    public bool IsThirdPerson => thirdPerson;
+    private bool lastThirdPerson;
+    private bool viewApplied;
+    private Vector3 firstPersonLocalPosition;
+    private Camera viewCamera;
+    private Camera[] weaponCameras;
+    private int ownBodyLayer = -1;
 
     public NetworkVariable<float> networkPitch = new NetworkVariable<float>(
         0f,
@@ -26,6 +37,35 @@ public class CameraControllerFPS : NetworkBehaviour
         {
             weaponSwitcher = transform.root.GetComponentInChildren<WeaponSwitcher>();
         }
+
+        firstPersonLocalPosition = transform.localPosition;
+        viewCamera = GetComponent<Camera>();
+        ownBodyLayer = LayerMask.NameToLayer("OwnBody");
+
+        if (weaponPivot != null)
+            weaponCameras = weaponPivot.GetComponentsInChildren<Camera>(true);
+        else
+        {
+            Camera named = null;
+            foreach (Camera cam in transform.root.GetComponentsInChildren<Camera>(true))
+            {
+                if (cam.gameObject.name == "WeaponCamera")
+                {
+                    named = cam;
+                    break;
+                }
+            }
+            weaponCameras = named != null ? new[] { named } : new Camera[0];
+        }
+
+        if (GetComponent<SpectatorMode>() == null)
+            gameObject.AddComponent<SpectatorMode>();
+    }
+
+    private bool OwnerIsDead()
+    {
+        PlayerHealth health = GetComponentInParent<PlayerHealth>();
+        return health != null && health.IsSpawned && health.IsDead && (!IsSpawned || IsOwner);
     }
 
     public override void OnNetworkSpawn()
@@ -85,7 +125,7 @@ public class CameraControllerFPS : NetworkBehaviour
         bool isLocal = !IsSpawned || IsOwner;
         Vector3 recoilOffset = Vector3.zero;
 
-        if (isLocal)
+        if (isLocal && !OwnerIsDead())
         {
             if (!PauseMenuUI.IsOpen
                 && Mouse.current != null
@@ -131,6 +171,11 @@ public class CameraControllerFPS : NetworkBehaviour
             // pitch "limpio" del mouse (xRotation nunca se contamina con el
             // recoil, asi que networkPitch sigue reflejando tu apuntado real).
             transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f) * Quaternion.Euler(recoilOffset);
+
+            if (!PauseMenuUI.IsOpen && !EndScreenShown && Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
+                thirdPerson = !thirdPerson;
+
+            ApplyView();
         }
 
         if (weaponPivot != null)
@@ -138,5 +183,101 @@ public class CameraControllerFPS : NetworkBehaviour
             float pitchToApply = isLocal ? xRotation : (IsSpawned ? networkPitch.Value : xRotation);
             weaponPivot.localRotation = Quaternion.Euler(pitchToApply, 0f, 0f) * Quaternion.Euler(recoilOffset);
         }
+    }
+
+    private void LateUpdate()
+    {
+        if (IsSpawned && !IsOwner)
+            return;
+
+        // Muerto: SpectatorMode ubica la cámara. Si la reubicamos acá, vuelve al cuerpo.
+        if (OwnerIsDead())
+            return;
+
+        // CameraBob corre en Update y, al caminar, devuelve la cámara a los ojos.
+        if (thirdPerson)
+            PlaceThirdPersonCamera();
+
+        ApplyCameraVisibility();
+    }
+
+    // OwnBody queda fuera de la Main Camera y el arma del cuerpo solo tira sombra. En tercera persona se invierte eso.
+    private void ApplyView()
+    {
+        if (thirdPerson)
+            PlaceThirdPersonCamera();
+        else
+            transform.localPosition = firstPersonLocalPosition;
+
+        if (weaponSwitcher != null && (!viewApplied || thirdPerson != lastThirdPerson))
+        {
+            weaponSwitcher.SetThirdPersonView(thirdPerson);
+            lastThirdPerson = thirdPerson;
+            viewApplied = true;
+        }
+    }
+
+    private void PlaceThirdPersonCamera()
+    {
+        Vector3 shoulder = thirdPersonOffset + new Vector3(0f, 0f, -thirdPersonDistance);
+        Vector3 desiredLocal = firstPersonLocalPosition + transform.localRotation * shoulder;
+        Vector3 origin = transform.parent != null
+            ? transform.parent.TransformPoint(firstPersonLocalPosition)
+            : transform.position;
+        Vector3 desiredWorld = transform.parent != null
+            ? transform.parent.TransformPoint(desiredLocal)
+            : desiredLocal;
+        Vector3 pulled = PullInFrontOfWalls(origin, desiredWorld);
+        transform.localPosition = transform.parent != null
+            ? transform.parent.InverseTransformPoint(pulled)
+            : pulled;
+    }
+
+    // Después del refresh del modelo, que vuelve a prender todas las cámaras del dueño.
+    private void ApplyCameraVisibility()
+    {
+        if (viewCamera != null && ownBodyLayer >= 0)
+        {
+            int bit = 1 << ownBodyLayer;
+            if (thirdPerson)
+                viewCamera.cullingMask |= bit;
+            else
+                viewCamera.cullingMask &= ~bit;
+        }
+
+        if (weaponCameras == null)
+            return;
+
+        foreach (Camera cam in weaponCameras)
+        {
+            if (cam != null && cam != viewCamera && cam.gameObject.name == "WeaponCamera")
+                cam.enabled = !thirdPerson;
+        }
+    }
+
+    private Vector3 PullInFrontOfWalls(Vector3 origin, Vector3 desired)
+    {
+        Vector3 delta = desired - origin;
+        float distance = delta.magnitude;
+        if (distance < 0.05f)
+            return desired;
+
+        Vector3 direction = delta / distance;
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        float closest = distance;
+        Transform root = transform.root;
+        foreach (RaycastHit hit in hits)
+        {
+            if (hit.transform == root || hit.transform.IsChildOf(root))
+                continue;
+            if (hit.distance < closest)
+                closest = hit.distance;
+        }
+
+        if (closest >= distance)
+            return desired;
+
+        closest = Mathf.Max(0.2f, closest - 0.15f);
+        return origin + direction * closest;
     }
 }
