@@ -22,7 +22,7 @@ public class PMovement : NetworkBehaviour
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
-
+    private float launchLockUntil;
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector3 velocity;
@@ -144,9 +144,11 @@ public class PMovement : NetworkBehaviour
             controller.Move(new Vector3(0f, verticalVelocity * Time.deltaTime, 0f));
             return;
         }
+        Vector2 input = Time.time < launchLockUntil ? Vector2.zero : moveInput;
         Vector3 wishDir =
-        (transform.right * moveInput.x +
-        transform.forward * moveInput.y).normalized;
+            (transform.right * input.x +
+             transform.forward * input.y).normalized;
+
 
         float wishSpeed =
         moveSpeed * CombineSpeed(speedMultiplier.Value, slowMultiplier.Value);
@@ -291,5 +293,11 @@ public class PMovement : NetworkBehaviour
 
         slowMultiplier.Value = 1f;
         hitSlowRoutine = null;
+    }
+    public void Launch(Vector3 launchVelocity, float controlLockSeconds = 0.6f)
+    {
+        velocity = new Vector3(launchVelocity.x, 0f, launchVelocity.z);
+        verticalVelocity = launchVelocity.y;
+        launchLockUntil = Time.time + controlLockSeconds;
     }
 }

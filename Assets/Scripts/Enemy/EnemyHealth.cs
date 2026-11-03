@@ -17,7 +17,7 @@ public class EnemyHealth : NetworkBehaviour
     [SerializeField] private AnimationClip[] extraDeathClips;
     [SerializeField] private AudioClip[] deathSounds;
     [SerializeField, Range(0f, 1f)] private float deathVolume = 1f;
-
+    [SerializeField] private float healthOverride = 0f;
     private NetworkVariable<float> currentHealth = new NetworkVariable<float>(
         0f,
         NetworkVariableReadPermission.Everyone,
@@ -125,9 +125,12 @@ public class EnemyHealth : NetworkBehaviour
         All.Add(this);
         isDead.OnValueChanged += OnDeadChanged;
 
+        if (healthOverride > 0f)
+            maxHealth = healthOverride; // tambien en clientes, para que la barra tenga el maximo
+
         if (IsServer)
         {
-            maxHealth = HealthFor(variant);
+            maxHealth = healthOverride > 0f ? healthOverride : HealthFor(variant);
             currentHealth.Value = maxHealth;
         }
 
