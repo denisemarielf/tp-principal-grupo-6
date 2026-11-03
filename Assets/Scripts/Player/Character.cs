@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using TMPro;
+using static UnityEngine.GraphicsBuffer;
 
 [RequireComponent(typeof(PMovement))]
 public class Character : NetworkBehaviour
@@ -69,7 +70,7 @@ public class Character : NetworkBehaviour
         if (IsOwner)
         {
             string nombre = NombrePlayer.NombreJugador;
-
+            ElectricPanel.LocalMinigameChanged += SetMinigameMode;
             if (string.IsNullOrWhiteSpace(nombre))
                 nombre = "Jugador " + (OwnerClientId + 1);
 
@@ -89,6 +90,7 @@ public class Character : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        ElectricPanel.LocalMinigameChanged -= SetMinigameMode;
         RestoreSceneCameras();
     }
 
@@ -215,6 +217,7 @@ public class Character : NetworkBehaviour
     // vez, se usa el que esté más cerca.
     public void OnInteraction(InputAction.CallbackContext context)
     {
+       
         if (!IsOwner || IsDead() || !context.performed) return;
 
         ItemPickup item = ItemPickup.FindNearest(transform.position);
@@ -249,7 +252,18 @@ public class Character : NetworkBehaviour
             ? Vector3.Distance(transform.position, npc.transform.position)
             : float.MaxValue;
 
-        if (phone != null && phoneDist <= npcDist && phoneDist <= itemDist && phoneDist <= nearestWeaponDist)
+        ElectricPanel panel = ElectricPanel.FindNearestUnsolved(transform.position);
+        float panelDist = panel != null
+            ? Vector3.Distance(transform.position, panel.transform.position)
+            : float.MaxValue;
+
+        if (panel != null && panelDist <= phoneDist && panelDist <= npcDist
+    && panelDist <= itemDist && panelDist <= nearestWeaponDist)
+        {
+            panel.Interact();
+        }
+
+        else if (phone != null && phoneDist <= npcDist && phoneDist <= itemDist && phoneDist <= nearestWeaponDist)
         {
             phone.RequestExtraction();
         }
@@ -268,8 +282,27 @@ public class Character : NetworkBehaviour
                 nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
             );
         }
-    }
 
+    }
+    private void SetMinigameMode(bool on)
+    {
+        PlayerInput pi = GetComponent<PlayerInput>();
+        if (on)
+        {
+            movement.SetMoveInput(Vector2.zero);
+            movement.SetSprint(false);
+            if (pi != null) pi.enabled = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            if (IsDead()) return;   // si murió, que siga apagado
+            if (pi != null) pi.enabled = true;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
     private void SetLocalOnlyComponents(bool isLocal)
     {
         PlayerInput playerInput = GetComponent<PlayerInput>();

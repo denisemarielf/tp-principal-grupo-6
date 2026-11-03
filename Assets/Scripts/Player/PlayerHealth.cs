@@ -128,6 +128,8 @@ public class PlayerHealth : NetworkBehaviour
 
     private void OnHealthValueChanged(float previous, float current)
     {
+        if (IsOwner && current < previous)
+            ElectricPanel.CancelIfPlaying();
         HealthChanged?.Invoke(current, maxHealth);
         if (current < previous && current > 0f)
             PlayHurtSound();
@@ -143,6 +145,7 @@ public class PlayerHealth : NetworkBehaviour
         // El dueño deja de controlar al personaje; la gravedad de PMovement sigue aplicandose.
         if (IsOwner)
         {
+            ElectricPanel.CancelIfPlaying();
             PMovement movement = GetComponent<PMovement>();
             if (movement != null)
                 movement.ResetMovement();
