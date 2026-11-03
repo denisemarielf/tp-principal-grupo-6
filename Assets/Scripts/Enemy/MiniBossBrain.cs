@@ -6,6 +6,8 @@ using UnityEngine.AI;
 
 // IA del mini jefe (solo corre en el server). Camina hacia el blanco mas cercano, de a ratos le da un
 // impulso y corre, pega con golpes que mandan a volar (estilo Tank) y salta para aplastar.
+// Ataques especiales: burla (taunt), vomito acido a distancia (lento + dano por segundo),
+// agarrar y estrangular (jugador inmovil, mucho dano) y agarrar y lanzar hacia atras.
 // La vida, la muerte y el dano que recibe los maneja EnemyHealth (asi las armas siguen funcionando igual).
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(MiniBossAnimation))]
@@ -47,13 +49,76 @@ public class MiniBossBrain : NetworkBehaviour
     [SerializeField] private float slamRadius = 5f;
     [SerializeField] private float jumpLandOffset = 1.5f;   // aterriza un poco antes del blanco
 
-    [Header("Lanzamiento (estilo Tank)")]
+    [Header("Lanzamiento por golpe (estilo Tank)")]
     [SerializeField] private float launchHorizontal = 10f;
     [SerializeField] private float launchVertical = 7f;
+
+    [Header("Burla (Taunt)")]
+    [SerializeField] private float tauntMinRange = 10f;
+    [SerializeField] private float tauntMaxRange = 30f;
+    [Range(0f, 1f)]
+    [SerializeField] private float tauntChance = 0.25f;     // se tira una vez por segundo cuando esta en rango
+    [SerializeField] private Vector2 tauntCooldown = new Vector2(25f, 50f); // casi nunca
+
+    [Header("Vomito acido (a distancia)")]
+    [SerializeField] private float vomitMinRange = 5f;
+    [SerializeField] private float vomitRange = 14f;        // alcance del chorro (hitbox y particulas)
+    [SerializeField] private float vomitHalfAngle = 20f;    // apertura del cono
+    [Range(0f, 1f)]
+    [SerializeField] private float vomitChance = 0.5f;
+    [SerializeField] private Vector2 vomitCooldown = new Vector2(10f, 18f);
+    [Range(0.05f, 0.9f)]
+    [SerializeField] private float vomitSprayStart = 0.35f; // empieza a salir el acido (dentro del clip)
+    [Range(0.1f, 0.98f)]
+    [SerializeField] private float vomitSprayEnd = 0.8f;    // termina el chorro
+    [SerializeField] private float vomitTurnSpeed = 45f;    // grados/seg: va siguiendo al blanco mientras vomita
+    [SerializeField] private float mouthHeight = 2.6f;      // de donde sale el vomito (local al jefe)
+    [SerializeField] private float mouthForward = 0.8f;
+    [SerializeField] private float acidDamagePerSecond = 5f;
+    [SerializeField] private float acidDuration = 5f;
+    [Range(0.1f, 1f)]
+    [SerializeField] private float acidSpeedMultiplier = 0.5f; // 0.5 = el jugador va a la mitad de velocidad
+    [SerializeField] private float npcAcidDamage = 25f;     // los NPC reciben el dano de una sola vez
+
+    [Header("Agarrar y estrangular (raro)")]
+    [Range(0f, 1f)]
+    [SerializeField] private float grabChance = 0.15f;      // se evalua cuando va a pegar de cerca
+    [SerializeField] private Vector2 grabCooldown = new Vector2(20f, 35f);
+    [SerializeField] private float grabReach = 4.5f;
+    [SerializeField] private float grabHalfAngle = 60f;
+    [Range(0.05f, 0.9f)]
+    [SerializeField] private float grabLatchNormalized = 0.3f;   // momento en que lo agarra
+    [Range(0.1f, 0.95f)]
+    [SerializeField] private float grabStrangleStart = 0.4f;    // empieza el dano
+    [Range(0.2f, 0.98f)]
+    [SerializeField] private float grabReleaseNormalized = 0.9f; // lo suelta
+    [SerializeField] private int grabTicks = 4;
+    [SerializeField] private float grabTotalDamage = 90f;
+
+    [Header("Agarrar y lanzar")]
+    [Range(0f, 1f)]
+    [SerializeField] private float throwChance = 0.3f;      // se evalua cuando va a pegar de cerca
+    [SerializeField] private Vector2 throwCooldown = new Vector2(10f, 16f);
+    [SerializeField] private float throwReach = 4.5f;
+    [SerializeField] private float throwHalfAngle = 60f;
+    [Range(0.05f, 0.9f)]
+    [SerializeField] private float throwLatchNormalized = 0.3f;   // momento en que lo agarra y lo golpea
+    [Range(0.1f, 0.95f)]
+    [SerializeField] private float throwReleaseNormalized = 0.6f; // momento en que lo suelta y sale volando
+    [SerializeField] private float throwDamage = 35f;
+    [SerializeField] private float throwHorizontal = 16f;   // hacia ATRAS del jefe
+    [SerializeField] private float throwVertical = 8f;
+    [SerializeField] private float throwDropBehind = 1.8f;  // donde queda el jugador justo antes de salir volando
+    [SerializeField] private float throwDropHeight = 2.2f;
+
+    [Header("Punto de agarre (relativo al jefe)")]
+    [SerializeField] private float holdDistance = 1.4f;
+    [SerializeField] private float holdHeight = 1.0f;
 
     private NavMeshAgent agent;
     private MiniBossAnimation anim;
     private EnemyHealth health;
+    private Transform holdAnchor;
 
     private Transform target;
     private float searchTimer;
@@ -65,13 +130,23 @@ public class MiniBossBrain : NetworkBehaviour
     private float nextRunTime;
     private float nextAttackTime;
     private float nextJumpTime;
-    private float nextJumpRollTime;
+    private float nextRollTime;
+    private float nextTauntTime;
+    private float nextVomitTime;
+    private float nextGrabTime;
+    private float nextThrowTime;
 
     private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
         anim = GetComponent<MiniBossAnimation>();
         health = GetComponent<EnemyHealth>();
+
+        // Ancla donde queda el jugador agarrado. Existe en todos los clientes (el dueño del jugador la sigue).
+        GameObject anchor = new GameObject("HoldAnchor");
+        holdAnchor = anchor.transform;
+        holdAnchor.SetParent(transform, false);
+        holdAnchor.localPosition = new Vector3(0f, holdHeight, holdDistance);
     }
 
     public override void OnNetworkSpawn()
@@ -86,6 +161,10 @@ public class MiniBossBrain : NetworkBehaviour
         agent.speed = walkSpeed;
         nextRunTime = Time.time + Random.Range(runCooldown.x, runCooldown.y);
         nextJumpTime = Time.time + 3f;
+        nextVomitTime = Time.time + 8f;
+        nextThrowTime = Time.time + 5f;
+        nextGrabTime = Time.time + 15f;
+        nextTauntTime = Time.time + Random.Range(10f, 25f);
 
         if (!agent.isOnNavMesh && NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5f, NavMesh.AllAreas))
             agent.Warp(hit.position);
@@ -136,22 +215,72 @@ public class MiniBossBrain : NetworkBehaviour
 
         if (Time.time >= nextAttackTime && distance <= meleeRange)
         {
-            StartCoroutine(MeleeRoutine(target));
+            StartCloseAction(target);
             return;
         }
 
-        if (anim.HasJump && Time.time >= nextJumpTime && Time.time >= nextJumpRollTime
-            && distance >= jumpMinRange && distance <= jumpMaxRange)
+        // Una tirada por segundo para las acciones a distancia (vomito, salto, burla).
+        if (Time.time >= nextRollTime)
         {
-            nextJumpRollTime = Time.time + 1f;
-            if (Random.value < jumpChance)
+            nextRollTime = Time.time + 1f;
+            if (TryStartRangedAction(target, distance))
+                return;
+        }
+
+        Chase(distance);
+    }
+
+    // De cerca: agarrar y estrangular (raro), agarrar y lanzar, o el golpe normal.
+    // Agarrar solo funciona con jugadores (los NPC reciben siempre el golpe normal).
+    private void StartCloseAction(Transform victim)
+    {
+        bool isPlayer = victim.TryGetComponent(out PMovement _) && victim.TryGetComponent(out PlayerHealth _);
+
+        if (isPlayer)
+        {
+            if (anim.HasGrab && Time.time >= nextGrabTime && Random.value < grabChance)
             {
-                StartCoroutine(JumpRoutine(target));
+                StartCoroutine(GrabRoutine(victim));
+                return;
+            }
+
+            if (anim.HasThrow && Time.time >= nextThrowTime && Random.value < throwChance)
+            {
+                StartCoroutine(ThrowRoutine(victim));
                 return;
             }
         }
 
-        Chase(distance);
+        StartCoroutine(MeleeRoutine(victim));
+    }
+
+    private bool TryStartRangedAction(Transform victim, float distance)
+    {
+        if (anim.HasVomit && Time.time >= nextVomitTime
+            && distance >= vomitMinRange && distance <= vomitRange - 1f
+            && Random.value < vomitChance)
+        {
+            StartCoroutine(VomitRoutine(victim));
+            return true;
+        }
+
+        if (anim.HasJump && Time.time >= nextJumpTime
+            && distance >= jumpMinRange && distance <= jumpMaxRange
+            && Random.value < jumpChance)
+        {
+            StartCoroutine(JumpRoutine(victim));
+            return true;
+        }
+
+        if (anim.HasTaunt && Time.time >= nextTauntTime
+            && distance >= tauntMinRange && distance <= tauntMaxRange
+            && Random.value < tauntChance)
+        {
+            StartCoroutine(TauntRoutine(victim));
+            return true;
+        }
+
+        return false;
     }
 
     private void Chase(float distance)
@@ -285,6 +414,225 @@ public class MiniBossBrain : NetworkBehaviour
         yield return Recover();
     }
 
+    // Burla: se queda mirando al blanco un rato. No hace dano; el cooldown es largo para que sea poco frecuente.
+    private IEnumerator TauntRoutine(Transform victim)
+    {
+        busy = true;
+        Halt();
+
+        float length = anim.BeginTaunt() + 0.05f;
+        float t = 0f;
+
+        while (t < length)
+        {
+            if (Dead) yield break;
+
+            if (t < length * 0.4f)
+                FaceTarget(victim);
+
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        nextTauntTime = Time.time + Random.Range(tauntCooldown.x, tauntCooldown.y);
+        yield return Recover();
+    }
+
+    // Vomito: chorro de acido en cono. Quien lo recibe queda lento y con dano por segundo (PlayerAcidDot).
+    // Cada jugador se afecta una sola vez por vomito; otro vomito le refresca el efecto (no se acumula).
+    private IEnumerator VomitRoutine(Transform victim)
+    {
+        busy = true;
+        Halt();
+
+        float length = anim.BeginVomit() + 0.05f;
+        float sprayStart = length * vomitSprayStart;
+        float sprayEnd = Mathf.Max(length * vomitSprayEnd, sprayStart + 0.2f);
+
+        HashSet<PlayerHealth> affected = new HashSet<PlayerHealth>();
+        HashSet<RescuableNpc> affectedNpcs = new HashSet<RescuableNpc>();
+        bool spraying = false;
+        float nextCheck = 0f;
+        float t = 0f;
+
+        while (t < length)
+        {
+            if (Dead) yield break;
+
+            if (t < sprayEnd)
+                TurnToward(victim, vomitTurnSpeed);
+
+            if (!spraying && t >= sprayStart)
+            {
+                spraying = true;
+                AcidSprayClientRpc(sprayEnd - sprayStart);
+            }
+
+            if (spraying && t <= sprayEnd && t >= nextCheck)
+            {
+                nextCheck = t + 0.12f;
+                Vector3 mouth = transform.TransformPoint(new Vector3(0f, mouthHeight, mouthForward));
+                if (SprayHit(mouth, affected, affectedNpcs))
+                    HitLandedClientRpc();
+            }
+
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        nextVomitTime = Time.time + Random.Range(vomitCooldown.x, vomitCooldown.y);
+        nextAttackTime = Time.time + attackCooldown * 0.5f;
+        yield return Recover();
+    }
+
+    // Agarra al jugador, lo deja inmovil y lo estrangula (dano en varios ticks). Despues lo suelta.
+    private IEnumerator GrabRoutine(Transform victim)
+    {
+        busy = true;
+        Halt();
+
+        victim.TryGetComponent(out PMovement movement);
+        victim.TryGetComponent(out PlayerHealth victimHealth);
+
+        float length = anim.BeginGrab() + 0.05f;
+        float latchTime = length * grabLatchNormalized;
+        float strangleStart = length * grabStrangleStart;
+        float releaseTime = Mathf.Max(length * grabReleaseNormalized, strangleStart + 0.2f);
+        float tickEvery = (releaseTime - strangleStart) / Mathf.Max(1, grabTicks);
+
+        bool latchTried = false;
+        bool held = false;
+        int ticksDone = 0;
+        float t = 0f;
+
+        while (t < length)
+        {
+            if (Dead)
+            {
+                if (held) Free(movement, DropPointInFront());
+                yield break;
+            }
+
+            if (!latchTried && t < latchTime)
+                FaceTarget(victim);
+
+            if (!latchTried && t >= latchTime)
+            {
+                latchTried = true;
+                if (movement != null && victimHealth != null && !victimHealth.IsDead
+                    && CanReach(victim, grabReach, grabHalfAngle))
+                {
+                    held = true;
+                    HoldClientRpc(movement.NetworkObject, length - t + 0.5f);
+                    HitLandedClientRpc();
+                }
+            }
+
+            if (held && (movement == null || victimHealth == null))
+                held = false; // el jugador se desconecto
+
+            if (held && !victimHealth.IsDead && ticksDone < grabTicks && t >= strangleStart + ticksDone * tickEvery)
+            {
+                victimHealth.TakeDamage(grabTotalDamage / Mathf.Max(1, grabTicks));
+                ticksDone++;
+                HitLandedClientRpc();
+            }
+
+            if (held && t >= releaseTime)
+            {
+                held = false;
+                Free(movement, DropPointInFront());
+            }
+
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        if (held)
+            Free(movement, DropPointInFront());
+
+        nextGrabTime = Time.time + Random.Range(grabCooldown.x, grabCooldown.y);
+        nextAttackTime = Time.time + attackCooldown;
+        yield return Recover();
+    }
+
+    // Golpea, agarra al jugador y lo lanza hacia ATRAS del jefe (por encima del hombro).
+    private IEnumerator ThrowRoutine(Transform victim)
+    {
+        busy = true;
+        Halt();
+
+        victim.TryGetComponent(out PMovement movement);
+        victim.TryGetComponent(out PlayerHealth victimHealth);
+
+        float length = anim.BeginThrow() + 0.05f;
+        float latchTime = length * throwLatchNormalized;
+        float releaseTime = Mathf.Max(length * throwReleaseNormalized, latchTime + 0.1f);
+
+        bool latchTried = false;
+        bool held = false;
+        float t = 0f;
+
+        while (t < length)
+        {
+            if (Dead)
+            {
+                if (held) Free(movement, DropPointInFront());
+                yield break;
+            }
+
+            if (!latchTried && t < latchTime)
+                FaceTarget(victim);
+
+            if (!latchTried && t >= latchTime)
+            {
+                latchTried = true;
+                if (movement != null && victimHealth != null && !victimHealth.IsDead
+                    && CanReach(victim, throwReach, throwHalfAngle))
+                {
+                    victimHealth.TakeDamage(throwDamage);
+                    HitLandedClientRpc();
+
+                    if (!victimHealth.IsDead)
+                    {
+                        held = true;
+                        HoldClientRpc(movement.NetworkObject, length - t + 0.5f);
+                    }
+                }
+            }
+
+            if (held && (movement == null || victimHealth == null))
+                held = false;
+
+            if (held && t >= releaseTime)
+            {
+                held = false;
+
+                Vector3 back = -FlatForward();
+                Vector3 drop = transform.position + back * throwDropBehind + Vector3.up * throwDropHeight;
+                Free(movement, drop);
+
+                if (!victimHealth.IsDead)
+                {
+                    Vector3 velocity = back * throwHorizontal + Vector3.up * throwVertical;
+                    LaunchClientRpc(movement.NetworkObject, velocity);
+                }
+
+                SlamClientRpc();
+            }
+
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        if (held)
+            Free(movement, DropPointInFront());
+
+        nextThrowTime = Time.time + Random.Range(throwCooldown.x, throwCooldown.y);
+        nextAttackTime = Time.time + attackCooldown;
+        yield return Recover();
+    }
+
     private IEnumerator Recover()
     {
         anim.SetLocomotion(MiniBossAnimation.Idle);
@@ -331,6 +679,35 @@ public class MiniBossBrain : NetworkBehaviour
         transform.rotation = Quaternion.LookRotation(look);
     }
 
+    // Gira de a poco (para seguir al blanco mientras vomita).
+    private void TurnToward(Transform victim, float degreesPerSecond)
+    {
+        if (victim == null) return;
+        Vector3 look = victim.position - transform.position;
+        look.y = 0f;
+        if (look.sqrMagnitude < 0.001f) return;
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation, Quaternion.LookRotation(look), degreesPerSecond * Time.deltaTime);
+    }
+
+    private Vector3 FlatForward()
+    {
+        Vector3 forward = transform.forward;
+        forward.y = 0f;
+        return forward.sqrMagnitude > 0.001f ? forward.normalized : Vector3.forward;
+    }
+
+    private Vector3 DropPointInFront()
+    {
+        return transform.position + FlatForward() * holdDistance;
+    }
+
+    private bool CanReach(Transform victim, float range, float halfAngle)
+    {
+        if (victim == null) return false;
+        return InArea(victim.position, transform.position, FlatForward(), range, halfAngle, out _);
+    }
+
     // ---------- Dano y lanzamiento ----------
 
     // Dana (y manda a volar a los jugadores) todo lo que este dentro del alcance y del cono. Devuelve true si pego a alguien.
@@ -367,6 +744,41 @@ public class MiniBossBrain : NetworkBehaviour
         return anyHit;
     }
 
+    // Chorro de acido: a cada jugador/NPC dentro del cono lo afecta una sola vez por vomito.
+    // Devuelve true si alguien nuevo fue alcanzado en esta pasada.
+    private bool SprayHit(Vector3 origin, HashSet<PlayerHealth> affected, HashSet<RescuableNpc> affectedNpcs)
+    {
+        bool any = false;
+        Vector3 forward = FlatForward();
+
+        foreach (PMovement player in FindObjectsByType<PMovement>())
+        {
+            if (player == null) continue;
+            if (!player.TryGetComponent(out PlayerHealth playerHealth) || playerHealth.IsDead) continue;
+            if (affected.Contains(playerHealth)) continue;
+            if (!InArea(player.transform.position, origin, forward, vomitRange, vomitHalfAngle, out _)) continue;
+
+            affected.Add(playerHealth);
+            any = true;
+
+            PlayerAcidDot.Apply(playerHealth, acidDamagePerSecond, acidDuration);   // dano por segundo (server)
+            if (player.NetworkObject != null)
+                AcidSlowClientRpc(player.NetworkObject, acidSpeedMultiplier, acidDuration); // lentitud (dueño)
+        }
+
+        foreach (RescuableNpc npc in new List<RescuableNpc>(RescuableNpc.All))
+        {
+            if (npc == null || !npc.IsTargetable || affectedNpcs.Contains(npc)) continue;
+            if (!InArea(npc.transform.position, origin, forward, vomitRange, vomitHalfAngle, out _)) continue;
+
+            affectedNpcs.Add(npc);
+            npc.TakeDamage(npcAcidDamage);
+            any = true;
+        }
+
+        return any;
+    }
+
     private static bool InArea(Vector3 position, Vector3 origin, Vector3 forward, float radius, float halfAngle, out Vector3 away)
     {
         away = position - origin;
@@ -387,17 +799,57 @@ public class MiniBossBrain : NetworkBehaviour
         return true;
     }
 
-    // Solo el dueño del jugador aplica el empuje (el movimiento del jugador es de su cliente).
+    // ---------- Efectos sobre el jugador (el movimiento es del cliente dueño) ----------
+
+    private static bool TryGetOwnedMovement(NetworkObjectReference playerReference, out PMovement movement)
+    {
+        movement = null;
+        if (!playerReference.TryGet(out NetworkObject playerObject) || !playerObject.IsOwner)
+            return false;
+
+        movement = playerObject.GetComponentInChildren<PMovement>();
+        return movement != null;
+    }
+
+    // Solo el dueño del jugador aplica el empuje.
     [ClientRpc]
     private void LaunchClientRpc(NetworkObjectReference playerReference, Vector3 velocity)
     {
-        if (!playerReference.TryGet(out NetworkObject playerObject) || !playerObject.IsOwner)
-            return;
-
-        PMovement movement = playerObject.GetComponentInChildren<PMovement>();
-        if (movement != null)
+        if (TryGetOwnedMovement(playerReference, out PMovement movement))
             movement.Launch(velocity);
     }
+
+    [ClientRpc]
+    private void AcidSlowClientRpc(NetworkObjectReference playerReference, float multiplier, float duration)
+    {
+        if (TryGetOwnedMovement(playerReference, out PMovement movement))
+            PlayerStatusEffects.For(movement).ApplySlow(multiplier, duration);
+    }
+
+    // El jugador queda inmovil y pegado al punto de agarre del jefe. Se suelta solo al vencer 'duration' (seguro anti-trabado).
+    [ClientRpc]
+    private void HoldClientRpc(NetworkObjectReference playerReference, float duration)
+    {
+        if (TryGetOwnedMovement(playerReference, out PMovement movement))
+            PlayerStatusEffects.For(movement).Hold(holdAnchor, duration);
+    }
+
+    [ClientRpc]
+    private void ReleaseClientRpc(NetworkObjectReference playerReference, Vector3 dropPoint, bool teleport)
+    {
+        if (TryGetOwnedMovement(playerReference, out PMovement movement))
+            PlayerStatusEffects.For(movement).Release(teleport, dropPoint);
+    }
+
+    private void Free(PMovement movement, Vector3 dropPoint)
+    {
+        if (movement == null || movement.NetworkObject == null || !movement.NetworkObject.IsSpawned)
+            return;
+
+        ReleaseClientRpc(movement.NetworkObject, dropPoint, true);
+    }
+
+    // ---------- Sonido y particulas (todos los clientes) ----------
 
     [ClientRpc]
     private void HitLandedClientRpc()
@@ -409,6 +861,12 @@ public class MiniBossBrain : NetworkBehaviour
     private void SlamClientRpc()
     {
         if (anim != null) anim.PlaySlamSound();
+    }
+
+    [ClientRpc]
+    private void AcidSprayClientRpc(float duration)
+    {
+        MiniBossAcidFx.Spray(transform, new Vector3(0f, mouthHeight, mouthForward), duration, vomitRange, vomitHalfAngle);
     }
 
     // ---------- Blancos ----------

@@ -11,6 +11,10 @@ public class MiniBossAnimation : NetworkBehaviour
     public const int Run = 2;
     public const int Attack = 3;
     public const int Jump = 4;
+    public const int Taunt = 5;
+    public const int Vomit = 6;
+    public const int Grab = 7;
+    public const int Throw = 8;
 
     private static readonly int StateHash = Animator.StringToHash("state");
     private static readonly int IdleIndexHash = Animator.StringToHash("idleIndex");
@@ -27,6 +31,10 @@ public class MiniBossAnimation : NetworkBehaviour
     [SerializeField] private float[] jumpLengths;
     [SerializeField] private float defaultAttackLength = 1.2f;
     [SerializeField] private float defaultJumpLength = 1.6f;
+    [SerializeField] private float tauntLength;   // 0 = no hay clip: el jefe nunca se burla
+    [SerializeField] private float vomitLength;   // 0 = no hay clip: nunca vomita
+    [SerializeField] private float grabLength;    // 0 = no hay clip: nunca agarra/estrangula
+    [SerializeField] private float throwLength;   // 0 = no hay clip: nunca lanza
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -34,6 +42,7 @@ public class MiniBossAnimation : NetworkBehaviour
     [SerializeField] private AudioClip[] attackClips;   // grito / esfuerzo al empezar un golpe o un salto
     [SerializeField] private AudioClip[] hitClips;      // el golpe conecta
     [SerializeField] private AudioClip[] slamClips;     // aterrizaje del salto
+    [SerializeField] private AudioClip[] tauntClips;    // burla
     [SerializeField, Range(0f, 1f)] private float volume = 1f;
     [SerializeField] private float stepInterval = 0.75f;
     [SerializeField] private float runStepInterval = 0.4f;
@@ -59,6 +68,10 @@ public class MiniBossAnimation : NetworkBehaviour
     private float nextStepTime;
 
     public bool HasJump => jumpVariants > 0;
+    public bool HasTaunt => tauntLength > 0f;
+    public bool HasVomit => vomitLength > 0f;
+    public bool HasGrab => grabLength > 0f;
+    public bool HasThrow => throwLength > 0f;
 
     public override void OnNetworkSpawn()
     {
@@ -106,6 +119,22 @@ public class MiniBossAnimation : NetworkBehaviour
         return LengthOf(jumpLengths, variant, defaultJumpLength);
     }
 
+    // Acciones de un solo clip: arrancan el estado y devuelven cuanto dura el clip.
+    public float BeginTaunt() { return BeginSingle(Taunt, tauntLength, 2f); }
+    public float BeginVomit() { return BeginSingle(Vomit, vomitLength, 2f); }
+    public float BeginGrab() { return BeginSingle(Grab, grabLength, 3f); }
+    public float BeginThrow() { return BeginSingle(Throw, throwLength, 2f); }
+
+    private float BeginSingle(int value, float length, float fallback)
+    {
+        float result = length > 0f ? length : fallback;
+        if (!IsSpawned || !IsServer)
+            return result;
+
+        state.Value = value;
+        return result;
+    }
+
     private static float LengthOf(float[] lengths, int index, float fallback)
     {
         if (lengths == null || index < 0 || index >= lengths.Length || lengths[index] <= 0f)
@@ -137,7 +166,11 @@ public class MiniBossAnimation : NetworkBehaviour
         int current = state.Value;
         if (current != lastState)
         {
-            if (current == Attack || current == Jump)
+            if (current == Taunt)
+            {
+                PlayRandom(tauntClips, 1f);
+            }
+            else if (current == Attack || current == Jump || current == Vomit || current == Grab || current == Throw)
             {
                 // Si el jefe tiene EnemyVoice, la voz de ataque sale por ahi (mismo presupuesto de voces que los zombis).
                 if (voice != null)

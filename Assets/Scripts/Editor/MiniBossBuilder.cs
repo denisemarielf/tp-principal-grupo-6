@@ -15,7 +15,7 @@ using UnityEngine.AI;
 //  - crea Assets/Prefabs/Enemy/MiniBoss.prefab (prefab propio, no toca Enemy.prefab),
 //  - asigna el modelo, el Avatar (huesos), el controller, la muerte y las duraciones de los clips,
 //  - registra el prefab en la lista de NetworkPrefabs.
-// Los clips se buscan por prefijo del nombre: idle*, walk*, run*, attack*, jump*, dying*.
+// Los clips se buscan por prefijo del nombre: idle*, walk*, run*, attack*, jump*, taunt*, vomit*, grab*, throw*, dying*.
 // Para agregar o sacar una variante alcanza con dejar o borrar el FBX. Menu: Tools > MiniBoss > Reconstruir.
 [InitializeOnLoad]
 public static class MiniBossBuilder
@@ -46,7 +46,11 @@ public static class MiniBossBuilder
         new Group { name = "Walk",   stateValue = 1, indexParam = null,          loop = true,  prefix = "walk" },
         new Group { name = "Run",    stateValue = 2, indexParam = null,          loop = true,  prefix = "run" },
         new Group { name = "Attack", stateValue = 3, indexParam = "attackIndex", loop = false, prefix = "attack" },
-        new Group { name = "Jump",   stateValue = 4, indexParam = "jumpIndex",   loop = false, optional = true, prefix = "jump" }
+        new Group { name = "Jump",   stateValue = 4, indexParam = "jumpIndex",   loop = false, optional = true, prefix = "jump" },
+        new Group { name = "Taunt",  stateValue = 5, indexParam = null,          loop = false, optional = true, prefix = "taunt" },
+        new Group { name = "Vomit",  stateValue = 6, indexParam = null,          loop = false, optional = true, prefix = "vomit" },
+        new Group { name = "Grab",   stateValue = 7, indexParam = null,          loop = false, optional = true, prefix = "grab" },
+        new Group { name = "Throw",  stateValue = 8, indexParam = null,          loop = false, optional = true, prefix = "throw" }
     };
 
     static MiniBossBuilder()
@@ -499,6 +503,10 @@ public static class MiniBossBuilder
             dirty |= SetInt(animationData, "jumpVariants", CountOf(found, "Jump"));
             dirty |= SetLengths(animationData, "attackLengths", ClipsOf(found, "Attack"));
             dirty |= SetLengths(animationData, "jumpLengths", ClipsOf(found, "Jump"));
+            dirty |= SetFloat(animationData, "tauntLength", FirstLength(found, "Taunt"));
+            dirty |= SetFloat(animationData, "vomitLength", FirstLength(found, "Vomit"));
+            dirty |= SetFloat(animationData, "grabLength", FirstLength(found, "Grab"));
+            dirty |= SetFloat(animationData, "throwLength", FirstLength(found, "Throw"));
             animationData.ApplyModifiedPropertiesWithoutUndo();
 
             SerializedObject healthData = new SerializedObject(health);
@@ -546,6 +554,12 @@ public static class MiniBossBuilder
         }
 
         return new List<AnimationClip>();
+    }
+
+    private static float FirstLength(Dictionary<Group, List<AnimationClip>> found, string groupName)
+    {
+        List<AnimationClip> clips = ClipsOf(found, groupName);
+        return clips.Count > 0 ? clips[0].length : 0f;
     }
 
     private static int CountOf(Dictionary<Group, List<AnimationClip>> found, string groupName)

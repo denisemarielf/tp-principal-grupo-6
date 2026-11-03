@@ -36,7 +36,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.7, y: 1.7, z: 1.7}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8707456815737169129}
@@ -271,7 +271,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::EnemyHealth
   ShowTopMostFoldoutHeaderGroup: 1
   variant: 1
-  maxHealth: 100
+  maxHealth: 1500
   deathClip: {fileID: -203655887218126122, guid: 8a4a5187519fcfe4cbb1cba809f43d2c, type: 3}
   extraDeathClips: []
   deathSounds: []
@@ -302,11 +302,16 @@ MonoBehaviour:
   - 3.7000003
   defaultAttackLength: 1.2
   defaultJumpLength: 1.6
+  tauntLength: 2.8333335
+  vomitLength: 2.8000002
+  grabLength: 4.266667
+  throwLength: 4.3
   audioSource: {fileID: 1073719349855188196}
   stepClips: []
   attackClips: []
   hitClips: []
   slamClips: []
+  tauntClips: []
   volume: 1
   stepInterval: 0.75
   runStepInterval: 0.4
@@ -324,8 +329,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::MiniBossBrain
   ShowTopMostFoldoutHeaderGroup: 1
-  walkSpeed: 4
-  runSpeed: 11
+  walkSpeed: 6
+  runSpeed: 14
   targetSearchInterval: 0.3
   repathInterval: 0.2
   runCooldown: {x: 6, y: 12}
@@ -333,14 +338,14 @@ MonoBehaviour:
   minDistanceToRun: 8
   meleeRange: 4
   meleeHitRange: 5
-  meleeHalfAngle: 70
+  meleeHalfAngle: 180
   meleeDamage: 45
   attackHitNormalized: 0.45
   attackCooldown: 1
   recoverTime: 0.4
   jumpMinRange: 7
   jumpMaxRange: 18
-  jumpChance: 0.381
+  jumpChance: 0.159
   jumpCooldown: {x: 7, y: 12}
   jumpTakeoffNormalized: 0.3
   jumpLandNormalized: 0.65
@@ -349,6 +354,46 @@ MonoBehaviour:
   jumpLandOffset: 1.5
   launchHorizontal: 10
   launchVertical: 7
+  tauntMinRange: 10
+  tauntMaxRange: 30
+  tauntChance: 0.25
+  tauntCooldown: {x: 25, y: 50}
+  vomitMinRange: 5
+  vomitRange: 14
+  vomitHalfAngle: 20
+  vomitChance: 0.589
+  vomitCooldown: {x: 10, y: 18}
+  vomitSprayStart: 0.35
+  vomitSprayEnd: 0.8
+  vomitTurnSpeed: 45
+  mouthHeight: 2.6
+  mouthForward: 0.8
+  acidDamagePerSecond: 5
+  acidDuration: 5
+  acidSpeedMultiplier: 0.5
+  npcAcidDamage: 25
+  grabChance: 0.053
+  grabCooldown: {x: 20, y: 35}
+  grabReach: 4.5
+  grabHalfAngle: 60
+  grabLatchNormalized: 0.3
+  grabStrangleStart: 0.4
+  grabReleaseNormalized: 0.9
+  grabTicks: 4
+  grabTotalDamage: 90
+  throwChance: 0.094
+  throwCooldown: {x: 10, y: 16}
+  throwReach: 4.5
+  throwHalfAngle: 60
+  throwLatchNormalized: 0.3
+  throwReleaseNormalized: 0.6
+  throwDamage: 35
+  throwHorizontal: 16
+  throwVertical: 8
+  throwDropBehind: 1.8
+  throwDropHeight: 2.2
+  holdDistance: 1.4
+  holdHeight: 1
 --- !u!114 &2764652632390027804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -383,7 +428,19 @@ MonoBehaviour:
   volume: 1
   pitchRange: {x: 0.9, y: 1.1}
   ambientClips: []
-  hurtClips: []
+  hurtClips:
+  - {fileID: 8300000, guid: 6c4a823ec04a12f44993f61a58e1a389, type: 3}
+  - {fileID: 8300000, guid: c18fc985ccf6cc446953930e54c4c3b8, type: 3}
+  - {fileID: 8300000, guid: 010214d0af48f044bacb9a74e74925ad, type: 3}
+  - {fileID: 8300000, guid: d9256b58d59db1d41817bfbb6e36c9ad, type: 3}
+  - {fileID: 8300000, guid: 9d2ef0648ca75a046b3dc8d015d2ec63, type: 3}
+  - {fileID: 8300000, guid: 376021d18f1b9f14186f01a47b23e062, type: 3}
+  - {fileID: 8300000, guid: df680404926938047a70a47cd0f50caa, type: 3}
+  - {fileID: 8300000, guid: 19b5e0e865580044798e1b9ea1cd3673, type: 3}
+  - {fileID: 8300000, guid: 2bfd024fb270b9749b8fb54fb44cec93, type: 3}
+  - {fileID: 8300000, guid: 4c42495e213590e47843cee320739830, type: 3}
+  - {fileID: 8300000, guid: c15d3dc8d5efaef4980154c504a0c34a, type: 3}
+  - {fileID: 8300000, guid: 7269ca48ce018064a864469aecd2ade4, type: 3}
   attackClips: []
   deathClips: []
   ambientInterval: {x: 6, y: 14}

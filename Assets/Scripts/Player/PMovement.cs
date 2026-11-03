@@ -31,7 +31,10 @@ public class PMovement : NetworkBehaviour
     public Vector2 MoveInput => moveInput;
     public bool IsGrounded => controller != null && controller.isGrounded;
     public bool IsSprinting => isSprinting;
- 
+
+    private float externalSlow = 1f;
+    private bool held;
+    public bool IsHeld => held;
 
     private NetworkVariable<float> speedMultiplier = new(
     1f,
@@ -71,7 +74,11 @@ public class PMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        
+        if (held)
+        {
+            UpdateAnimator();
+            return;
+        }
         HandleMovement();
         ApplyGravity();
         UpdateAnimator();
@@ -95,7 +102,7 @@ public class PMovement : NetworkBehaviour
 
     public void TryJump()
     {
-        if (frozen.Value)
+        if (frozen.Value || held)
             return;
         if (IsGrounded)
         {
@@ -151,7 +158,7 @@ public class PMovement : NetworkBehaviour
 
 
         float wishSpeed =
-        moveSpeed * CombineSpeed(speedMultiplier.Value, slowMultiplier.Value);
+        moveSpeed * CombineSpeed(speedMultiplier.Value, slowMultiplier.Value) * externalSlow;
 
 
         if (isSprinting)
@@ -225,10 +232,10 @@ public class PMovement : NetworkBehaviour
     {
         if (animator == null)
             return;
-        Vector2 input = frozen.Value ? Vector2.zero : moveInput;
-        animator.SetFloat("velX", moveInput.x, 0.1f, Time.deltaTime);
-        animator.SetFloat("velZ", moveInput.y, 0.1f, Time.deltaTime);
-        bool isActuallySprinting = isSprinting && moveInput.magnitude > 0.1f;
+        Vector2 input = (frozen.Value || held) ? Vector2.zero : moveInput;
+        animator.SetFloat("velX", input.x, 0.1f, Time.deltaTime);
+        animator.SetFloat("velZ", input.y, 0.1f, Time.deltaTime);
+        bool isActuallySprinting = isSprinting && input.magnitude > 0.1f;
         animator.SetBool("isSprinting", isActuallySprinting);
     }
 
@@ -281,7 +288,19 @@ public class PMovement : NetworkBehaviour
     {
         return boost * slow;
     }
-
+    public void SetExternalSlow(float multiplier)
+    {
+        externalSlow = Mathf.Clamp(multiplier, 0.05f, 1f);
+    }
+    public void SetHeld(bool value)
+    {
+        held = value;
+        if (value)
+        {
+            velocity = Vector3.zero;
+            verticalVelocity = 0f;
+        }
+    }
     private IEnumerator HitSlowRoutine(float multiplier, float duration, int token)
     {
         slowMultiplier.Value = multiplier;
