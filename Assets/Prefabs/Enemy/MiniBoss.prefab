@@ -324,14 +324,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::MiniBossBrain
   ShowTopMostFoldoutHeaderGroup: 1
-  walkSpeed: 3.5
-  runSpeed: 9
+  walkSpeed: 4
+  runSpeed: 11
   targetSearchInterval: 0.3
   repathInterval: 0.2
   runCooldown: {x: 6, y: 12}
   runDuration: {x: 3, y: 5}
   minDistanceToRun: 8
-  meleeRange: 3.5
+  meleeRange: 4
   meleeHitRange: 5
   meleeHalfAngle: 70
   meleeDamage: 45
@@ -340,7 +340,7 @@ MonoBehaviour:
   recoverTime: 0.4
   jumpMinRange: 7
   jumpMaxRange: 18
-  jumpChance: 0.6
+  jumpChance: 0.381
   jumpCooldown: {x: 7, y: 12}
   jumpTakeoffNormalized: 0.3
   jumpLandNormalized: 0.65
