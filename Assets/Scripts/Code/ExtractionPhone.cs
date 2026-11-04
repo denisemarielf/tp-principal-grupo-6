@@ -19,13 +19,15 @@ public class ExtractionPhone : NetworkBehaviour
     [Header("Referencias")]
     [SerializeField] private HelicopterEscapeNetworked helicopter;
     [SerializeField] private SafeZone safeZone;
+    [Tooltip("Panel eléctrico que hay que resolver antes de poder llamar al helicóptero. Vacío = siempre disponible.")]
+    [SerializeField] private ElectricPanel requiredPanel;
 
     [Header("Extracción")]
     [Tooltip("[X] segundos que hay que resistir desde que se solicita hasta que llega el helicóptero")]
     [SerializeField] private float survivalTime = 60f;
 
     [Header("Interacción")]
-    
+
     [SerializeField] private float interactDistance = 3f;
 
 
@@ -33,6 +35,8 @@ public class ExtractionPhone : NetworkBehaviour
     [SerializeField] private Vector3 markerOffset = new Vector3(0f, 0.6f, 0f);
     [SerializeField] private string objectiveText = "OBJETIVO: Llamar al helicóptero";
     [SerializeField] private Color markerColor = new Color(1f, 0.8f, 0.1f);
+    [SerializeField] private string lockedText = "Sin energía: repara el panel eléctrico";
+    [SerializeField] private Color lockedColor = new Color(1f, 0.3f, 0.2f);
 
     [Header("Avisos")]
     [SerializeField] private string requestedText = "Helicóptero en camino";
@@ -66,7 +70,7 @@ public class ExtractionPhone : NetworkBehaviour
 
         foreach (var p in all)
         {
-            if (p == null || !p.IsSpawned || p.state.Value != ExtractionState.Idle) continue;
+            if (p == null || !p.IsSpawned || p.state.Value != ExtractionState.Idle || !p.IsUnlocked) continue;
 
             float d = Vector3.Distance(from, p.transform.position);
             if (d <= p.interactDistance && d < bestDist)
@@ -78,6 +82,7 @@ public class ExtractionPhone : NetworkBehaviour
         return best;
     }
     public ExtractionState State => state.Value;
+    public bool IsUnlocked => requiredPanel == null || requiredPanel.IsSolved;
 
 
 
@@ -86,18 +91,26 @@ public class ExtractionPhone : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         state.OnValueChanged += OnStateChanged;
-        if (highlight != null) highlight.SetHighlighted(state.Value == ExtractionState.Idle);
+        if (requiredPanel != null) requiredPanel.onSolved.AddListener(RefreshHighlight);
+        RefreshHighlight();
     }
 
     public override void OnNetworkDespawn()
     {
 
         state.OnValueChanged -= OnStateChanged;
+        if (requiredPanel != null) requiredPanel.onSolved.RemoveListener(RefreshHighlight);
+    }
+
+    private void RefreshHighlight()
+    {
+        if (highlight != null)
+            highlight.SetHighlighted(state.Value == ExtractionState.Idle && IsUnlocked);
     }
 
     private void OnStateChanged(ExtractionState previous, ExtractionState current)
     {
-        if (highlight != null) highlight.SetHighlighted(current == ExtractionState.Idle);
+        RefreshHighlight();
         if (current == ExtractionState.Requested) onRequested?.Invoke();
         if (current == ExtractionState.Arrived)
         {
@@ -112,6 +125,7 @@ public class ExtractionPhone : NetworkBehaviour
     {
         Debug.Log($"ServerRpc en '{name}' desde cliente {rpcParams.Receive.SenderClientId}", this);
         if (state.Value != ExtractionState.Idle) return;
+        if (!IsUnlocked) return;   // el panel eléctrico todavía no se resolvió
 
         state.Value = ExtractionState.Requested;
         requestTime.Value = NetworkManager.ServerTime.Time;
@@ -122,7 +136,7 @@ public class ExtractionPhone : NetworkBehaviour
     /// </summary>
     public void OnHelicopterArrived()
     {
-        
+
         if (!IsServer || state.Value != ExtractionState.Requested) return;
 
         state.Value = ExtractionState.Arrived;
@@ -130,8 +144,8 @@ public class ExtractionPhone : NetworkBehaviour
     }
     public void RequestExtraction()
     {
-       
-        if (!IsSpawned || state.Value != ExtractionState.Idle) return;
+
+        if (!IsSpawned || state.Value != ExtractionState.Idle || !IsUnlocked) return;
         RequestExtractionServerRpc();   // el server vuelve a validar (CA8)
     }
 
@@ -203,11 +217,12 @@ public class ExtractionPhone : NetworkBehaviour
         if (sp.z <= 0f) return; // detrás de la cámara
 
         float dist = Vector3.Distance(cam.transform.position, world);
-        string text = $"◆\n{objectiveText}\n{dist:0} m";
-        if (PlayerCanInteract()) text += $"\n[{promptKeyLabel}] Interactuar";
+        bool unlocked = IsUnlocked;
+        string text = $"◆\n{(unlocked ? objectiveText : lockedText)}\n{dist:0} m";
+        if (unlocked && PlayerCanInteract()) text += $"\n[{promptKeyLabel}] Interactuar";
 
         Rect r = new Rect(sp.x - 150f, Screen.height - sp.y - 40f, 300f, 100f);
-        DrawLabel(r, text, markerColor);
+        DrawLabel(r, text, unlocked ? markerColor : lockedColor);
     }
 
     private void DrawNotification()
