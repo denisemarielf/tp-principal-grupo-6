@@ -101,6 +101,22 @@ public class PMovement : NetworkBehaviour
         {
             verticalVelocity =
             Mathf.Sqrt(jumpHeight * -2f * gravity);
+            TriggerJump();
+        }
+    }
+
+    private void TriggerJump()
+    {
+        if (animator == null)
+            return;
+
+        foreach (AnimatorControllerParameter parameter in animator.parameters)
+        {
+            if (parameter.name == "Jump" && parameter.type == AnimatorControllerParameterType.Trigger)
+            {
+                animator.SetTrigger(parameter.name);
+                return;
+            }
         }
     }
 

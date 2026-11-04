@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bfad83e2df08dc4f8615d565079542f, type: 3}
+  m_Name: Item_Ammo
+  m_EditorClassIdentifier: Game::ItemDefinition
+  id: 2
+  displayName: Ammo
+  icon: {fileID: 21300000, guid: fa2bf57f18cf8b74289cbb9fd1ea3e69, type: 3}
+  maxStack: 5
+  maxCarried: 15
+  worldPrefab: {fileID: 3544098695751023613, guid: 1511d36bc631e24428565226e8c42d5d, type: 3}
+  useEffect: {fileID: 11400000, guid: 8a6f6a821d3382145bfc7e99ef48785d, type: 2}
+  consumeOnUse: 1
+  pickupSound: {fileID: 0}
+  useSound: {fileID: 8300000, guid: 30dc4734e69c2f54bb923b9f81c631a4, type: 3}

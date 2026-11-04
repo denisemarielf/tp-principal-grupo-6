@@ -17,7 +17,7 @@ public class GameOverUI : MonoBehaviour
 {
     private const float CheckInterval = 0.25f;
 
-    // ---------- diseño (mismos valores que el menu principal) ----------
+    // ---------- diseï¿½o (mismos valores que el menu principal) ----------
     private const float LeftMargin = 120f;
     private const float TopMargin = 70f;
 
@@ -320,7 +320,7 @@ public class GameOverUI : MonoBehaviour
     // ============================================================
 
     // Boton transparente: degradado, barra de acento y hover animado.
-    // 'accent' tiñe el boton (rojo en derrota, verde en victoria).
+    // 'accent' tiï¿½e el boton (rojo en derrota, verde en victoria).
     private static Button CreateButton(Transform parent, string text, Color accent, UnityEngine.Events.UnityAction onClick)
     {
         GameObject buttonObject = new GameObject("Btn_" + text,
@@ -509,7 +509,7 @@ public class GameOverUI : MonoBehaviour
         if (font != null)
             label.font = font;
 
-        // Se achica solo si no entra (nunca por encima del tamaño pedido).
+        // Se achica solo si no entra (nunca por encima del tamaï¿½o pedido).
         label.textWrappingMode = TextWrappingModes.NoWrap;
         label.enableAutoSizing = true;
         label.fontSizeMin = Mathf.Max(10f, size * 0.5f);

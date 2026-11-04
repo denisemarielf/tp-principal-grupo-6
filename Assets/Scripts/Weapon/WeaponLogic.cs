@@ -82,16 +82,25 @@ public class WeaponLogic : NetworkBehaviour
     public void RequestFire()
     {
         if (projectileType == ProjectileType.Hitscan)
-        {
-            Vector3 origin =  spawnPoint.position;
-            Vector3 direction = spawnPoint.forward;
-            FireHitscanServerRpc(origin, direction);
-        }
+            FireHitscanServerRpc(AimDirection());
         else
         {
             Quaternion fireRotation = spawnPoint.rotation;
             ShootServerRpc(spawnPoint.position, fireRotation);
         }
+    }
+
+    // La mira manda, no la punta del cañón. Si el rayo saliera del cañón, un zombie pegado al cuerpo queda atrás y no recibe el tiro.
+    private Vector3 AimDirection()
+    {
+        if (IsOwner)
+        {
+            Camera cam = Camera.main;
+            if (cam != null)
+                return cam.transform.forward;
+        }
+
+        return spawnPoint != null ? spawnPoint.forward : transform.forward;
     }
 
     // ---------- Proyectil físico (Bullet.cs) ----------
@@ -126,8 +135,16 @@ public class WeaponLogic : NetworkBehaviour
     // ---------- Hitscan (raycast) ----------
 
     [ServerRpc]
-    private void FireHitscanServerRpc(Vector3 origin, Vector3 direction)
+    private void FireHitscanServerRpc(Vector3 direction)
     {
+        if (direction.sqrMagnitude < 0.0001f)
+            direction = transform.forward;
+        direction.Normalize();
+
+        Vector3 eye = transform.root.position + Vector3.up * 1.5f;
+        const float pullBack = 2.5f;
+        Vector3 origin = eye - direction * pullBack;
+
         Vector3 hitPoint;
         Vector3 hitNormal;
         bool hitEnemy = false;
@@ -137,7 +154,7 @@ public class WeaponLogic : NetworkBehaviour
         HumanBodyBones boneToRemove = HumanBodyBones.Head;
         EnemyHealth targetHealth = null;
 
-        if (Physics.Raycast(origin, direction, out RaycastHit hit, hitscanRange, hitscanLayers))
+        if (TryHitscan(origin, direction, eye, out RaycastHit hit))
         {
             hitPoint = hit.point;
             hitNormal = hit.normal;
@@ -152,7 +169,7 @@ public class WeaponLogic : NetworkBehaviour
         }
         else
         {
-            hitPoint = origin + direction.normalized * hitscanRange;
+            hitPoint = eye + direction * hitscanRange;
             hitNormal = -direction;
         }
 
@@ -166,6 +183,32 @@ public class WeaponLogic : NetworkBehaviour
         }
 
         PlayShootEffectsClientRpc();
+    }
+
+    // Ignora al que dispara y lo que quedó detrás de su cabeza. Así el zombie que está encima entra en el tiro.
+    private bool TryHitscan(Vector3 origin, Vector3 direction, Vector3 eye, out RaycastHit chosen)
+    {
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, hitscanRange + 2.5f, hitscanLayers, QueryTriggerInteraction.Ignore);
+        Transform shooter = transform.root;
+        float best = float.PositiveInfinity;
+        chosen = default;
+        bool found = false;
+
+        foreach (RaycastHit hit in hits)
+        {
+            if (hit.transform == shooter || hit.transform.IsChildOf(shooter))
+                continue;
+            if (Vector3.Dot(hit.point - eye, direction) < 0.05f)
+                continue;
+            if (hit.distance >= best)
+                continue;
+
+            best = hit.distance;
+            chosen = hit;
+            found = true;
+        }
+
+        return found;
     }
 
     [ClientRpc]

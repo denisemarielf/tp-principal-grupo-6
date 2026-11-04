@@ -100,17 +100,27 @@ public class HelicopterEscapeNetworked : NetworkBehaviour
         arrivedEventFired = false;
         if (current >= 0.0) PlayRotorSound();
     }
+    public float FlightDuration
+    {
+        get
+        {
+            if (startPoint == null || hoverPoint == null) return minFlightDuration;
+            float distance = Vector3.Distance(startPoint.position, hoverPoint.position);
+            return Mathf.Max(minFlightDuration, distance / Mathf.Max(0.1f, flightSpeed));
+        }
+    }
 
     /// <summary>Inicia el vuelo para todos los clientes. Solo funciona en servidor/host.</summary>
     public void StartArrival()
     {
+        Debug.Log($"[{Time.time:0.0}s] StartArrival llamado, flightStartTime={flightStartTime.Value}");
         if (!IsServer)
         {
             Debug.LogWarning("HelicopterEscapeNetworked.StartArrival() solo puede llamarse desde el servidor.");
             return;
         }
         if (flightStartTime.Value >= 0.0) return; // ya empezó
-
+        Debug.Log("StartArrival llamado");
         flightStartTime.Value = NetworkManager.ServerTime.Time;
     }
 
