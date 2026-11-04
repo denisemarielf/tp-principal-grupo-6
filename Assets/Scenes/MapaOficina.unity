@@ -11668,7 +11668,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
@@ -11780,6 +11780,22 @@ MonoBehaviour:
   - {r: 0, g: 0.04132557, b: 1, a: 1}
   - {r: 0, g: 1, b: 0.042769313, a: 1}
   - {r: 1, g: 0.86891216, b: 0, a: 1}
+  levels:
+  - wires: 3
+    timeLimit: 0
+    maxErrors: 0
+    shuffleSources: 0
+    shuffleInterval: 0
+  - wires: 4
+    timeLimit: 25
+    maxErrors: 3
+    shuffleSources: 1
+    shuffleInterval: 12
+  - wires: 5
+    timeLimit: 15
+    maxErrors: 1
+    shuffleSources: 1
+    shuffleInterval: 8
   audioSource: {fileID: 1165059029}
   connectClip: {fileID: 8300000, guid: 4f75788642ee9e549befa7c13c464457, type: 3}
   errorClip: {fileID: 8300000, guid: 3f338e90d672e5f41a2b6fb4b0073cf7, type: 3}

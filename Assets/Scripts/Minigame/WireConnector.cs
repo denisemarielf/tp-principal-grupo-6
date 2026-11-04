@@ -11,6 +11,8 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     public Image colorImage;   // imagen que se pinta con el color del cable
     public Image led;          // lucecita: gris -> verde al conectar
     public float wireThickness = 14f;
+    Vector3 basePos;
+    bool hasBase;
 
     [HideInInspector] public int colorId;
     [HideInInspector] public bool connected;
@@ -26,6 +28,12 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         game = g;
         colorId = id;
         rt = (RectTransform)transform;
+
+        StopAllCoroutines();
+        if (!hasBase) { basePos = transform.localPosition; hasBase = true; }
+        transform.localPosition = basePos;
+        gameObject.SetActive(true);
+
         colorImage.color = c;
         if (led) led.color = Color.gray;
         connected = false;
@@ -62,7 +70,8 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void OnBeginDrag(PointerEventData e)
     {
-        if (!isSource || connected) return;
+
+        if (!isSource || connected || game.Locked) return;
         dragging = true;
         if (wire == null) CreateWire();
         wireImg.color = colorImage.color;
@@ -87,11 +96,23 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         if (target != null && !target.isSource && !target.connected)
         {
             if (target.colorId == colorId) { Success(target); return; }
-            game.PlayError();
             StartCoroutine(FailRoutine());
+            game.PlayError();
             return;
         }
         wire.gameObject.SetActive(false);
+    }
+    /// Intercambia color e id con otro conector (para la mezcla a mitad de nivel).
+    public void SwapColorWith(WireConnector other)
+    {
+        (colorId, other.colorId) = (other.colorId, colorId);
+
+        Color c = colorImage.color;
+        colorImage.color = other.colorImage.color;
+        other.colorImage.color = c;
+
+        StartCoroutine(Pop(transform));
+        other.StartCoroutine(other.Pop(other.transform));
     }
 
     void Success(WireConnector target)
@@ -127,5 +148,9 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
             yield return null;
         }
         t.localScale = Vector3.one;
+    }
+    public void FlashLed(bool on)
+    {
+        if (led && !connected) led.color = on ? Color.red : Color.gray;
     }
 }
