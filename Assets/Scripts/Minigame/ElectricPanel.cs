@@ -3,6 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
 
+using UnityEngine.InputSystem;
 /// Panel eléctrico interactuable. Solo un jugador puede usarlo a la vez.
 /// Al resolverlo, queda desbloqueado para TODOS (NetworkVariable).
 public class ElectricPanel : NetworkBehaviour
@@ -103,7 +104,11 @@ public class ElectricPanel : NetworkBehaviour
         LocalMinigameChanged?.Invoke(true);
         onOpened.Invoke();
     }
-
+    void Update()
+    {
+        if (localActive == this && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            Close();
+    }
     // Botón "Cancelar" o tecla Esc del minijuego
     public void Close()
     {

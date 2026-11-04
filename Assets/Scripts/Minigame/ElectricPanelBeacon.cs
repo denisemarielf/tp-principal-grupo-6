@@ -47,7 +47,12 @@ public class ElectricPanelBeacon : MonoBehaviour
         if (sparks != null) sparks.Stop();
         Apply(solvedColor, maxIntensity * 0.6f);
     }
-
+    private void Start()
+    {
+        if (solved || buzz == null) return;
+        buzz.loop = true;
+        if (!buzz.isPlaying) buzz.Play();
+    }
     private void Update()
     {
         if (solved) return;
@@ -57,6 +62,7 @@ public class ElectricPanelBeacon : MonoBehaviour
 
         if (sparks != null && Time.time >= nextSpark)
         {
+            sparks.Clear();
             sparks.Play();
             nextSpark = Time.time + Random.Range(sparkInterval.x, sparkInterval.y);
         }
