@@ -15258,6 +15258,7 @@ MonoBehaviour:
   weaponSway: {fileID: 853752883742672750}
   cameraRecoil: {fileID: 8499981520626278180}
   crosshairController: {fileID: 0}
+  closeRangeDismember: 1
 --- !u!82 &7452977819059515930
 AudioSource:
   m_ObjectHideFlags: 0
@@ -15374,6 +15375,7 @@ MonoBehaviour:
   reloadSound: {fileID: 8300000, guid: f07f8f2d0edbff64495f0069c6284677, type: 3}
   emptySound: {fileID: 8300000, guid: 98d671cc7dbfb1c41b75b015cd8c3dfa, type: 3}
   weaponSway: {fileID: 0}
+  maxReserveAmmo: 120
 --- !u!114 &8499981520626278180
 MonoBehaviour:
   m_ObjectHideFlags: 0
