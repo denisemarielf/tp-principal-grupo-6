@@ -12267,7 +12267,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.05
   far clip plane: 100
   field of view: 60
   orthographic: 0
@@ -12363,6 +12363,8 @@ MonoBehaviour:
   hitRoll: 3
   hitSpring: 120
   hitDamping: 14
+  cameraRadius: 0.25
+  wallSkin: 0.02
   networkPitch:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
