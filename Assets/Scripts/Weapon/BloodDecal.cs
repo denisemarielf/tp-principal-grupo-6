@@ -188,22 +188,7 @@ public class BloodDecal : MonoBehaviour
 
     private static Material MakeMaterial(Texture2D tex)
     {
-        Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
-        if (shader == null)
-            shader = Shader.Find("Particles/Standard Unlit");
-
-        Material m = new Material(shader);
-        m.mainTexture = tex;
-        if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
-        if (m.HasProperty("_Surface")) m.SetFloat("_Surface", 1f);
-        if (m.HasProperty("_SrcBlend")) m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-        if (m.HasProperty("_DstBlend")) m.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-        if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 0f);
-        if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f); // se ve de ambos lados
-        m.SetOverrideTag("RenderType", "Transparent");
-        m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        m.renderQueue = (int)RenderQueue.Transparent;
-        return m;
+        return BloodMaterials.Textured(tex);
     }
 
     // Mancha irregular con borde ondulado y gotitas alrededor. Una textura distinta por semilla.
