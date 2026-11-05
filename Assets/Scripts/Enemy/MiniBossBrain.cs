@@ -115,6 +115,9 @@ public class MiniBossBrain : NetworkBehaviour
     [Header("Punto de agarre (relativo al jefe)")]
     [SerializeField] private float holdDistance = 1.4f;
     [SerializeField] private float holdHeight = 1.0f;
+    [Header("Linea de vision (golpes cuerpo a cuerpo)")]
+    [SerializeField] private LayerMask attackBlockMask = ~0;   // capas que frenan los golpes (paredes/suelo/props). Quita la capa del jefe, de los jugadores y de otros enemigos
+    [SerializeField] private float attackRayHeight = 1.5f;     // altura (desde los pies del jefe) desde donde sale el chequeo
 
     private NavMeshAgent agent;
     private MiniBossAnimation anim;
@@ -703,47 +706,52 @@ public class MiniBossBrain : NetworkBehaviour
         return transform.position + FlatForward() * holdDistance;
     }
 
-    private bool CanReach(Transform victim, float range, float halfAngle)
-    {
-        if (victim == null) return false;
-        return InArea(victim.position, transform.position, FlatForward(), range, halfAngle, out _);
-    }
+   private bool CanReach(Transform victim, float range, float halfAngle)
+{
+    if (victim == null) return false;
+    if (!InArea(victim.position, transform.position, FlatForward(), range, halfAngle, out _))
+        return false;
+    return HasClearShot(transform.position + Vector3.up * attackRayHeight, victim, attackBlockMask);
+}
 
     // ---------- Dano y lanzamiento ----------
 
     // Dana (y manda a volar a los jugadores) todo lo que este dentro del alcance y del cono. Devuelve true si pego a alguien.
-    private bool DamageArea(Vector3 origin, Vector3 forward, float radius, float halfAngle, float damage)
+   private bool DamageArea(Vector3 origin, Vector3 forward, float radius, float halfAngle, float damage)
+{
+    bool anyHit = false;
+    forward.y = 0f;
+    Vector3 rayOrigin = origin + Vector3.up * attackRayHeight;
+
+    foreach (PMovement player in FindObjectsByType<PMovement>())
     {
-        bool anyHit = false;
-        forward.y = 0f;
+        if (player == null) continue;
+        if (!player.TryGetComponent(out PlayerHealth playerHealth) || playerHealth.IsDead) continue;
+        if (!InArea(player.transform.position, origin, forward, radius, halfAngle, out Vector3 away)) continue;
+        if (!HasClearShot(rayOrigin, player.transform, attackBlockMask)) continue;
 
-        foreach (PMovement player in FindObjectsByType<PMovement>())
+        playerHealth.TakeDamage(damage);
+        anyHit = true;
+
+        if (!playerHealth.IsDead && player.NetworkObject != null)
         {
-            if (player == null) continue;
-            if (!player.TryGetComponent(out PlayerHealth playerHealth) || playerHealth.IsDead) continue;
-            if (!InArea(player.transform.position, origin, forward, radius, halfAngle, out Vector3 away)) continue;
-
-            playerHealth.TakeDamage(damage);
-            anyHit = true;
-
-            if (!playerHealth.IsDead && player.NetworkObject != null)
-            {
-                Vector3 velocity = away * launchHorizontal + Vector3.up * launchVertical;
-                LaunchClientRpc(player.NetworkObject, velocity);
-            }
+            Vector3 velocity = away * launchHorizontal + Vector3.up * launchVertical;
+            LaunchClientRpc(player.NetworkObject, velocity);
         }
-
-        foreach (RescuableNpc npc in new List<RescuableNpc>(RescuableNpc.All))
-        {
-            if (npc == null || !npc.IsTargetable) continue;
-            if (!InArea(npc.transform.position, origin, forward, radius, halfAngle, out _)) continue;
-
-            npc.TakeDamage(damage);
-            anyHit = true;
-        }
-
-        return anyHit;
     }
+
+    foreach (RescuableNpc npc in new List<RescuableNpc>(RescuableNpc.All))
+    {
+        if (npc == null || !npc.IsTargetable) continue;
+        if (!InArea(npc.transform.position, origin, forward, radius, halfAngle, out _)) continue;
+        if (!HasClearShot(rayOrigin, npc.transform, attackBlockMask)) continue;
+
+        npc.TakeDamage(damage);
+        anyHit = true;
+    }
+
+    return anyHit;
+}
 
     // Chorro de acido: a cada jugador/NPC dentro del cono lo afecta una sola vez por vomito.
     // Devuelve true si alguien nuevo fue alcanzado en esta pasada.
@@ -782,27 +790,31 @@ public class MiniBossBrain : NetworkBehaviour
         return any;
     }
 
-    // Linea de vision boca -> victima: si hay geometria solida en medio, el acido no llega.
     private bool HasClearShot(Vector3 origin, Transform victim)
     {
-        Vector3 target = AimPoint(victim);
-        Vector3 dir = target - origin;
-        float dist = dir.magnitude;
-        if (dist < 0.05f)
-            return true;
-
-        RaycastHit[] hits = Physics.RaycastAll(origin, dir / dist, dist, acidBlockMask, QueryTriggerInteraction.Ignore);
-        foreach (RaycastHit hit in hits)
-        {
-            Transform h = hit.collider.transform;
-            if (h.IsChildOf(transform) || h.IsChildOf(victim)) continue;   // el propio jefe o la victima
-            if (hit.collider.GetComponentInParent<PlayerHealth>() != null) continue; // otros jugadores no tapan
-            if (hit.collider.GetComponentInParent<RescuableNpc>() != null) continue; // ni los NPC
-            return false;
-        }
-
-        return true;
+        return HasClearShot(origin, victim, acidBlockMask);
     }
+    // Linea de vision boca -> victima: si hay geometria solida en medio, el acido no llega.
+    private bool HasClearShot(Vector3 origin, Transform victim, LayerMask mask)
+{
+    Vector3 target = AimPoint(victim);
+    Vector3 dir = target - origin;
+    float dist = dir.magnitude;
+    if (dist < 0.05f)
+        return true;
+
+    RaycastHit[] hits = Physics.RaycastAll(origin, dir / dist, dist, mask, QueryTriggerInteraction.Ignore);
+    foreach (RaycastHit hit in hits)
+    {
+        Transform h = hit.collider.transform;
+        if (h.IsChildOf(transform) || h.IsChildOf(victim)) continue;
+        if (hit.collider.GetComponentInParent<PlayerHealth>() != null) continue;
+        if (hit.collider.GetComponentInParent<RescuableNpc>() != null) continue;
+        return false;
+    }
+
+    return true;
+}
 
     private static Vector3 AimPoint(Transform victim)
     {
