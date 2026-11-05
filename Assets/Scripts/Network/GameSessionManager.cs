@@ -62,6 +62,8 @@ public static class GameSessionManager
     {
         gameStarted = false;
         PlayerCarryOver.Clear();
+        SavedGameLoader.Clear();
+        CurrentGame.Clear();
 
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager != null)
@@ -118,6 +120,9 @@ public static class GameSessionManager
         Vector3 spawnPosition = spawnPoint != null ? spawnPoint.transform.position : playerPrefab.transform.position;
         Quaternion spawnRotation = spawnPoint != null ? spawnPoint.transform.rotation : playerPrefab.transform.rotation;
 
+        if (SavedGameLoader.TryGetSafePoint(out Vector3 safePoint))
+            spawnPosition = safePoint;
+
         int playerIndex = 0;
         foreach (ulong clientId in networkManager.ConnectedClientsIds)
         {
@@ -140,6 +145,8 @@ public static class GameSessionManager
 
         if (PlayerCarryOver.HasServerPending)
             PlayerCarryOver.MarkServerApplied();
+
+        SavedGameLoader.Clear();
     }
 
     // Si se acaba de salir de una sala, el NetworkManager no puede volver a arrancar hasta terminar de apagarse.
