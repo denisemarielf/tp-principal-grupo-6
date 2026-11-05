@@ -261,4 +261,20 @@ public class WireMinigame : MonoBehaviour
         free[a].SwapColorWith(free[b]);
         Play(errorClip, 1.3f);        // sonido de aviso (podés usar otro clip)
     }
+      public WireConnector FindTargetNear(Vector2 screenPos, Camera cam)
+    {
+        float tolerance = Mathf.Min(Screen.width, Screen.height) * 0.07f; // ~7% del lado corto
+        WireConnector best = null;
+        float bestDist = tolerance;
+
+        for (int i = 0; i < activeCount; i++)
+        {
+            var t = targets[i];
+            if (t.connected) continue;
+            Vector2 sp = RectTransformUtility.WorldToScreenPoint(cam, t.WorldCenter);
+            float d = Vector2.Distance(sp, screenPos);
+            if (d < bestDist) { bestDist = d; best = t; }
+        }
+        return best;
+    }
 }

@@ -79,6 +79,7 @@ public class MiniBossBrain : NetworkBehaviour
     [Range(0.1f, 1f)]
     [SerializeField] private float acidSpeedMultiplier = 0.5f; // 0.5 = el jugador va a la mitad de velocidad
     [SerializeField] private float npcAcidDamage = 25f;     // los NPC reciben el dano de una sola vez
+    [SerializeField] private LayerMask acidBlockMask = ~0;  // capas que frenan el acido (paredes/suelo/props). Quita la capa del jefe y de los jugadores
 
     [Header("Agarrar y estrangular (raro)")]
     [Range(0f, 1f)]
@@ -757,6 +758,7 @@ public class MiniBossBrain : NetworkBehaviour
             if (!player.TryGetComponent(out PlayerHealth playerHealth) || playerHealth.IsDead) continue;
             if (affected.Contains(playerHealth)) continue;
             if (!InArea(player.transform.position, origin, forward, vomitRange, vomitHalfAngle, out _)) continue;
+            if (!HasClearShot(origin, player.transform)) continue;   // hay una pared en medio
 
             affected.Add(playerHealth);
             any = true;
@@ -770,6 +772,7 @@ public class MiniBossBrain : NetworkBehaviour
         {
             if (npc == null || !npc.IsTargetable || affectedNpcs.Contains(npc)) continue;
             if (!InArea(npc.transform.position, origin, forward, vomitRange, vomitHalfAngle, out _)) continue;
+            if (!HasClearShot(origin, npc.transform)) continue;      // hay una pared en medio
 
             affectedNpcs.Add(npc);
             npc.TakeDamage(npcAcidDamage);
@@ -777,6 +780,34 @@ public class MiniBossBrain : NetworkBehaviour
         }
 
         return any;
+    }
+
+    // Linea de vision boca -> victima: si hay geometria solida en medio, el acido no llega.
+    private bool HasClearShot(Vector3 origin, Transform victim)
+    {
+        Vector3 target = AimPoint(victim);
+        Vector3 dir = target - origin;
+        float dist = dir.magnitude;
+        if (dist < 0.05f)
+            return true;
+
+        RaycastHit[] hits = Physics.RaycastAll(origin, dir / dist, dist, acidBlockMask, QueryTriggerInteraction.Ignore);
+        foreach (RaycastHit hit in hits)
+        {
+            Transform h = hit.collider.transform;
+            if (h.IsChildOf(transform) || h.IsChildOf(victim)) continue;   // el propio jefe o la victima
+            if (hit.collider.GetComponentInParent<PlayerHealth>() != null) continue; // otros jugadores no tapan
+            if (hit.collider.GetComponentInParent<RescuableNpc>() != null) continue; // ni los NPC
+            return false;
+        }
+
+        return true;
+    }
+
+    private static Vector3 AimPoint(Transform victim)
+    {
+        Collider col = victim.GetComponentInChildren<Collider>();
+        return col != null ? col.bounds.center : victim.position + Vector3.up;
     }
 
     private static bool InArea(Vector3 position, Vector3 origin, Vector3 forward, float radius, float halfAngle, out Vector3 away)
@@ -866,7 +897,7 @@ public class MiniBossBrain : NetworkBehaviour
     [ClientRpc]
     private void AcidSprayClientRpc(float duration)
     {
-        MiniBossAcidFx.Spray(transform, new Vector3(0f, mouthHeight, mouthForward), duration, vomitRange, vomitHalfAngle);
+        MiniBossAcidFx.Spray(transform, new Vector3(0f, mouthHeight, mouthForward), duration, vomitRange, vomitHalfAngle, acidBlockMask);
     }
 
     // ---------- Blancos ----------

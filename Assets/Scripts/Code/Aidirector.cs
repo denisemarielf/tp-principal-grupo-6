@@ -1,4 +1,4 @@
-ï»¿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,12 +7,12 @@ using UnityEngine.AI;
 // AI Director estilo Left 4 Dead 2. Solo corre en el server.
 //
 // Idea: en vez de plantar enemigos fijos por el mapa, el Director mide la "intensidad"
-// emocional de cada jugador y decide cuï¿½ndo apretar y cuï¿½ndo dar respiro:
+// emocional de cada jugador y decide cuándo apretar y cuándo dar respiro:
 //
 //   BuildUp -> SustainPeak -> PeakFade -> Relax -> BuildUp ...
 //
-//   BuildUp     : va llenando el mapa de zombies (fuera de la vista) y cuenta para la prï¿½xima horda.
-//   SustainPeak : la intensidad llegï¿½ al tope; sigue spawneando 3-5 s mï¿½s.
+//   BuildUp     : va llenando el mapa de zombies (fuera de la vista) y cuenta para la próxima horda.
+//   SustainPeak : la intensidad llegó al tope; sigue spawneando 3-5 s más.
 //   PeakFade    : deja de spawnear hasta que el grupo se calme (matan o se alejan).
 //   Relax       : 30-45 s sin spawns nuevos. Respiro.
 //
@@ -24,11 +24,22 @@ public class AIDirector : MonoBehaviour
 
     public static AIDirector Instance { get; private set; }
 
-    // (enemigo, vino de horda). ï¿½til para ponerle objetivo a la horda en tu script Ai.
+    // (enemigo, vino de horda). Útil para ponerle objetivo a la horda en tu script Ai.
     public static event System.Action<EnemyHealth, bool> EnemySpawned;
 
     [Header("Prefab")]
     [SerializeField] private GameObject enemyPrefab;
+
+    [Header("MiniBoss")]
+    [Tooltip("Prefab del miniboss. Vacio = no aparece ninguno. Igual que el enemigo comun, tiene que tener NetworkObject y estar en la lista de Network Prefabs.")]
+    [SerializeField] private GameObject miniBossPrefab;
+    [Tooltip("Maximo de minibosses por oleada (una oleada = un ciclo BuildUp -> SustainPeak -> PeakFade -> Relax). 0 = ninguno.")]
+    [SerializeField, Min(0)] private int maxMiniBossesPerWave = 1;
+    [Tooltip("Maximo de minibosses VIVOS a la vez en el mapa, sin importar la oleada.")]
+    [SerializeField, Min(1)] private int maxMiniBossesAlive = 1;
+    [Tooltip("Probabilidad (0-1) de que cada enemigo que se spawnea sea un miniboss, mientras no se hayan alcanzado los limites de arriba.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float miniBossChance = 0.03f;
     [Header("Variantes (peso relativo)")]
     [SerializeField] private float normalWeight = 0.7f;
     [Tooltip("Rapido (7): igual de veloz que el jugador. Mejor usarlo con poca frecuencia.")]
@@ -61,7 +72,7 @@ public class AIDirector : MonoBehaviour
     [Tooltip("Sube la intensidad de TODOS cuando cae un jugador.")]
     [SerializeField] private float playerDownGain = 0.5f;
 
-    [Header("Poblaciï¿½n de fondo")]
+    [Header("Población de fondo")]
     [SerializeField] private int baseWanderers = 12;
     [SerializeField] private int extraPerPlayer = 6;
     [SerializeField] private int hardCap = 70;
@@ -71,16 +82,22 @@ public class AIDirector : MonoBehaviour
     [Header("Hordas")]
     [SerializeField] private Vector2 mobInterval = new Vector2(90f, 150f);
     [SerializeField] private Vector2Int mobSize = new Vector2Int(20, 35);
-    [Tooltip("Multiplicador extra de tamaï¿½o por cada jugador ademï¿½s del primero.")]
+    [Tooltip("Multiplicador extra de tamaño por cada jugador además del primero.")]
     [SerializeField] private float mobPerExtraPlayer = 0.25f;
     [SerializeField] private int mobBatch = 4;
     [SerializeField] private float mobBatchInterval = 0.4f;
     [SerializeField] private float mobGiveUpTime = 10f;
+    [Tooltip("Para la musica: la horda se considera terminada cuando quedan vivos este numero de zombis de horda o menos (evita que un zombi trabado mantenga la musica de combate).")]
+    [SerializeField] private int mobOverWhenRemaining = 2;
+    [Tooltip("Para la musica: un miniboss vivo activa la musica de combate aunque no haya horda.")]
+    [SerializeField] private bool miniBossTriggersMusic = true;
+    [Tooltip("Para la musica: intensidad del equipo alta (pico) activa la musica de combate aunque no haya horda.")]
+    [SerializeField] private bool highIntensityTriggersMusic = true;
 
-    [Header("Dï¿½nde aparecen")]
+    [Header("Dónde aparecen")]
     [SerializeField] private float minSpawnDistance = 20f;
     [SerializeField] private float maxSpawnDistance = 55f;
-    [Tooltip("Largo mï¿½ximo del camino por NavMesh hasta el jugador (evita spawns 'del otro lado de la pared').")]
+    [Tooltip("Largo máximo del camino por NavMesh hasta el jugador (evita spawns 'del otro lado de la pared').")]
     [SerializeField] private float maxPathLength = 150f;
     [Range(0f, 1f)]
     [SerializeField] private float behindBias = 0.6f;
@@ -92,9 +109,9 @@ public class AIDirector : MonoBehaviour
     [SerializeField] private float markerBias = 0.7f;
     [Tooltip("Si hay EnemySpawnPoint en la escena, usa SOLO esos y nunca puntos al azar. Asi no aparecen enemigos donde no pusiste marcadores (la calle, por ejemplo).")]
     [SerializeField] private bool markersOnly = false;
-    [Tooltip("Quï¿½ bloquea la vista de los jugadores. Idealmente solo geometrï¿½a del mapa.")]
+    [Tooltip("Qué bloquea la vista de los jugadores. Idealmente solo geometría del mapa.")]
     [SerializeField] private LayerMask occlusionMask = ~0;
-    [Tooltip("Zombis mï¿½s lejos que esto y fuera de vista se guardan.")]
+    [Tooltip("Zombis más lejos que esto y fuera de vista se guardan.")]
     [SerializeField] private float despawnDistance = 110f;
 
     [Header("Avance (calle recta)")]
@@ -127,6 +144,9 @@ public class AIDirector : MonoBehaviour
     private readonly List<PlayerState> players = new List<PlayerState>();
     private readonly List<PlayerState> alivePlayers = new List<PlayerState>();
     private readonly List<EnemyHealth> enemies = new List<EnemyHealth>();
+    private readonly List<EnemyHealth> miniBosses = new List<EnemyHealth>();
+    private readonly List<EnemyHealth> mobEnemies = new List<EnemyHealth>();
+    private int miniBossesThisWave;
     private NavMeshPath path;
     private EnemySpawnPoint[] spawnPoints = new EnemySpawnPoint[0];
     private readonly List<EnemySpawnPoint> aheadMarkers = new List<EnemySpawnPoint>();
@@ -165,6 +185,29 @@ public class AIDirector : MonoBehaviour
 
     public Phase CurrentPhase => phase;
     public float TeamIntensity { get; private set; }
+
+    // Horda en curso: todavia quedan por salir, o siguen vivos mas de mobOverWhenRemaining zombis de horda.
+    // Solo es confiable en el server (en los clientes el Director esta apagado). Lo usa MusicDirector.
+    public bool MobActive => running && (mobPending > 0 || CountAliveMobEnemies() > mobOverWhenRemaining);
+
+    // Para la musica de combate: horda en curso, o miniboss vivo, o intensidad del equipo en pico.
+    // Solo es confiable en el server. Lo usa MusicDirector.
+    public bool CombatMusicActive
+    {
+        get
+        {
+            if (!running)
+                return false;
+            if (MobActive)
+                return true;
+            if (miniBossTriggersMusic && CountAliveMiniBosses() > 0)
+                return true;
+            if (highIntensityTriggersMusic && (phase == Phase.SustainPeak || TeamIntensity >= peakIntensity))
+                return true;
+
+            return false;
+        }
+    }
 
     private void Awake()
     {
@@ -241,7 +284,7 @@ public class AIDirector : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("AIDirector: advanceTarget no estï¿½ cerca del NavMesh; se usa advanceDirection.", this);
+                Debug.LogWarning("AIDirector: advanceTarget no está cerca del NavMesh; se usa advanceDirection.", this);
             }
         }
 
@@ -251,9 +294,9 @@ public class AIDirector : MonoBehaviour
         running = true;
     }
 
-    // ---------------------------------------------------------------- API pï¿½blica
+    // ---------------------------------------------------------------- API pública
 
-    // Para alarmas, eventos de mapa, botones, etc. size <= 0 usa el tamaï¿½o normal.
+    // Para alarmas, eventos de mapa, botones, etc. size <= 0 usa el tamaño normal.
     public void TriggerMob(int size = -1)
     {
         if (!running)
@@ -359,7 +402,7 @@ public class AIDirector : MonoBehaviour
 
             if (enemy.IsDead())
             {
-                // Matar zombis cerca sube un poco la intensidad: estï¿½s peleando.
+                // Matar zombis cerca sube un poco la intensidad: estás peleando.
                 foreach (PlayerState state in players)
                 {
                     if (!state.IsDead && FlatDistance(state.move.transform.position, enemy.transform.position) <= threatRange)
@@ -381,8 +424,8 @@ public class AIDirector : MonoBehaviour
 
         foreach (PlayerState state in players)
         {
-            // El daï¿½o se detecta leyendo la vida. Si cambiï¿½ la vida mï¿½xima (boost que
-            // empieza o termina) no se cuenta como daï¿½o.
+            // El daño se detecta leyendo la vida. Si cambió la vida máxima (boost que
+            // empieza o termina) no se cuenta como daño.
             if (state.health != null)
             {
                 float max = state.health.MaxHealth;
@@ -439,7 +482,7 @@ public class AIDirector : MonoBehaviour
             team = Mathf.Max(team, state.intensity);
         }
 
-        // Como en L4D: manda el jugador mï¿½s estresado.
+        // Como en L4D: manda el jugador más estresado.
         TeamIntensity = team;
     }
 
@@ -447,6 +490,10 @@ public class AIDirector : MonoBehaviour
 
     private void EnterPhase(Phase next, float duration)
     {
+        // Arranca una oleada nueva: el cupo de minibosses se renueva.
+        if (next == Phase.BuildUp)
+            miniBossesThisWave = 0;
+
         phase = next;
         phaseTimer = duration;
         phaseElapsed = 0f;
@@ -513,7 +560,7 @@ public class AIDirector : MonoBehaviour
 
     private void UpdateMob(float dt)
     {
-        // La horda toca cuando venï¿½a el reloj y estamos en BuildUp; una vez arrancada, termina de salir.
+        // La horda toca cuando venía el reloj y estamos en BuildUp; una vez arrancada, termina de salir.
         if (mobPending <= 0)
         {
             if (phase == Phase.BuildUp && mobTimer <= 0f && alivePlayers.Count > 0)
@@ -543,7 +590,7 @@ public class AIDirector : MonoBehaviour
             mobFailTime += mobBatchInterval;
             if (mobFailTime >= mobGiveUpTime)
             {
-                Debug.LogWarning("AIDirector: no encontrï¿½ dï¿½nde spawnear la horda, se cancela el resto ("
+                Debug.LogWarning("AIDirector: no encontró dónde spawnear la horda, se cancela el resto ("
                     + mobPending + "). Motivos de rechazo:" + RejectSummary());
                 ResetRejects();
                 mobPending = 0;
@@ -579,14 +626,24 @@ public class AIDirector : MonoBehaviour
                 point = hit.position;
             }
 
-            EnemyHealth enemy = EnemySceneSetup.SpawnNetworkEnemy(enemyPrefab, point, PickVariant());
+            bool isBoss = RollMiniBoss();
+            GameObject prefab = isBoss ? miniBossPrefab : enemyPrefab;
+            EnemyHealth enemy = EnemySceneSetup.SpawnNetworkEnemy(prefab, point, isBoss ? EnemyVariant.Normal : PickVariant());
             if (enemy == null)
                 continue;
 
             enemies.Add(enemy);
+            if (isBoss)
+            {
+                miniBosses.Add(enemy);
+                miniBossesThisWave++;
+            }
             spawned++;
 
             // Los de horda persiguen sin importar la distancia (requiere Ai.StartHorde, ver parche).
+            if (isMob)
+                mobEnemies.Add(enemy);
+
             if (isMob && enemy.TryGetComponent(out Ai ai))
                 ai.StartHorde();
 
@@ -594,6 +651,41 @@ public class AIDirector : MonoBehaviour
         }
 
         return spawned;
+    }
+
+    // Decide si el proximo enemigo es un miniboss. Respeta el tope por oleada y el de vivos.
+    private bool RollMiniBoss()
+    {
+        if (miniBossPrefab == null || miniBossChance <= 0f)
+            return false;
+        if (miniBossesThisWave >= maxMiniBossesPerWave)
+            return false;
+        if (CountAliveMiniBosses() >= maxMiniBossesAlive)
+            return false;
+
+        return Random.value < miniBossChance;
+    }
+
+    private int CountAliveMobEnemies()
+    {
+        for (int i = mobEnemies.Count - 1; i >= 0; i--)
+        {
+            if (mobEnemies[i] == null || mobEnemies[i].IsDead())
+                mobEnemies.RemoveAt(i);
+        }
+
+        return mobEnemies.Count;
+    }
+
+    private int CountAliveMiniBosses()
+    {
+        for (int i = miniBosses.Count - 1; i >= 0; i--)
+        {
+            if (miniBosses[i] == null || miniBosses[i].IsDead())
+                miniBosses.RemoveAt(i);
+        }
+
+        return miniBosses.Count;
     }
 
     private EnemyVariant PickVariant()
@@ -615,7 +707,7 @@ public class AIDirector : MonoBehaviour
         return EnemyVariant.Resistente;
     }
 
-    // ---------------------------------------------------------------- bï¿½squeda de punto
+    // ---------------------------------------------------------------- búsqueda de punto
 
     private bool TryFindSpawnPoint(out Vector3 result)
     {
@@ -1035,11 +1127,12 @@ public class AIDirector : MonoBehaviour
         if (!showDebug || !running)
             return;
 
-        GUI.Label(new Rect(10f, Screen.height - 34f, 520f, 24f),
+        GUI.Label(new Rect(10f, Screen.height - 34f, 700f, 24f),
             "Director: " + phase
             + " | intensidad " + TeamIntensity.ToString("0.00")
             + " | zombis " + enemies.Count
             + " | horda pendiente " + mobPending
-            + " | prox horda " + Mathf.Max(0f, mobTimer).ToString("0") + "s");
+            + " | prox horda " + Mathf.Max(0f, mobTimer).ToString("0") + "s"
+            + " | miniboss " + miniBossesThisWave + "/" + maxMiniBossesPerWave + " (vivos " + miniBosses.Count + ")");
     }
 }

@@ -11,6 +11,7 @@ public class EnemyCombat : NetworkBehaviour
 
     [Header("Mordida")]
     [Range(0f, 1f)] public float biteChance = 0.25f;     // probabilidad de morder en cada ciclo (solo contra jugadores)
+    public float biteDamage = 15f;                        // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
 
     [Header("Empuje al recibir disparos")]
     public float knockbackSpeed = 5f;        // 0 = sin empuje. Distancia aprox = velocidad x duracion / 2
@@ -24,6 +25,7 @@ public class EnemyCombat : NetworkBehaviour
     private float attackEndTime;
     private float stunUntil;
     private bool biteCycle;
+    private bool biteDamageDealt;
     private PMovement frozenTarget;
     private bool IsCommitted => Time.time < attackEndTime;
 
@@ -64,6 +66,7 @@ public class EnemyCombat : NetworkBehaviour
 
         frozenTarget = null;
         biteCycle = false;
+        biteDamageDealt = false;
     }
 
     // Lo llama EnemyHealth cuando un jugador lo golpea y sigue vivo. No empuja a un zombie que esta atacando.
@@ -109,7 +112,14 @@ public class EnemyCombat : NetworkBehaviour
 
         // Termino el clip de mordida: el jugador queda libre aunque el resto del Update se corte antes.
         if (frozenTarget != null && !IsCommitted)
+        {
+            // Si el clip termino y el evento de dano nunca llego, la mordida igual cuenta.
+            if (biteCycle && !biteDamageDealt && currentTarget != null
+                && (enemyHealth == null || !enemyHealth.IsDead()))
+                ApplyDamage(biteDamage, true);
+
             ReleaseBiteTarget();
+        }
 
         if (enemyHealth != null && enemyHealth.IsDead()) return;
         if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
@@ -162,6 +172,7 @@ public class EnemyCombat : NetworkBehaviour
                 // La mordida agarra al jugador: queda totalmente quieto mientras dura el clip.
                 duration = enemyAnimation.StartBite();
                 biteCycle = true;
+                biteDamageDealt = false;
                 frozenTarget = movement;
                 frozenTarget.SetFrozen(true);
             }
@@ -169,6 +180,7 @@ public class EnemyCombat : NetworkBehaviour
             {
                 // La ventana dura lo mismo que el clip sorteado, asi nunca se corta a la mitad.
                 biteCycle = false;
+                biteDamageDealt = false;
                 if (enemyAnimation != null)
                     duration = enemyAnimation.StartAttackCycle();
             }
@@ -194,11 +206,18 @@ public class EnemyCombat : NetworkBehaviour
         // Solo cuenta el evento que llega dentro de un ataque (o un instante despues). Un evento suelto no pega.
         if (Time.time > attackEndTime + 0.15f) return;
 
-        // La mordida solo inmoviliza. Ese zombie no vuelve a sacar vida mientras te tiene agarrado.
-        if (biteCycle) return;
+        // La mordida pega una sola vez (el fallback de Update cubre el caso de que el clip no tenga evento).
+        if (biteCycle && biteDamageDealt) return;
         if (Vector3.Distance(transform.position, currentTarget.position) > attackRange * 1.2f) return;
 
-        float damage = attackDamage;
+        ApplyDamage(biteCycle ? biteDamage : attackDamage, biteCycle);
+    }
+
+    private void ApplyDamage(float damage, bool bite)
+    {
+        if (currentTarget == null) return;
+        if (bite) biteDamageDealt = true;
+        if (damage <= 0f) return;
 
         PlayerHealth playerHealth = currentTarget.GetComponent<PlayerHealth>();
         if (playerHealth != null)
@@ -206,7 +225,7 @@ public class EnemyCombat : NetworkBehaviour
             if (playerHealth.IsDead) return;
 
             playerHealth.TakeDamage(damage);
-            HitLandedClientRpc(biteCycle);
+            HitLandedClientRpc(bite);
             if (playerHealth.IsDead) return;
 
             PMovement movement = currentTarget.GetComponent<PMovement>();
@@ -219,7 +238,7 @@ public class EnemyCombat : NetworkBehaviour
         if (npc != null)
         {
             npc.TakeDamage(damage);
-            HitLandedClientRpc(biteCycle);
+            HitLandedClientRpc(bite);
         }
     }
 
