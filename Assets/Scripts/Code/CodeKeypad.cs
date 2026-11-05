@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using QuickOutline;
 
 public class CodeKeypad : NetworkBehaviour
 {
@@ -15,14 +16,13 @@ public class CodeKeypad : NetworkBehaviour
 
     [Header("Resaltado")]
     [Tooltip("Componente Outline del objeto (Quick Outline u otro). Se prende cuando el jugador está cerca.")]
-    [SerializeField] private Behaviour outline;
 
     [Header("Sonido")]
     [SerializeField] private AudioClip unlockedClip;   // beep de acceso concedido
     [SerializeField, Range(0f, 1f)] private float unlockedVolume = 1f;
     [Header("Resaltado")]
 [Tooltip("Componente Outline (Quick Outline) del objeto. Se prende cuando el jugador está cerca.")]
-//[SerializeField] private Outline outline;
+[SerializeField] private Outline outline;
 [SerializeField] private Color outlineColor = new Color(1f, 0.5f, 0f); // naranja
 [SerializeField] private float outlineWidth = 4f;
 
@@ -30,12 +30,12 @@ public class CodeKeypad : NetworkBehaviour
 
    private void Awake()
 {
-    /*if (outline == null) return;
+    if (outline == null) return;
 
     outline.OutlineMode = Outline.Mode.OutlineAll;
     outline.OutlineColor = outlineColor;
     outline.OutlineWidth = outlineWidth;
-    outline.enabled = false;*/
+    outline.enabled = false;
 }
 
     private void OnEnable() => all.Add(this);

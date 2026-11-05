@@ -63093,7 +63093,6 @@ GameObject:
   - component: {fileID: 7884332520953288803}
   - component: {fileID: 7884332520953288806}
   - component: {fileID: 7884332520953288804}
-  - component: {fileID: 7884332520953288807}
   m_Layer: 0
   m_Name: Codigera
   m_TagString: Untagged
@@ -67654,6 +67653,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3842291948099477373}
+  - component: {fileID: 4474678657551451592}
   m_Layer: 0
   m_Name: KeypadVisuals
   m_TagString: Untagged
@@ -67661,6 +67661,24 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &4474678657551451592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4474678657551451591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::QuickOutline.Outline
+  outlineMode: 0
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineWidth: 4
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!205 &4476208002251112431
 LODGroup:
   m_ObjectHideFlags: 0
@@ -74099,29 +74117,11 @@ MonoBehaviour:
   ui: {fileID: 7884332520953288804}
   door: {fileID: 1040504370}
   interactRange: 3
-  outline: {fileID: 7884332520953288807}
   unlockedClip: {fileID: 8300000, guid: 9a5bb4d25cce9aa44826ca61e8930d6f, type: 3}
   unlockedVolume: 1
+  outline: {fileID: 4474678657551451592}
   outlineColor: {r: 1, g: 0.5, b: 0, a: 1}
   outlineWidth: 4
---- !u!114 &7884332520953288807
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2281558900369890473}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Game::QuickOutline.Outline
-  outlineMode: 0
-  outlineColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineWidth: 2
-  precomputeOutline: 0
-  bakeKeys: []
-  bakeValues: []
 --- !u!23 &7904758310168760498
 MeshRenderer:
   m_ObjectHideFlags: 0
