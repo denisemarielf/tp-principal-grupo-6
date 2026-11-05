@@ -71,6 +71,7 @@ public class Character : NetworkBehaviour
         {
             string nombre = NombrePlayer.NombreJugador;
             ElectricPanel.LocalMinigameChanged += SetMinigameMode;
+            CodeKeypad.LocalMinigameChanged += SetMinigameMode;
             if (string.IsNullOrWhiteSpace(nombre))
                 nombre = "Jugador " + (OwnerClientId + 1);
 
@@ -91,6 +92,7 @@ public class Character : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         ElectricPanel.LocalMinigameChanged -= SetMinigameMode;
+        CodeKeypad.LocalMinigameChanged -= SetMinigameMode;
         RestoreSceneCameras();
     }
 
@@ -253,35 +255,44 @@ public class Character : NetworkBehaviour
             : float.MaxValue;
 
         ElectricPanel panel = ElectricPanel.FindNearestUnsolved(transform.position);
-        float panelDist = panel != null
-            ? Vector3.Distance(transform.position, panel.transform.position)
-            : float.MaxValue;
+float panelDist = panel != null
+    ? Vector3.Distance(transform.position, panel.transform.position)
+    : float.MaxValue;
 
-        if (panel != null && panelDist <= phoneDist && panelDist <= npcDist
+CodeKeypad keypad = CodeKeypad.FindNearestUnsolved(transform.position);
+float keypadDist = keypad != null
+    ? Vector3.Distance(transform.position, keypad.transform.position)
+    : float.MaxValue;
+
+if (keypad != null && keypadDist <= panelDist && keypadDist <= phoneDist
+    && keypadDist <= npcDist && keypadDist <= itemDist && keypadDist <= nearestWeaponDist)
+{
+    keypad.Interact();
+}
+else if (panel != null && panelDist <= phoneDist && panelDist <= npcDist
     && panelDist <= itemDist && panelDist <= nearestWeaponDist)
-        {
-            panel.Interact();
-        }
-
-        else if (phone != null && phoneDist <= npcDist && phoneDist <= itemDist && phoneDist <= nearestWeaponDist)
-        {
-            phone.RequestExtraction();
-        }
-        else if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
-        {
-            npc.RequestRescue();
-        }
-        else if (item != null && itemDist <= nearestWeaponDist)
-        {
-            inventory?.RequestPickupItemServerRpc(item.NetworkObjectId);
-        }
-        else if (nearestWeapon != null)
-        {
-            weaponSwitcher?.RequestPickupWeaponServerRpc(
-                (int)nearestWeapon.weaponType,
-                nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
-            );
-        }
+{
+    panel.Interact();
+}
+else if (phone != null && phoneDist <= npcDist && phoneDist <= itemDist && phoneDist <= nearestWeaponDist)
+{
+    phone.RequestExtraction();
+}
+else if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
+{
+    npc.RequestRescue();
+}
+else if (item != null && itemDist <= nearestWeaponDist)
+{
+    inventory?.RequestPickupItemServerRpc(item.NetworkObjectId);
+}
+else if (nearestWeapon != null)
+{
+    weaponSwitcher?.RequestPickupWeaponServerRpc(
+        (int)nearestWeapon.weaponType,
+        nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
+    );
+}
 
     }
     private void SetMinigameMode(bool on)
