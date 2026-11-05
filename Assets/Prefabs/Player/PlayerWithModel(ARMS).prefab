@@ -1598,6 +1598,7 @@ GameObject:
   - component: {fileID: 8564519523311716274}
   - component: {fileID: 7100162145622258601}
   - component: {fileID: 2319105055433980074}
+  - component: {fileID: 7246564124639301237}
   m_Layer: 6
   m_Name: PlayerWithModel(ARMS)
   m_TagString: Player
@@ -2657,6 +2658,23 @@ MonoBehaviour:
   slideFromLeft: 0
   applyMenuStyle: 1
   backdropPadding: 16
+--- !u!114 &7246564124639301237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1338943456637610382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f606c95db1824942882aa3e839932b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::DamageFeedbackUI
+  ShowTopMostFoldoutHeaderGroup: 1
+  color: {r: 0.8, g: 0, b: 0, a: 1}
+  maxAlpha: 0.85
+  fadeSpeed: 1.8
+  sortingOrder: 20
 --- !u!1 &1390964396608293640
 GameObject:
   m_ObjectHideFlags: 0
@@ -12338,6 +12356,13 @@ MonoBehaviour:
   sensitivity: 7
   weaponPivot: {fileID: 29664896406910336}
   weaponSwitcher: {fileID: 3088416575911931480}
+  thirdPersonDistance: 3.2
+  thirdPersonOffset: {x: 0.45, y: 0.35, z: 0}
+  hitPitch: 3.5
+  hitYaw: 2
+  hitRoll: 3
+  hitSpring: 120
+  hitDamping: 14
   networkPitch:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0

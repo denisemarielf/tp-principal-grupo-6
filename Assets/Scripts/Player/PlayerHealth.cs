@@ -11,6 +11,7 @@ public class PlayerHealth : NetworkBehaviour
     // Se disparan en todos los equipos, cuando cambia el valor sincronizado.
     public event Action<float, float> HealthChanged; // (vida actual, vida maxima)
     public event Action Died;
+    public event Action<float> DamageTaken; // solo se dispara en el dueño, con el daño recibido
 
     [Header("Vida")]
     [SerializeField] private float maxHealth = 100f;
@@ -97,8 +98,21 @@ public class PlayerHealth : NetworkBehaviour
 
         currentHealth.Value = ApplyDamage(currentHealth.Value, amount);
 
+        // Avisa solo al dueño para el feedback (pantalla roja + golpe de camara).
+        NotifyDamageClientRpc(amount, new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+        });
+
         if (currentHealth.Value <= 0f)
             Die();
+    }
+
+    [ClientRpc]
+    private void NotifyDamageClientRpc(float amount, ClientRpcParams rpcParams = default)
+    {
+        if (!IsOwner) return;
+        DamageTaken?.Invoke(amount);
     }
 
     // Solo el server. Un jugador muerto no se puede curar.
@@ -155,7 +169,7 @@ public class PlayerHealth : NetworkBehaviour
                 playerInput.enabled = false;
         }
 
-        
+
         Died?.Invoke();
     }
 
@@ -216,7 +230,7 @@ public class PlayerHealth : NetworkBehaviour
 
     public void ApplyHealthBoost(float amount, float duration)
     {
-        
+
         if (!IsServer || isDead.Value || amount <= 0f) return;
 
         // Si ya había un boost activo, se reinicia (no se acumula)

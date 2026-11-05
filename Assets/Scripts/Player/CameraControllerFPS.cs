@@ -11,6 +11,13 @@ public class CameraControllerFPS : NetworkBehaviour
     [SerializeField] private float thirdPersonDistance = 3.2f;
     [SerializeField] private Vector3 thirdPersonOffset = new Vector3(0.45f, 0.35f, 0f);
 
+    [Header("Impacto al recibir daño")]
+    [SerializeField] private float hitPitch = 3.5f;
+    [SerializeField] private float hitYaw = 2f;
+    [SerializeField] private float hitRoll = 3f;
+    [SerializeField] private float hitSpring = 120f;
+    [SerializeField] private float hitDamping = 14f;
+
     private float xRotation = 0f;
     private bool thirdPerson;
 
@@ -21,6 +28,16 @@ public class CameraControllerFPS : NetworkBehaviour
     private Camera viewCamera;
     private Camera[] weaponCameras;
     private int ownBodyLayer = -1;
+
+    // Fix del mouse
+    private int skipMouseFrames;
+    private const float MouseScale = 0.0167f;      // equivale a lo que tenias a 60 FPS
+    private const float MaxDeltaPerFrame = 150f;   // pixeles; descarta picos absurdos
+
+    // Golpe de camara
+    private Vector3 hitOffset;
+    private Vector3 hitVelocity;
+    private PlayerHealth ownerHealth;
 
     public NetworkVariable<float> networkPitch = new NetworkVariable<float>(
         0f,
@@ -75,6 +92,21 @@ public class CameraControllerFPS : NetworkBehaviour
         {
             SetCursorLocked(true);
         }
+
+        if (IsOwner)
+        {
+            ownerHealth = GetComponentInParent<PlayerHealth>();
+            if (ownerHealth != null)
+                ownerHealth.DamageTaken += ApplyHitKick;
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (ownerHealth != null)
+            ownerHealth.DamageTaken -= ApplyHitKick;
+        ownerHealth = null;
+        base.OnNetworkDespawn();
     }
 
     void Start()
@@ -99,6 +131,10 @@ public class CameraControllerFPS : NetworkBehaviour
         // Con la pantalla de nivel completado o de partida terminada el cursor tiene que quedar libre para los botones.
         if (locked && EndScreenShown) return;
 
+        // Al bloquear el cursor, ignoramos unos frames de mouse: ahi aparecen los saltos.
+        if (locked && Cursor.lockState != CursorLockMode.Locked)
+            skipMouseFrames = 3;
+
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !locked;
     }
@@ -109,6 +145,8 @@ public class CameraControllerFPS : NetworkBehaviour
     public void ResetCamera()
     {
         xRotation = 0f;
+        hitOffset = Vector3.zero;
+        hitVelocity = Vector3.zero;
         transform.localRotation = Quaternion.identity;
         if (weaponPivot != null)
         {
@@ -118,6 +156,17 @@ public class CameraControllerFPS : NetworkBehaviour
         {
             SetCursorLocked(true);
         }
+    }
+
+    // Golpe de camara al recibir dano: la camara se sacude y vuelve sola.
+    public void ApplyHitKick(float damage)
+    {
+        float strength = Mathf.Lerp(0.5f, 1.5f, Mathf.Clamp01(damage / 40f));
+        hitOffset += new Vector3(
+            -hitPitch * strength,                                           // cabecea hacia arriba
+            UnityEngine.Random.Range(-hitYaw, hitYaw) * strength,
+            UnityEngine.Random.Range(-hitRoll, hitRoll) * strength          // inclinacion lateral
+        );
     }
 
     void Update()
@@ -140,21 +189,28 @@ public class CameraControllerFPS : NetworkBehaviour
 
             if (!PauseMenuUI.IsOpen && Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
             {
-                Vector2 mouseDelta = Mouse.current.delta.ReadValue();
-                float mouseX = mouseDelta.x * sensitivity * Time.deltaTime;
-                float mouseY = mouseDelta.y * sensitivity * Time.deltaTime;
-
-                xRotation -= mouseY;
-                xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-
-                if (transform.parent != null)
+                if (skipMouseFrames > 0)
                 {
-                    transform.parent.Rotate(Vector3.up * mouseX);
+                    skipMouseFrames--;
                 }
-
-                if (IsSpawned)
+                else
                 {
-                    networkPitch.Value = xRotation;
+                    Vector2 mouseDelta = Vector2.ClampMagnitude(Mouse.current.delta.ReadValue(), MaxDeltaPerFrame);
+                    float mouseX = mouseDelta.x * sensitivity * MouseScale;   // SIN Time.deltaTime
+                    float mouseY = mouseDelta.y * sensitivity * MouseScale;
+
+                    xRotation -= mouseY;
+                    xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+
+                    if (transform.parent != null)
+                    {
+                        transform.parent.Rotate(Vector3.up * mouseX);
+                    }
+
+                    if (IsSpawned)
+                    {
+                        networkPitch.Value = xRotation;
+                    }
                 }
             }
 
@@ -167,10 +223,17 @@ public class CameraControllerFPS : NetworkBehaviour
                 recoilOffset = currentRecoil.UpdateRecoil();
             }
 
-            // El recoil se suma como offset LOCAL de la camara, encima del
-            // pitch "limpio" del mouse (xRotation nunca se contamina con el
-            // recoil, asi que networkPitch sigue reflejando tu apuntado real).
-            transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f) * Quaternion.Euler(recoilOffset);
+            // Resorte amortiguado del golpe de camara.
+            float dt = Mathf.Min(Time.deltaTime, 0.033f);
+            hitVelocity += (-hitSpring * hitOffset - hitDamping * hitVelocity) * dt;
+            hitOffset += hitVelocity * dt;
+
+            // El recoil y el golpe se suman como offset LOCAL de la camara, encima del
+            // pitch "limpio" del mouse (xRotation nunca se contamina, asi que
+            // networkPitch sigue reflejando tu apuntado real).
+            transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f)
+                                    * Quaternion.Euler(recoilOffset)
+                                    * Quaternion.Euler(hitOffset);
 
             if (!PauseMenuUI.IsOpen && !EndScreenShown && Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
                 thirdPerson = !thirdPerson;
