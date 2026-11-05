@@ -29,6 +29,17 @@ public class AIDirector : MonoBehaviour
 
     [Header("Prefab")]
     [SerializeField] private GameObject enemyPrefab;
+
+    [Header("MiniBoss")]
+    [Tooltip("Prefab del miniboss. Vacio = no aparece ninguno. Igual que el enemigo comun, tiene que tener NetworkObject y estar en la lista de Network Prefabs.")]
+    [SerializeField] private GameObject miniBossPrefab;
+    [Tooltip("Maximo de minibosses por oleada (una oleada = un ciclo BuildUp -> SustainPeak -> PeakFade -> Relax). 0 = ninguno.")]
+    [SerializeField, Min(0)] private int maxMiniBossesPerWave = 1;
+    [Tooltip("Maximo de minibosses VIVOS a la vez en el mapa, sin importar la oleada.")]
+    [SerializeField, Min(1)] private int maxMiniBossesAlive = 1;
+    [Tooltip("Probabilidad (0-1) de que cada enemigo que se spawnea sea un miniboss, mientras no se hayan alcanzado los limites de arriba.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float miniBossChance = 0.03f;
     [Header("Variantes (peso relativo)")]
     [SerializeField] private float normalWeight = 0.7f;
     [Tooltip("Rapido (7): igual de veloz que el jugador. Mejor usarlo con poca frecuencia.")]
@@ -76,6 +87,12 @@ public class AIDirector : MonoBehaviour
     [SerializeField] private int mobBatch = 4;
     [SerializeField] private float mobBatchInterval = 0.4f;
     [SerializeField] private float mobGiveUpTime = 10f;
+    [Tooltip("Para la musica: la horda se considera terminada cuando quedan vivos este numero de zombis de horda o menos (evita que un zombi trabado mantenga la musica de combate).")]
+    [SerializeField] private int mobOverWhenRemaining = 2;
+    [Tooltip("Para la musica: un miniboss vivo activa la musica de combate aunque no haya horda.")]
+    [SerializeField] private bool miniBossTriggersMusic = true;
+    [Tooltip("Para la musica: intensidad del equipo alta (pico) activa la musica de combate aunque no haya horda.")]
+    [SerializeField] private bool highIntensityTriggersMusic = true;
 
     [Header("Dónde aparecen")]
     [SerializeField] private float minSpawnDistance = 20f;
@@ -127,6 +144,9 @@ public class AIDirector : MonoBehaviour
     private readonly List<PlayerState> players = new List<PlayerState>();
     private readonly List<PlayerState> alivePlayers = new List<PlayerState>();
     private readonly List<EnemyHealth> enemies = new List<EnemyHealth>();
+    private readonly List<EnemyHealth> miniBosses = new List<EnemyHealth>();
+    private readonly List<EnemyHealth> mobEnemies = new List<EnemyHealth>();
+    private int miniBossesThisWave;
     private NavMeshPath path;
     private EnemySpawnPoint[] spawnPoints = new EnemySpawnPoint[0];
     private readonly List<EnemySpawnPoint> aheadMarkers = new List<EnemySpawnPoint>();
@@ -165,6 +185,29 @@ public class AIDirector : MonoBehaviour
 
     public Phase CurrentPhase => phase;
     public float TeamIntensity { get; private set; }
+
+    // Horda en curso: todavia quedan por salir, o siguen vivos mas de mobOverWhenRemaining zombis de horda.
+    // Solo es confiable en el server (en los clientes el Director esta apagado). Lo usa MusicDirector.
+    public bool MobActive => running && (mobPending > 0 || CountAliveMobEnemies() > mobOverWhenRemaining);
+
+    // Para la musica de combate: horda en curso, o miniboss vivo, o intensidad del equipo en pico.
+    // Solo es confiable en el server. Lo usa MusicDirector.
+    public bool CombatMusicActive
+    {
+        get
+        {
+            if (!running)
+                return false;
+            if (MobActive)
+                return true;
+            if (miniBossTriggersMusic && CountAliveMiniBosses() > 0)
+                return true;
+            if (highIntensityTriggersMusic && (phase == Phase.SustainPeak || TeamIntensity >= peakIntensity))
+                return true;
+
+            return false;
+        }
+    }
 
     private void Awake()
     {
@@ -447,6 +490,10 @@ public class AIDirector : MonoBehaviour
 
     private void EnterPhase(Phase next, float duration)
     {
+        // Arranca una oleada nueva: el cupo de minibosses se renueva.
+        if (next == Phase.BuildUp)
+            miniBossesThisWave = 0;
+
         phase = next;
         phaseTimer = duration;
         phaseElapsed = 0f;
@@ -579,14 +626,24 @@ public class AIDirector : MonoBehaviour
                 point = hit.position;
             }
 
-            EnemyHealth enemy = EnemySceneSetup.SpawnNetworkEnemy(enemyPrefab, point, PickVariant());
+            bool isBoss = RollMiniBoss();
+            GameObject prefab = isBoss ? miniBossPrefab : enemyPrefab;
+            EnemyHealth enemy = EnemySceneSetup.SpawnNetworkEnemy(prefab, point, isBoss ? EnemyVariant.Normal : PickVariant());
             if (enemy == null)
                 continue;
 
             enemies.Add(enemy);
+            if (isBoss)
+            {
+                miniBosses.Add(enemy);
+                miniBossesThisWave++;
+            }
             spawned++;
 
             // Los de horda persiguen sin importar la distancia (requiere Ai.StartHorde, ver parche).
+            if (isMob)
+                mobEnemies.Add(enemy);
+
             if (isMob && enemy.TryGetComponent(out Ai ai))
                 ai.StartHorde();
 
@@ -594,6 +651,41 @@ public class AIDirector : MonoBehaviour
         }
 
         return spawned;
+    }
+
+    // Decide si el proximo enemigo es un miniboss. Respeta el tope por oleada y el de vivos.
+    private bool RollMiniBoss()
+    {
+        if (miniBossPrefab == null || miniBossChance <= 0f)
+            return false;
+        if (miniBossesThisWave >= maxMiniBossesPerWave)
+            return false;
+        if (CountAliveMiniBosses() >= maxMiniBossesAlive)
+            return false;
+
+        return Random.value < miniBossChance;
+    }
+
+    private int CountAliveMobEnemies()
+    {
+        for (int i = mobEnemies.Count - 1; i >= 0; i--)
+        {
+            if (mobEnemies[i] == null || mobEnemies[i].IsDead())
+                mobEnemies.RemoveAt(i);
+        }
+
+        return mobEnemies.Count;
+    }
+
+    private int CountAliveMiniBosses()
+    {
+        for (int i = miniBosses.Count - 1; i >= 0; i--)
+        {
+            if (miniBosses[i] == null || miniBosses[i].IsDead())
+                miniBosses.RemoveAt(i);
+        }
+
+        return miniBosses.Count;
     }
 
     private EnemyVariant PickVariant()
@@ -1035,11 +1127,12 @@ public class AIDirector : MonoBehaviour
         if (!showDebug || !running)
             return;
 
-        GUI.Label(new Rect(10f, Screen.height - 34f, 520f, 24f),
+        GUI.Label(new Rect(10f, Screen.height - 34f, 700f, 24f),
             "Director: " + phase
             + " | intensidad " + TeamIntensity.ToString("0.00")
             + " | zombis " + enemies.Count
             + " | horda pendiente " + mobPending
-            + " | prox horda " + Mathf.Max(0f, mobTimer).ToString("0") + "s");
+            + " | prox horda " + Mathf.Max(0f, mobTimer).ToString("0") + "s"
+            + " | miniboss " + miniBossesThisWave + "/" + maxMiniBossesPerWave + " (vivos " + miniBosses.Count + ")");
     }
 }

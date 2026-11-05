@@ -111,8 +111,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::PickupGlow
   glowLight: {fileID: 521890042230755531}
-  pulseSpeed: 4
-  minIntensity: 3
+  pulseSpeed: 1
+  minIntensity: 1
   maxIntensity: 2.5
 --- !u!65 &6438207609476111757
 BoxCollider:
