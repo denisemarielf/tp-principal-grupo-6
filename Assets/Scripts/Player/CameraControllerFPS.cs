@@ -45,6 +45,22 @@ public class CameraControllerFPS : NetworkBehaviour
         NetworkVariableWritePermission.Owner
     );
 
+    private void OnEnable()
+    {
+        ApplySavedSensitivity();
+        GameOptions.Changed += ApplySavedSensitivity;
+    }
+
+    private void OnDisable()
+    {
+        GameOptions.Changed -= ApplySavedSensitivity;
+    }
+
+    private void ApplySavedSensitivity()
+    {
+        sensitivity = GameOptions.Sensitivity;
+    }
+
     private void Awake()
     {
         // Fallback por si no lo asignaste a mano: WeaponSwitcher es hermano de
