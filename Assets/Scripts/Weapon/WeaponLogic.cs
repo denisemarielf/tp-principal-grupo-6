@@ -11,6 +11,7 @@ public class WeaponLogic : NetworkBehaviour
     public GameObject bullet; // solo se usa si projectileType es Physical
     public float shootForce = 1500f;
     public int damageAmount = 20;
+    
 
     [Header("Hitscan")]
     public float hitscanRange = 100f;
@@ -19,6 +20,7 @@ public class WeaponLogic : NetworkBehaviour
 
     [Header("Tracer")]
     [SerializeField] private BulletTracer bulletTracer; // solo se usa si projectileType es Hitscan
+    bool killed = false;
 
     [Header("Effects")]
     public AudioSource audioSource;
@@ -157,59 +159,60 @@ public class WeaponLogic : NetworkBehaviour
 
     // ---------- Hitscan (raycast) ----------
 
-    [ServerRpc]
-    private void FireHitscanServerRpc(Vector3 camPos, Vector3 direction)
+  [ServerRpc]
+private void FireHitscanServerRpc(Vector3 camPos, Vector3 direction)
+{
+    if (direction.sqrMagnitude < 0.0001f)
+        direction = transform.forward;
+    direction.Normalize();
+
+    Vector3 rootEye = transform.root.position + Vector3.up * 1.5f;
+    Vector3 eye = (camPos - rootEye).sqrMagnitude > 16f ? rootEye : camPos;
+
+    const float pullBack = 2.5f;
+    Vector3 origin = eye - direction * pullBack;
+
+    Vector3 hitPoint;
+    Vector3 hitNormal;
+    bool hitEnemy = false;
+    bool killed = false;
+    NetworkObjectReference enemyRef = default;
+
+    bool dismember = false;
+    HumanBodyBones boneToRemove = HumanBodyBones.Head;
+    EnemyHealth targetHealth = null;
+
+    if (TryHitscan(origin, direction, eye, out RaycastHit hit))
     {
-        if (direction.sqrMagnitude < 0.0001f)
-            direction = transform.forward;
-        direction.Normalize();
+        hitPoint = hit.point;
+        hitNormal = hit.normal;
 
-        // Validación básica: el origen no puede estar lejos del jugador
-        Vector3 rootEye = transform.root.position + Vector3.up * 1.5f;
-        Vector3 eye = (camPos - rootEye).sqrMagnitude > 16f ? rootEye : camPos;
-        const float pullBack = 2.5f;
-        Vector3 origin = eye - direction * pullBack;
+        targetHealth = hit.collider.GetComponentInParent<EnemyHealth>();
+        ZombieDismember dism = hit.collider.GetComponentInParent<ZombieDismember>();
+        if (dism != null)
+            dismember = dism.TryChooseBone(hit.point, hit.distance, closeRangeDismember, out boneToRemove);
 
-
-        Vector3 hitPoint;
-        Vector3 hitNormal;
-        bool hitEnemy = false;
-        NetworkObjectReference enemyRef = default;
-
-        bool dismember = false;
-        HumanBodyBones boneToRemove = HumanBodyBones.Head;
-        EnemyHealth targetHealth = null;
-
-        if (TryHitscan(origin, direction, eye, out RaycastHit hit))
-        {
-            hitPoint = hit.point;
-            hitNormal = hit.normal;
-
-            // Se decide ANTES de hacer daño: al morir, el zombie puede despawnearse.
-            targetHealth = hit.collider.GetComponentInParent<EnemyHealth>();
-            ZombieDismember dism = hit.collider.GetComponentInParent<ZombieDismember>();
-            if (dism != null)
-                dismember = dism.TryChooseBone(hit.point, hit.distance, closeRangeDismember, out boneToRemove);
-
-            hitEnemy = ApplyHitscanDamage(hit.collider, out enemyRef);
-        }
-        else
-        {
-            hitPoint = eye + direction * hitscanRange;
-            hitNormal = -direction;
-        }
-
-        PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy, enemyRef);
-
-        // Solo si este disparo mato al zombie.
-        if (hitEnemy && dismember && (targetHealth == null || targetHealth.IsDead()))
-        {
-            Vector3 force = direction.normalized * 4f + Vector3.up * 2f;
-            DismemberClientRpc(enemyRef, (int)boneToRemove, force);
-        }
-
-        PlayShootEffectsClientRpc();
+        bool wasDead = targetHealth != null && targetHealth.IsDead();
+        hitEnemy = ApplyHitscanDamage(hit.collider, out enemyRef);
+        killed = hitEnemy && targetHealth != null && !wasDead && targetHealth.IsDead();
     }
+    else
+    {
+        hitPoint = eye + direction * hitscanRange;
+        hitNormal = -direction;
+    }
+
+    PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy, enemyRef, killed);
+
+    // Solo si este disparo mató al zombie.
+    if (hitEnemy && dismember && (targetHealth == null || targetHealth.IsDead()))
+    {
+        Vector3 force = direction * 4f + Vector3.up * 2f;
+        DismemberClientRpc(enemyRef, (int)boneToRemove, force);
+    }
+
+    PlayShootEffectsClientRpc();
+}
 
     // Ignora al que dispara y lo que quedó detrás de su cabeza. Así el zombie que está encima entra en el tiro.
     private bool TryHitscan(Vector3 origin, Vector3 direction, Vector3 eye, out RaycastHit chosen)
@@ -270,29 +273,32 @@ public class WeaponLogic : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy, NetworkObjectReference enemyRef)
+private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy, NetworkObjectReference enemyRef, bool killed)
+{
+    if (IsOwner && hitEnemy)
+        crosshairController?.NotifyHit(killed);
+
+    if (hitEnemy)
     {
-        if (hitEnemy)
-        {
-            Transform woundParent = null;
-            if (enemyRef.TryGet(out NetworkObject enemyObj))
-                woundParent = enemyObj.transform;
+        Transform woundParent = null;
+        if (enemyRef.TryGet(out NetworkObject enemyObj))
+            woundParent = enemyObj.transform;
 
-            BloodSplatter.Play(hitPoint, hitNormal, woundParent);
-        }
-        else if (hitscanImpactEffect != null)
-        {
-            ParticleSystem sparks = Instantiate(
-                hitscanImpactEffect,
-                hitPoint,
-                Quaternion.LookRotation(hitNormal)
-            );
-            sparks.Play();
-            Destroy(sparks.gameObject, sparks.main.duration + sparks.main.startLifetime.constantMax);
-        }
-
-        bulletTracer?.PlayTracer(VisualMuzzlePosition, hitPoint);
+        BloodSplatter.Play(hitPoint, hitNormal, woundParent);
     }
+    else if (hitscanImpactEffect != null)
+    {
+        ParticleSystem sparks = Instantiate(
+            hitscanImpactEffect,
+            hitPoint,
+            Quaternion.LookRotation(hitNormal)
+        );
+        sparks.Play();
+        Destroy(sparks.gameObject, sparks.main.duration + sparks.main.startLifetime.constantMax);
+    }
+
+    bulletTracer?.PlayTracer(VisualMuzzlePosition, hitPoint);
+}
 
 
 
