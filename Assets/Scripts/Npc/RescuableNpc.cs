@@ -466,6 +466,7 @@ public class RescuableNpc : NetworkBehaviour
         agent.enabled = false;
         
         AchievementService.NotifyCivilianRescued(leaderId.Value);
+        MatchStatsService.NotifyRescue(leaderId.Value);
     }
 
     // ---------- Vida (solo host) ----------

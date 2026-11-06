@@ -39,6 +39,23 @@ public class GameOverUI : MonoBehaviour
     private GameObject panelCanvas;
     private GameObject survivalHud;
     private TextMeshProUGUI hudText;
+    private MatchBoardWidget boardWidget;
+
+    private void OnEnable()
+    {
+        MatchStatsService.BoardReady += OnBoardReady;
+    }
+
+    private void OnDisable()
+    {
+        MatchStatsService.BoardReady -= OnBoardReady;
+    }
+
+    private void OnBoardReady()
+    {
+        if (boardWidget != null)
+            boardWidget.Apply(MatchStatsService.Current);
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
@@ -122,6 +139,7 @@ public class GameOverUI : MonoBehaviour
     {
         Destroy(panelCanvas);
         panelCanvas = null;
+        boardWidget = null;
         if (survivalHud != null)
             survivalHud.SetActive(false);
         IsShown = false;
@@ -299,11 +317,21 @@ public class GameOverUI : MonoBehaviour
         // Mensaje (puede tener dos lineas: "Sobreviviste / Puntos: N")
         TextMeshProUGUI subtitle = CreateText(background.transform, "Subtitulo", subtitleText.ToUpperInvariant(), 38f, TextMain,
             TextAlignmentOptions.TopLeft, false, 2f);
-        AnchorTopLeft(subtitle.rectTransform, LeftMargin, TopMargin + 152f, 1200f, 120f);
+        AnchorTopLeft(subtitle.rectTransform, LeftMargin, TopMargin + 152f, 1200f, 90f);
 
-        // Boton
+        const float boardTop = 290f;
+        const float boardHeight = 400f;
+        boardWidget = MatchBoardWidget.Create(
+            background.transform,
+            new Vector2(0f, 1f),
+            new Vector2(0f, 1f),
+            new Vector2(0f, 1f),
+            new Vector2(LeftMargin, -(TopMargin + boardTop)),
+            new Vector2(860f, boardHeight));
+        boardWidget.Apply(MatchStatsService.Current);
+
         Button button = CreateButton(background.transform, "VOLVER AL MENU", titleColor, ReturnToMainMenu);
-        AnchorTopLeft(button.GetComponent<RectTransform>(), LeftMargin, TopMargin + 310f, 520f, 72f);
+        AnchorTopLeft(button.GetComponent<RectTransform>(), LeftMargin, TopMargin + boardTop + boardHeight + 28f, 520f, 72f);
     }
 
     private void ReturnToMainMenu()

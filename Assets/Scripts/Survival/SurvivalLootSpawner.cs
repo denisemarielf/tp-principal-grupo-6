@@ -127,7 +127,14 @@ public class SurvivalLootSpawner : NetworkBehaviour
         if (spawned == null)
             return;
 
-        MedkitPickup medkit = spawned.GetComponent<MedkitPickup>();
+        Rigidbody body = spawned.GetComponent<Rigidbody>();
+        if (body != null)
+        {
+            body.useGravity = false;
+            body.isKinematic = true;
+        }
+
+        ItemPickup medkit = spawned.GetComponent<ItemPickup>();
         if (medkit == null)
             return;
 

@@ -83,6 +83,19 @@ public class SafeZone : NetworkBehaviour
 );
     public bool IsUnlocked => unlocked.Value;
 
+    // Suburbio se cierra al llegar a la zona. El helicoptero solo traba la zona
+    // en los mapas que tienen telefono de extraccion (hay que llamarlo).
+    private bool DebeEsperarHelicoptero()
+    {
+        if (gameObject.scene.name == PlayerCarryOver.SuburbSceneName)
+            return false;
+
+        if (!startLocked)
+            return false;
+
+        return FindObjectsByType<ExtractionPhone>(FindObjectsInactive.Include).Length > 0;
+    }
+
     public void Unlock()
     {
         if (!IsServer) return;
@@ -115,7 +128,8 @@ public class SafeZone : NetworkBehaviour
         completed.OnValueChanged += OnCompletedChanged;
         unlocked.OnValueChanged += OnUnlockedChanged;
 
-        if (IsServer) unlocked.Value = !startLocked;
+        if (IsServer)
+            unlocked.Value = !DebeEsperarHelicoptero();
         ApplyUnlockVisuals(unlocked.Value);
 
         if (!GetComponent<Collider>().isTrigger)

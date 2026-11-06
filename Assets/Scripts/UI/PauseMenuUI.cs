@@ -41,11 +41,20 @@ public class PauseMenuUI : MonoBehaviour
     private static Sprite fadeStrong;
 
     private GameObject panel;
+    private GameObject pauseCard;
+    private GameObject optionsCard;
     private Slider volumeSlider;
     private TextMeshProUGUI volumeValue;
+    private TextMeshProUGUI qualityLabel;
+    private int pendingQuality;
+    private Slider optionsMasterSlider;
+    private Slider optionsMusicSlider;
+    private Slider optionsSfxSlider;
+    private Slider optionsSensitivitySlider;
     private Button saveButton;
     private TextMeshProUGUI saveStatus;
     private bool saveInProgress;
+    private bool optionsOpen;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
@@ -95,7 +104,12 @@ public class PauseMenuUI : MonoBehaviour
             return;
 
         if (IsOpen)
-            Close();
+        {
+            if (optionsOpen)
+                ShowPauseHome();
+            else
+                Close();
+        }
         else
             Open();
     }
@@ -103,8 +117,7 @@ public class PauseMenuUI : MonoBehaviour
     private void Open()
     {
         IsOpen = true;
-        volumeSlider.SetValueWithoutNotify(AudioListener.volume);
-        volumeValue.text = Mathf.RoundToInt(AudioListener.volume * 100f) + "%";
+        ShowPauseHome();
         panel.SetActive(true);
         RefreshSaveUi();
 
@@ -153,6 +166,7 @@ public class PauseMenuUI : MonoBehaviour
     private void Close()
     {
         IsOpen = false;
+        optionsOpen = false;
         panel.SetActive(false);
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -217,17 +231,18 @@ public class PauseMenuUI : MonoBehaviour
         BuildTitle(panel.transform, "PAUSA", "LA PARTIDA CONTINÚA");
 
         // Tarjeta de vidrio, alineada a la izquierda
-        GameObject card = CreateCard(panel.transform, LeftMargin, ContentY, CardWidth);
+        pauseCard = CreateCard(panel.transform, LeftMargin, ContentY, CardWidth);
 
-        BuildVolumeControl(card.transform);
+        BuildVolumeControl(pauseCard.transform);
 
-        CreateSpacer(card.transform, 6f);
+        CreateSpacer(pauseCard.transform, 6f);
 
-        CreateButton(card.transform, "CONTINUAR", ButtonStyle.Primary, Close);
-        saveButton = CreateButton(card.transform, "GUARDAR PARTIDA", ButtonStyle.Normal, SaveGame);
+        CreateButton(pauseCard.transform, "OPCIONES", ButtonStyle.Normal, ShowOptions);
+        CreateButton(pauseCard.transform, "CONTINUAR", ButtonStyle.Primary, Close);
+        saveButton = CreateButton(pauseCard.transform, "GUARDAR PARTIDA", ButtonStyle.Normal, SaveGame);
 
         // Estado del guardado: con wrap real y alto según el texto.
-        saveStatus = CreateText(card.transform, "Estado_Guardado", "", 18f, Amber,
+        saveStatus = CreateText(pauseCard.transform, "Estado_Guardado", "", 18f, Amber,
             TextAlignmentOptions.TopLeft, false, 1f);
         saveStatus.textWrappingMode = TextWrappingModes.Normal;
         saveStatus.enableAutoSizing = false;
@@ -235,9 +250,13 @@ public class PauseMenuUI : MonoBehaviour
         LayoutElement statusLayout = saveStatus.gameObject.AddComponent<LayoutElement>();
         statusLayout.minHeight = 28f;
 
-        CreateSpacer(card.transform, 6f);
+        CreateSpacer(pauseCard.transform, 6f);
 
-        CreateButton(card.transform, "SALIR DE LA PARTIDA", ButtonStyle.Secondary, ExitMatch);
+        CreateButton(pauseCard.transform, "SALIR DE LA PARTIDA", ButtonStyle.Secondary, ExitMatch);
+
+        optionsCard = CreateCard(panel.transform, LeftMargin, ContentY, CardWidth);
+        BuildOptions(optionsCard.transform);
+        optionsCard.SetActive(false);
     }
 
     private void BuildTitle(Transform parent, string title, string subtitle)
@@ -261,7 +280,7 @@ public class PauseMenuUI : MonoBehaviour
         container.transform.SetParent(parent, false);
         SetHeight(container, 66f);
 
-        TextMeshProUGUI label = CreateText(container.transform, "Etiqueta", "VOLUMEN", 24f, TextMain,
+        TextMeshProUGUI label = CreateText(container.transform, "Etiqueta", "VOLUMEN GENERAL", 24f, TextMain,
             TextAlignmentOptions.MidlineLeft, false, 2f);
         RectTransform labelRect = label.rectTransform;
         labelRect.anchorMin = new Vector2(0f, 1f);
@@ -271,7 +290,7 @@ public class PauseMenuUI : MonoBehaviour
         labelRect.sizeDelta = new Vector2(-90f, 30f);
 
         volumeValue = CreateText(container.transform, "Valor",
-            Mathf.RoundToInt(AudioListener.volume * 100f) + "%", 24f, RedHover,
+            Mathf.RoundToInt(GameOptions.Master * 100f) + "%", 24f, RedHover,
             TextAlignmentOptions.MidlineRight, false, 1f);
         RectTransform valueRect = volumeValue.rectTransform;
         valueRect.anchorMin = new Vector2(1f, 1f);
@@ -347,16 +366,168 @@ public class PauseMenuUI : MonoBehaviour
         Slider slider = root.GetComponent<Slider>();
         slider.minValue = 0f;
         slider.maxValue = 1f;
-        slider.value = AudioListener.volume;
+        slider.value = GameOptions.Master;
         slider.onValueChanged.AddListener(value =>
         {
-            AudioListener.volume = value;
+            GameOptions.SetMaster(value);
             volumeValue.text = Mathf.RoundToInt(value * 100f) + "%";
         });
 
         Navigation navigation = slider.navigation;
         navigation.mode = Navigation.Mode.None;
         slider.navigation = navigation;
+        return slider;
+    }
+
+    private void ShowPauseHome()
+    {
+        optionsOpen = false;
+        if (optionsCard != null)
+            optionsCard.SetActive(false);
+        if (pauseCard != null)
+            pauseCard.SetActive(true);
+
+        if (volumeSlider != null)
+        {
+            volumeSlider.SetValueWithoutNotify(GameOptions.Master);
+            volumeValue.text = Percent(GameOptions.Master);
+        }
+    }
+
+    private void ShowOptions()
+    {
+        optionsOpen = true;
+        pauseCard.SetActive(false);
+        optionsCard.SetActive(true);
+        SetSlider(optionsMasterSlider, GameOptions.Master, Percent);
+        SetSlider(optionsMusicSlider, GameOptions.Music, Percent);
+        SetSlider(optionsSfxSlider, GameOptions.Sfx, Percent);
+        SetSlider(optionsSensitivitySlider, GameOptions.Sensitivity, SensitivityText);
+        pendingQuality = GameOptions.Quality;
+        if (qualityLabel != null)
+            qualityLabel.text = QualityText(pendingQuality);
+    }
+
+    private static void SetSlider(Slider slider, float value, System.Func<float, string> format)
+    {
+        if (slider == null)
+            return;
+
+        slider.SetValueWithoutNotify(value);
+        Transform valueLabel = slider.transform.parent.Find("Valor");
+        if (valueLabel != null)
+        {
+            TextMeshProUGUI text = valueLabel.GetComponent<TextMeshProUGUI>();
+            if (text != null)
+                text.text = format(value);
+        }
+    }
+
+    private void BuildOptions(Transform parent)
+    {
+        TextMeshProUGUI heading = CreateText(parent, "Titulo_Opciones", "OPCIONES", 28f, TextMain,
+            TextAlignmentOptions.MidlineLeft, false, 2f);
+        LayoutElement headingLayout = heading.gameObject.AddComponent<LayoutElement>();
+        headingLayout.minHeight = 36f;
+
+        optionsMasterSlider = BuildBoundSlider(parent, "VOLUMEN GENERAL", 0f, 1f, GameOptions.Master, Percent, GameOptions.SetMaster);
+        optionsMusicSlider = BuildBoundSlider(parent, "MUSICA", 0f, 1f, GameOptions.Music, Percent, GameOptions.SetMusic);
+        optionsSfxSlider = BuildBoundSlider(parent, "EFECTOS", 0f, 1f, GameOptions.Sfx, Percent, GameOptions.SetSfx);
+        optionsSensitivitySlider = BuildBoundSlider(parent, "SENSIBILIDAD", GameOptions.MinSensitivity, GameOptions.MaxSensitivity,
+            GameOptions.Sensitivity, SensitivityText, GameOptions.SetSensitivity);
+
+        CreateSpacer(parent, 6f);
+        pendingQuality = GameOptions.Quality;
+        Button qualityButton = CreateButton(parent, QualityText(pendingQuality), ButtonStyle.Normal, CycleQuality);
+        qualityLabel = qualityButton.GetComponentInChildren<TextMeshProUGUI>();
+        CreateButton(parent, "APLICAR", ButtonStyle.Primary, ApplyPendingQuality);
+        CreateButton(parent, "VOLVER", ButtonStyle.Secondary, ShowPauseHome);
+    }
+
+    private Slider BuildBoundSlider(
+        Transform parent,
+        string caption,
+        float min,
+        float max,
+        float value,
+        System.Func<float, string> format,
+        System.Action<float> onChanged)
+    {
+        GameObject container = new GameObject("Control_" + caption, typeof(RectTransform), typeof(LayoutElement));
+        container.transform.SetParent(parent, false);
+        SetHeight(container, 66f);
+
+        CreateText(container.transform, "Etiqueta", caption, 24f, TextMain,
+            TextAlignmentOptions.MidlineLeft, false, 2f).rectTransform.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 0f, 30f);
+
+        TextMeshProUGUI valueLabel = CreateText(container.transform, "Valor", format(value), 24f, RedHover,
+            TextAlignmentOptions.MidlineRight, false, 1f);
+        RectTransform valueRect = valueLabel.rectTransform;
+        valueRect.anchorMin = new Vector2(1f, 1f);
+        valueRect.anchorMax = new Vector2(1f, 1f);
+        valueRect.pivot = new Vector2(1f, 1f);
+        valueRect.anchoredPosition = Vector2.zero;
+        valueRect.sizeDelta = new Vector2(90f, 30f);
+
+        TextMeshProUGUI label = container.transform.Find("Etiqueta").GetComponent<TextMeshProUGUI>();
+        RectTransform labelRect = label.rectTransform;
+        labelRect.anchorMin = new Vector2(0f, 1f);
+        labelRect.anchorMax = new Vector2(1f, 1f);
+        labelRect.pivot = new Vector2(0f, 1f);
+        labelRect.anchoredPosition = Vector2.zero;
+        labelRect.sizeDelta = new Vector2(-100f, 30f);
+
+        return CreateStyledSlider(container.transform, min, max, value, next =>
+        {
+            onChanged(next);
+            valueLabel.text = format(next);
+        });
+    }
+
+    private void CycleQuality()
+    {
+        string[] names = QualitySettings.names;
+        if (names == null || names.Length == 0)
+            return;
+
+        pendingQuality = (pendingQuality + 1) % names.Length;
+        if (qualityLabel != null)
+            qualityLabel.text = QualityText(pendingQuality);
+    }
+
+    private void ApplyPendingQuality()
+    {
+        GameOptions.SetQuality(pendingQuality);
+    }
+
+    private static string Percent(float value)
+    {
+        return Mathf.RoundToInt(value * 100f) + "%";
+    }
+
+    private static string SensitivityText(float value)
+    {
+        return value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string QualityText(int level)
+    {
+        string[] names = QualitySettings.names;
+        if (names == null || names.Length == 0)
+            return "GRAFICOS";
+
+        int clamped = Mathf.Clamp(level, 0, names.Length - 1);
+        return "GRAFICOS: " + names[clamped].ToUpperInvariant();
+    }
+
+    private Slider CreateStyledSlider(Transform parent, float min, float max, float value, UnityEngine.Events.UnityAction<float> onChanged)
+    {
+        Slider slider = CreateVolumeSlider(parent);
+        slider.minValue = min;
+        slider.maxValue = max;
+        slider.onValueChanged.RemoveAllListeners();
+        slider.SetValueWithoutNotify(Mathf.Clamp(value, min, max));
+        slider.onValueChanged.AddListener(onChanged);
         return slider;
     }
 

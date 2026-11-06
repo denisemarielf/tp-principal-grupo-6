@@ -94,6 +94,7 @@ public class MusicDirector : NetworkBehaviour
         src.playOnAwake = false;
         src.loop = false;
         src.spatialBlend = 0f;   // 2D: se escucha igual en cualquier lugar
+        src.ignoreListenerVolume = true; // el listener es general * efectos; la musica lleva el suyo
         src.volume = 0f;
         if (mixerGroup != null)
             src.outputAudioMixerGroup = mixerGroup;
@@ -215,7 +216,7 @@ public class MusicDirector : NetworkBehaviour
             edge = Mathf.Clamp01(Mathf.Min(fromStart, toEnd));
         }
 
-        src.volume = maxVolume * ch.level * edge;
+        src.volume = maxVolume * ch.level * edge * GameOptions.MusicGain;
     }
 
     private static AudioClip Pick(AudioClip[] list, AudioClip avoid)
