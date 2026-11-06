@@ -289,6 +289,10 @@ public class SafeZoneUI : MonoBehaviour
     {
         return SceneManager.GetActiveScene().name == PlayerCarryOver.OfficesSceneName;
     }
+    public static bool IsEasterEggScene()
+    {
+        return SceneManager.GetActiveScene().name == PlayerCarryOver.EasterEggSceneName;
+    }
 
     private static bool HasNextScene()
     {
