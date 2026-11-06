@@ -138,6 +138,7 @@ public class PlayerHealth : NetworkBehaviour
         if (!IsServer || isDead.Value) return;
 
         isDead.Value = true;
+        MatchStatsService.NotifyDeath(OwnerClientId);
     }
 
     private void OnHealthValueChanged(float previous, float current)
