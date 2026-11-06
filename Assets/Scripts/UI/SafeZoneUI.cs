@@ -307,6 +307,12 @@ public class SafeZoneUI : MonoBehaviour
         ContinueTo(PlayerCarryOver.StationSceneName);
     }
 
+    // Solo el host. Al terminar Oficinas sigue la cadena hacia la estacion.
+    public void ContinueToEasterEgg()
+    {
+        ContinueTo(PlayerCarryOver.EasterEggSceneName);
+    }
+
     private static void ContinueTo(string sceneName)
     {
         NetworkManager networkManager = NetworkManager.Singleton;
