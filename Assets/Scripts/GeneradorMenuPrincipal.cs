@@ -623,7 +623,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             1.5f
         );
 
-        FijarAltura(txtDetallesLobby.gameObject, 64f);
+        FijarAltura(txtDetallesLobby.gameObject, 80f);
 
         CrearEspaciador(tarjetaLobby.transform, 4f);
 
@@ -1609,7 +1609,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // El código de sala va en blanco; el resto de la línea usa el color del texto.
     private string TextoCodigoSala(string prefijo)
     {
-        return "<color=#FFFFFF>" + prefijo + ": " + codigoSala + "</color>";
+        return prefijo + ": <size=150%><color=#FFFFFF>" + codigoSala + "</color></size>";
     }
 
     private string TextoDetallesPartida()
