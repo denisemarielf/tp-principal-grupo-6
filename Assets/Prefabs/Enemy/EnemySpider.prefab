@@ -1959,7 +1959,7 @@ NavMeshAgent:
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
-  m_StoppingDistance: 0
+  m_StoppingDistance: 1.2
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
@@ -2102,7 +2102,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::EnemyCombat
   ShowTopMostFoldoutHeaderGroup: 1
   attackDamage: 15
-  attackRange: 2
+  attackRange: 4
   attackDuration: 1.2
   biteChance: 0
   biteDamage: 15
@@ -2111,6 +2111,7 @@ MonoBehaviour:
   knockbackCooldown: 0.4
   hitSlowMultiplier: 1.7
   hitSlowDuration: 1.25
+  timedDamageAt: 0.45
 --- !u!114 &4799201056922227780
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2126,9 +2127,10 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   variant: 1
   maxHealth: 100
-  deathClip: {fileID: 0}
+  deathClip: {fileID: 7400000, guid: f3a213ef76a772a4c8e63ba267e2388b, type: 2}
   extraDeathClips: []
-  deathSounds: []
+  deathSounds:
+  - {fileID: 8300000, guid: 5120c28a72a284746818b54a8c99d028, type: 3}
   deathVolume: 1
   healthOverride: 0
 --- !u!114 &7443090537162938764
@@ -2146,11 +2148,13 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   audioSource: {fileID: 5490909947503339829}
   stepClips: []
-  attackClips: []
+  attackClips:
+  - {fileID: 8300000, guid: 002024daa88c3a947bdb12038d0cedda, type: 3}
   landedClips: []
   biteLandedClips: []
   landedVolume: 1
-  impactClips: []
+  impactClips:
+  - {fileID: 8300000, guid: e4e87d9b52fc5f14ab7351820f5983f7, type: 3}
   impactVolume: 1
   stepInterval: 0.5
   runStepInterval: 0.3

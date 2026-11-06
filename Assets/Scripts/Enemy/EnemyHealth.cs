@@ -348,6 +348,8 @@ public class EnemyHealth : NetworkBehaviour
 
     private GameObject ActiveModel()
     {
+        if (GetComponent<Animator>() != null)
+            return gameObject;
         foreach (Transform child in transform)
         {
             if (!child.gameObject.activeInHierarchy)

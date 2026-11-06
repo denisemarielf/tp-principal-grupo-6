@@ -252,6 +252,13 @@ public class EnemyAnimation : NetworkBehaviour
 
     private Animator ActiveAnimator()
     {
+        Animator rootAnimator = GetComponent<Animator>();
+        if (rootAnimator != null)
+        {
+            if (rootAnimator.GetComponent<EnemyAttackEventRelay>() == null)
+                rootAnimator.gameObject.AddComponent<EnemyAttackEventRelay>();
+            return rootAnimator;
+        }
         foreach (Transform child in transform)
         {
             if (!child.gameObject.activeInHierarchy)
