@@ -8,10 +8,14 @@ public class BulletTracerMovement : MonoBehaviour
     private bool can_Move;
     private Transform home;
     private TrailRenderer trailRenderer;
+    private Light tracerLight;
+    private float baseIntensity;
 
     private void Awake()
     {
         trailRenderer = GetComponent<TrailRenderer>();
+        tracerLight = GetComponentInChildren<Light>(true);
+        if (tracerLight != null) baseIntensity = tracerLight.intensity;
     }
 
     private void Update()
@@ -40,6 +44,7 @@ public class BulletTracerMovement : MonoBehaviour
         target_point = end_point;
         move_Speed = speed;
         can_Move = true;
+        if (tracerLight != null) tracerLight.intensity = baseIntensity;
 
         if (trailRenderer != null)
             trailRenderer.Clear();
@@ -50,7 +55,14 @@ public class BulletTracerMovement : MonoBehaviour
 
     private IEnumerator ReturnToPool(float delay)
     {
-        yield return new WaitForSeconds(delay);
+        float t = 0f;
+        while (t < delay)
+        {
+            t += Time.deltaTime;
+            if (tracerLight != null && !can_Move)
+                tracerLight.intensity = Mathf.Lerp(baseIntensity, 0f, t / Mathf.Max(delay, 0.01f));
+            yield return null;
+        }
         Release();
     }
 

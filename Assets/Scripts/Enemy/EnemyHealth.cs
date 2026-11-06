@@ -348,7 +348,8 @@ public class EnemyHealth : NetworkBehaviour
 
     private GameObject ActiveModel()
     {
-        if (GetComponent<Animator>() != null)
+        EnemyAnimation anim = GetComponent<EnemyAnimation>();
+        if (anim != null && anim.UsesRootAnimator && GetComponent<Animator>() != null)
             return gameObject;
         foreach (Transform child in transform)
         {

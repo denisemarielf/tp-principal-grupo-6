@@ -54,6 +54,10 @@ public class EnemyAnimation : NetworkBehaviour
     [Tooltip("Pausa entre el final de una reaccion y la siguiente.")]
     [SerializeField] private float hitCooldown = 0.5f;
 
+    [Header("Animator")]
+    [Tooltip("Marcar solo en enemigos cuyo Animator esta en la raiz del prefab (la arana).")]
+    [SerializeField] private bool useRootAnimator = false;
+    public bool UsesRootAnimator => useRootAnimator;
     // Las variantes se declaran ANTES de isAttacking para que lleguen juntas y en ese orden.
     private readonly NetworkVariable<int> walkVariant = new NetworkVariable<int>(
         0,
@@ -252,12 +256,15 @@ public class EnemyAnimation : NetworkBehaviour
 
     private Animator ActiveAnimator()
     {
-        Animator rootAnimator = GetComponent<Animator>();
-        if (rootAnimator != null)
+        if (useRootAnimator)
         {
-            if (rootAnimator.GetComponent<EnemyAttackEventRelay>() == null)
-                rootAnimator.gameObject.AddComponent<EnemyAttackEventRelay>();
-            return rootAnimator;
+            Animator rootAnimator = GetComponent<Animator>();
+            if (rootAnimator != null)
+            {
+                if (rootAnimator.GetComponent<EnemyAttackEventRelay>() == null)
+                    rootAnimator.gameObject.AddComponent<EnemyAttackEventRelay>();
+                return rootAnimator;
+            }
         }
         foreach (Transform child in transform)
         {
