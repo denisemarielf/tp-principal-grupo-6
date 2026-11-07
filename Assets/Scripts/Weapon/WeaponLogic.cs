@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using System.Collections.Generic;
 
 public class WeaponLogic : NetworkBehaviour
 {
@@ -17,6 +18,7 @@ public class WeaponLogic : NetworkBehaviour
     public float hitscanRange = 100f;
     public LayerMask hitscanLayers = ~0; // qué puede golpear el rayo (configurable por arma)
     public ParticleSystem hitscanImpactEffect;
+    [SerializeField] private float headshotMargin = 0.3f;
 
     [Header("Tracer")]
     [SerializeField] private BulletTracer bulletTracer; // solo se usa si projectileType es Hitscan
@@ -127,7 +129,63 @@ public class WeaponLogic : NetworkBehaviour
 
         return spawnPoint != null ? spawnPoint.forward : transform.forward;
     }
+private readonly Dictionary<EnemyHealth, Transform> headCache = new Dictionary<EnemyHealth, Transform>();
 
+private Transform FindHead(EnemyHealth health)
+{
+    if (headCache.TryGetValue(health, out Transform cached) && cached != null)
+        return cached;
+
+    // Evita que el cache crezca con zombies ya destruidos
+    if (headCache.Count > 64)
+        headCache.Clear();
+
+    Transform head = null;
+
+    // 1) Cualquier Animator humanoide dentro del zombie
+    foreach (Animator a in health.GetComponentsInChildren<Animator>(true))
+    {
+        if (!a.isHuman) continue;
+        head = a.GetBoneTransform(HumanBodyBones.Head);
+        if (head != null) break;
+    }
+
+    // 2) Si no hay, por nombre del hueso (el primero que aparece es "Head", antes que "HeadTop_End")
+    if (head == null)
+    {
+        foreach (Transform t in health.GetComponentsInChildren<Transform>(true))
+        {
+            if (t.name.ToLowerInvariant().Contains("head"))
+            {
+                head = t;
+                break;
+            }
+        }
+    }
+
+    if (head != null)
+        headCache[health] = head;
+
+    return head;
+}
+
+private bool IsHeadshot(RaycastHit hit, EnemyHealth health)
+{
+    Transform head = FindHead(health);
+    if (head == null)
+    {
+        Debug.Log("[Headshot] no se encontró ningún hueso de cabeza");
+        return false;
+    }
+
+    // Colliders por hueso (ragdoll): alcanza con esto.
+    if (hit.collider.transform.IsChildOf(head)) return true;
+
+    // Collider único: el impacto queda en la superficie, así que se compara solo la altura.
+    float height = hit.point.y - head.position.y;
+   
+    return height > -headshotMargin;
+}
     // ---------- Proyectil físico (Bullet.cs) ----------
 
     [ServerRpc]
@@ -175,7 +233,7 @@ private void FireHitscanServerRpc(Vector3 camPos, Vector3 direction)
     Vector3 hitPoint;
     Vector3 hitNormal;
     bool hitEnemy = false;
-    bool killed = false;
+    bool headshot = false;  
     NetworkObjectReference enemyRef = default;
 
     bool dismember = false;
@@ -192,9 +250,10 @@ private void FireHitscanServerRpc(Vector3 camPos, Vector3 direction)
         if (dism != null)
             dismember = dism.TryChooseBone(hit.point, hit.distance, closeRangeDismember, out boneToRemove);
 
-        bool wasDead = targetHealth != null && targetHealth.IsDead();
-        hitEnemy = ApplyHitscanDamage(hit.collider, out enemyRef);
-        killed = hitEnemy && targetHealth != null && !wasDead && targetHealth.IsDead();
+       bool wasDead = targetHealth != null && targetHealth.IsDead();
+headshot = targetHealth != null && !wasDead && IsHeadshot(hit, targetHealth);   // nuevo
+hitEnemy = ApplyHitscanDamage(hit.collider, out enemyRef);
+killed = hitEnemy && targetHealth != null && !wasDead && targetHealth.IsDead();
     }
     else
     {
@@ -202,7 +261,7 @@ private void FireHitscanServerRpc(Vector3 camPos, Vector3 direction)
         hitNormal = -direction;
     }
 
-    PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy, enemyRef, killed);
+    PlayHitscanEffectsClientRpc(hitPoint, hitNormal, hitEnemy, enemyRef, killed, hitEnemy && headshot);
 
     // Solo si este disparo mató al zombie.
     if (hitEnemy && dismember && (targetHealth == null || targetHealth.IsDead()))
@@ -273,10 +332,11 @@ private void FireHitscanServerRpc(Vector3 camPos, Vector3 direction)
     }
 
     [ClientRpc]
-private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy, NetworkObjectReference enemyRef, bool killed)
+private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bool hitEnemy, NetworkObjectReference enemyRef, bool killed, bool headshot)
+
 {
     if (IsOwner && hitEnemy)
-        crosshairController?.NotifyHit(killed);
+         crosshairController?.NotifyHit(killed, headshot);
 
     if (hitEnemy)
     {
@@ -298,10 +358,8 @@ private void PlayHitscanEffectsClientRpc(Vector3 hitPoint, Vector3 hitNormal, bo
     }
 
     bulletTracer?.PlayTracer(VisualMuzzlePosition, hitPoint);
+    
 }
-
-
-
     // ---------- Efectos compartidos ----------
 
     [ClientRpc]

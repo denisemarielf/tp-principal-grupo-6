@@ -13,6 +13,8 @@ public static class PlayerCarryOver
     public const string OfficesSceneName = "MapaOficina";
     public const string StationSceneName = "ExtraccionScene";
     public const string EasterEggSceneName = "EasterEggScene";
+
+
     private struct AmmoSlot
     {
         public int current;
