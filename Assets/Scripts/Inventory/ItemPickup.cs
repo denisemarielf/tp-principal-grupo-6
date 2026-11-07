@@ -23,6 +23,17 @@ public class ItemPickup : NetworkPickup
     public int ItemId => itemId;
     public float UseRadius => useRadius;
 
+    // Si el rigidbody cae, en el cliente atraviesa el piso y el botiquín desaparece.
+    private void Awake()
+    {
+        Rigidbody body = GetComponent<Rigidbody>();
+        if (body == null)
+            return;
+
+        body.useGravity = false;
+        body.isKinematic = true;
+    }
+
     public override void OnNetworkSpawn()
     {
         active.Add(this);

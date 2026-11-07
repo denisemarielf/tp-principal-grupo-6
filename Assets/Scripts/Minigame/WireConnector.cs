@@ -8,11 +8,10 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 {
     [Header("Config")]
     public bool isSource;
-    public Image colorImage;   // imagen que se pinta con el color del cable
-    public Image led;          // lucecita: gris -> verde al conectar
+    public Image colorImage;
+    public Image led;
+    [Tooltip("Grosor del cable en unidades del Canvas (el CanvasScaler lo escala solo)")]
     public float wireThickness = 14f;
-    Vector3 basePos;
-    bool hasBase;
 
     [HideInInspector] public int colorId;
     [HideInInspector] public bool connected;
@@ -22,6 +21,11 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     RectTransform wire;
     Image wireImg;
     bool dragging;
+    WireConnector linkedTarget;          // destino al que quedó conectado
+    Vector3 shakeOffset;
+
+    /// Centro visual del conector en coordenadas mundo (no depende del pivote).
+    public Vector3 WorldCenter => rt.TransformPoint(rt.rect.center);
 
     public void Init(WireMinigame g, int id, Color c)
     {
@@ -30,13 +34,12 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         rt = (RectTransform)transform;
 
         StopAllCoroutines();
-        if (!hasBase) { basePos = transform.localPosition; hasBase = true; }
-        transform.localPosition = basePos;
         gameObject.SetActive(true);
 
         colorImage.color = c;
         if (led) led.color = Color.gray;
         connected = false;
+        linkedTarget = null;
         dragging = false;
         transform.localScale = Vector3.one;
         if (wire != null) wire.gameObject.SetActive(false);
@@ -53,16 +56,18 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
         wireImg = go.GetComponent<Image>();
         wireImg.color = colorImage.color;
-        wireImg.raycastTarget = false;   // para no bloquear el raycast del destino
+        wireImg.raycastTarget = false;
 
-        // Dibujar el cable por encima de los demás conectores
         var cv = go.AddComponent<Canvas>();
         cv.overrideSorting = true;
         cv.sortingOrder = 10;
     }
 
-    void UpdateWire(Vector2 localEnd)
+    /// worldEnd: punto final del cable en coordenadas mundo.
+    void UpdateWireToWorld(Vector3 worldEnd)
     {
+        // Relativo al CENTRO del rect (el origen real del cable), no al pivote
+        Vector2 localEnd = (Vector2)rt.InverseTransformPoint(worldEnd) - rt.rect.center;
         wire.sizeDelta = new Vector2(localEnd.magnitude, wireThickness);
         float angle = Mathf.Atan2(localEnd.y, localEnd.x) * Mathf.Rad2Deg;
         wire.localRotation = Quaternion.Euler(0, 0, angle);
@@ -70,7 +75,6 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
 
     public void OnBeginDrag(PointerEventData e)
     {
-
         if (!isSource || connected || game.Locked) return;
         dragging = true;
         if (wire == null) CreateWire();
@@ -81,8 +85,9 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     public void OnDrag(PointerEventData e)
     {
         if (!dragging) return;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(rt, e.position, e.pressEventCamera, out var local);
-        UpdateWire(local);
+        if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                rt, e.position, e.pressEventCamera, out var world))
+            UpdateWireToWorld(world);
     }
 
     public void OnEndDrag(PointerEventData e)
@@ -93,6 +98,10 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         var hit = e.pointerCurrentRaycast.gameObject;
         var target = hit ? hit.GetComponentInParent<WireConnector>() : null;
 
+        // Si no pegó justo, buscar el destino más cercano dentro de una tolerancia
+        if (target == null || target.isSource)
+            target = game.FindTargetNear(e.position, e.pressEventCamera);
+
         if (target != null && !target.isSource && !target.connected)
         {
             if (target.colorId == colorId) { Success(target); return; }
@@ -102,6 +111,7 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         }
         wire.gameObject.SetActive(false);
     }
+
     /// Intercambia color e id con otro conector (para la mezcla a mitad de nivel).
     public void SwapColorWith(WireConnector other)
     {
@@ -118,25 +128,36 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     void Success(WireConnector target)
     {
         connected = target.connected = true;
-        UpdateWire(rt.InverseTransformPoint(target.transform.position));
+        linkedTarget = target;
+        UpdateWireToWorld(target.WorldCenter);
         if (led) led.color = Color.green;
         if (target.led) target.led.color = Color.green;
 
         StartCoroutine(Pop(transform));
         StartCoroutine(Pop(target.transform));
-        game.OnWireConnected(target.transform.position);
+        game.OnWireConnected(target.WorldCenter);
+    }
+
+    // Si el layout cambia (rotación, resize de ventana), el cable sigue pegado al destino
+    void LateUpdate()
+    {
+        if (connected && linkedTarget != null && wire != null && wire.gameObject.activeSelf)
+            UpdateWireToWorld(linkedTarget.WorldCenter);
     }
 
     IEnumerator FailRoutine()
     {
         wireImg.color = Color.red;
-        Vector3 start = transform.localPosition;
+        // Shake solo visual: se mueve el hijo "colorImage", no el conector,
+        // así no pelea con el Layout Group.
+        var visual = colorImage.rectTransform;
+        Vector2 start = visual.anchoredPosition;
         for (float t = 0; t < 0.25f; t += Time.deltaTime)
         {
-            transform.localPosition = start + (Vector3)(Random.insideUnitCircle * 6f);
+            visual.anchoredPosition = start + Random.insideUnitCircle * 6f;
             yield return null;
         }
-        transform.localPosition = start;
+        visual.anchoredPosition = start;
         wire.gameObject.SetActive(false);
     }
 
@@ -149,6 +170,7 @@ public class WireConnector : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
         }
         t.localScale = Vector3.one;
     }
+
     public void FlashLed(bool on)
     {
         if (led && !connected) led.color = on ? Color.red : Color.gray;

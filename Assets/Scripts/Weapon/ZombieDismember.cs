@@ -78,7 +78,8 @@ public class ZombieDismember : MonoBehaviour
             gib.transform.localScale = isHead
                 ? Vector3.one * gibSize
                 : new Vector3(0.12f, 0.25f, 0.12f);
-            gib.GetComponent<Renderer>().material.color = new Color(0.45f, 0.08f, 0.06f);
+            
+            gib.GetComponent<Renderer>().sharedMaterial = BloodMaterials.Solid(new Color(0.45f, 0.08f, 0.06f));
         }
 
         if (!gib.TryGetComponent(out Rigidbody rb))
@@ -101,7 +102,7 @@ public class ZombieDismember : MonoBehaviour
         stump.transform.SetParent(parent, false);
         stump.transform.position = bone.position;
         stump.transform.localScale = Vector3.one * (0.13f / Mathf.Max(0.0001f, parent.lossyScale.x));
-        stump.GetComponent<Renderer>().material.color = new Color(0.35f, 0.02f, 0.02f);
+        stump.GetComponent<Renderer>().sharedMaterial = BloodMaterials.Solid(new Color(0.35f, 0.02f, 0.02f));
     }
 
     private Transform GetBone(HumanBodyBones id)

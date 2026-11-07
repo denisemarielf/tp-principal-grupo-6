@@ -43,6 +43,7 @@ public class SafeZoneUI : MonoBehaviour
     private TMP_Text waitingHostText;
     private bool continueUiBuilt;
     private bool panelStyled;
+    private MatchBoardWidget boardWidget;
 
     private void Awake()
     {
@@ -61,11 +62,19 @@ public class SafeZoneUI : MonoBehaviour
     private void OnEnable()
     {
         SafeZone.LevelCompleted += OnLevelCompleted;
+        MatchStatsService.BoardReady += OnBoardReady;
     }
 
     private void OnDisable()
     {
         SafeZone.LevelCompleted -= OnLevelCompleted;
+        MatchStatsService.BoardReady -= OnBoardReady;
+    }
+
+    private void OnBoardReady()
+    {
+        if (boardWidget != null)
+            boardWidget.Apply(MatchStatsService.Current);
     }
 
     private void Start()
@@ -157,6 +166,7 @@ public class SafeZoneUI : MonoBehaviour
         }
 
         SetupContinueUi();
+        EnsureMatchBoard();
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -230,6 +240,25 @@ public class SafeZoneUI : MonoBehaviour
             continueButton.SetActive(false);
     }
 
+    private void EnsureMatchBoard()
+    {
+        if (levelCompletePanel == null)
+            return;
+
+        if (boardWidget == null)
+        {
+            boardWidget = MatchBoardWidget.Create(
+                levelCompletePanel.transform,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -350f),
+                new Vector2(860f, 340f));
+        }
+
+        boardWidget.Apply(MatchStatsService.Current);
+    }
+
     private static GameObject CreatePanelButton(
         Transform parent,
         string name,
@@ -289,6 +318,10 @@ public class SafeZoneUI : MonoBehaviour
     {
         return SceneManager.GetActiveScene().name == PlayerCarryOver.OfficesSceneName;
     }
+    public static bool IsEasterEggScene()
+    {
+        return SceneManager.GetActiveScene().name == PlayerCarryOver.EasterEggSceneName;
+    }
 
     private static bool HasNextScene()
     {
@@ -305,6 +338,12 @@ public class SafeZoneUI : MonoBehaviour
     public void ContinueToStation()
     {
         ContinueTo(PlayerCarryOver.StationSceneName);
+    }
+
+    // Solo el host. Al terminar Oficinas sigue la cadena hacia la estacion.
+    public void ContinueToEasterEgg()
+    {
+        ContinueTo(PlayerCarryOver.EasterEggSceneName);
     }
 
     private static void ContinueTo(string sceneName)

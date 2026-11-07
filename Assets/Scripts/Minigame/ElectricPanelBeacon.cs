@@ -19,14 +19,24 @@ public class ElectricPanelBeacon : MonoBehaviour
     [SerializeField] private Renderer[] emissiveRenderers;
     [SerializeField] private float emissionBoost = 2f;
 
-    [Header("Chispas y zumbido")]
+    [Header("Chispas")]
     [SerializeField] private ParticleSystem sparks;
     [SerializeField] private Vector2 sparkInterval = new Vector2(1.5f, 4f);
-    [Tooltip("AudioSource en loop con Spatial Blend = 1 (3D) y Max Distance de unos 8-10 m.")]
+
+    [Header("Zumbido / sonidos de chispas")]
+    [Tooltip("AudioSource con Spatial Blend = 1 (3D) y Max Distance de unos 8-10 m. Loop desactivado.")]
     [SerializeField] private AudioSource buzz;
+    [Tooltip("Lista de sonidos; se reproduce uno al azar cada vez. Si está vacía, usa el clip del AudioSource en loop.")]
+    [SerializeField] private AudioClip[] buzzClips;
+    [Tooltip("Pausa aleatoria (segundos) entre un sonido y el siguiente.")]
+    [SerializeField] private Vector2 buzzGap = new Vector2(0.1f, 1.2f);
+    [Tooltip("Variación aleatoria de pitch para que no suene repetitivo.")]
+    [SerializeField] private Vector2 buzzPitchRange = new Vector2(0.9f, 1.1f);
 
     private bool solved;
     private float nextSpark;
+    private float nextBuzz;
+    private int lastClipIndex = -1;
     private MaterialPropertyBlock block;
 
     private void Awake()
@@ -47,12 +57,24 @@ public class ElectricPanelBeacon : MonoBehaviour
         if (sparks != null) sparks.Stop();
         Apply(solvedColor, maxIntensity * 0.6f);
     }
+
     private void Start()
     {
         if (solved || buzz == null) return;
-        buzz.loop = true;
-        if (!buzz.isPlaying) buzz.Play();
+
+        if (HasClips())
+        {
+            buzz.loop = false;
+            nextBuzz = Time.time + Random.Range(0f, buzzGap.y);
+        }
+        else
+        {
+            // Sin lista: comportamiento anterior (un clip en loop)
+            buzz.loop = true;
+            if (!buzz.isPlaying) buzz.Play();
+        }
     }
+
     private void Update()
     {
         if (solved) return;
@@ -66,6 +88,37 @@ public class ElectricPanelBeacon : MonoBehaviour
             sparks.Play();
             nextSpark = Time.time + Random.Range(sparkInterval.x, sparkInterval.y);
         }
+
+        if (buzz != null && HasClips() && Time.time >= nextBuzz)
+            PlayRandomBuzz();
+    }
+
+    private bool HasClips()
+    {
+        return buzzClips != null && buzzClips.Length > 0;
+    }
+
+    private void PlayRandomBuzz()
+    {
+        int index = Random.Range(0, buzzClips.Length);
+
+        // Evita repetir el mismo clip dos veces seguidas
+        if (buzzClips.Length > 1 && index == lastClipIndex)
+            index = (index + 1 + Random.Range(0, buzzClips.Length - 1)) % buzzClips.Length;
+        lastClipIndex = index;
+
+        AudioClip clip = buzzClips[index];
+        if (clip == null)
+        {
+            nextBuzz = Time.time + 0.5f;
+            return;
+        }
+
+        float pitch = Random.Range(buzzPitchRange.x, buzzPitchRange.y);
+        buzz.pitch = pitch;
+        buzz.PlayOneShot(clip);
+
+        nextBuzz = Time.time + (clip.length / pitch) + Random.Range(buzzGap.x, buzzGap.y);
     }
 
     private void Apply(Color color, float intensity)

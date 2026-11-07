@@ -178,6 +178,7 @@ public class EnemyHealth : NetworkBehaviour
 
         currentHealth.Value -= amount;
         ImpactClientRpc();
+        MatchStatsService.NotifyDamage(attacker, amount);
 
         if (attacker != null && ai != null)
             ai.SetAggroTarget(attacker);
@@ -185,6 +186,7 @@ public class EnemyHealth : NetworkBehaviour
         if (currentHealth.Value <= 0f)
         {
             AchievementService.NotifyEnemyKilled(attacker, variant);
+            MatchStatsService.NotifyKill(attacker);
             Die();
         }
         else if (enemyCombat != null)
@@ -348,6 +350,9 @@ public class EnemyHealth : NetworkBehaviour
 
     private GameObject ActiveModel()
     {
+        EnemyAnimation anim = GetComponent<EnemyAnimation>();
+        if (anim != null && anim.UsesRootAnimator && GetComponent<Animator>() != null)
+            return gameObject;
         foreach (Transform child in transform)
         {
             if (!child.gameObject.activeInHierarchy)

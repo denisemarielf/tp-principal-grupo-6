@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using TMPro;
 using System.Collections.Generic;
@@ -196,8 +197,6 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private Color colorRojoSangre = new Color(0.80f, 0.12f, 0.12f, 1f);
     private Color colorRojoHover = new Color(0.95f, 0.25f, 0.15f, 1f);
     private Color colorVerdeZombie = new Color(0.2f, 0.85f, 0.3f, 1f);   // lo usa el lobby
-    private Color colorAmbar = new Color(0.95f, 0.78f, 0.28f, 1f);
-
     private Color colorTexto = new Color(0.93f, 0.94f, 0.92f, 1f);
     private Color colorTextoSuave = new Color(0.68f, 0.71f, 0.70f, 1f);
     private Color colorTextoApagado = new Color(0.52f, 0.55f, 0.54f, 1f);
@@ -665,13 +664,13 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             "Texto_DetallesLobby",
             "ESPERANDO...",
             22f,
-            colorAmbar,
+            colorRojoSangre,
             TextAlignmentOptions.MidlineLeft,
             false,
             1.5f
         );
 
-        FijarAltura(txtDetallesLobby.gameObject, 64f);
+        FijarAltura(txtDetallesLobby.gameObject, 80f);
 
         CrearEspaciador(tarjetaLobby.transform, 4f);
 
@@ -752,59 +751,62 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             "AJUSTES DEL JUEGO"
         );
 
+        // Más arriba que el resto de las tarjetas: esta es la más alta
+        // y si no, VOLVER queda fuera de la pantalla.
         GameObject tarjetaOpciones = CrearTarjeta(
             panelOpciones.transform,
             margenIzquierdo,
-            InicioContenidoY,
+            margenSuperior + 188f,
             anchoTarjeta
         );
 
-        // VOLUMEN
+        VerticalLayoutGroup layoutOpciones = tarjetaOpciones.GetComponent<VerticalLayoutGroup>();
+        layoutOpciones.spacing = 6f;
+        layoutOpciones.padding = new RectOffset(28, 28, 16, 16);
+
         CrearControlSlider(
             tarjetaOpciones.transform,
             "VOLUMEN GENERAL",
-            AudioListener.volume,
-            (val) =>
-            {
-                AudioListener.volume = val;
-            }
+            GameOptions.Master,
+            GameOptions.SetMaster
         );
 
-        // PANTALLA
-        string txtPantalla =
-            Screen.fullScreen
-            ? "PANTALLA: COMPLETA"
-            : "PANTALLA: VENTANA";
-
-        CrearBotonOpcion(
+        CrearControlSlider(
             tarjetaOpciones.transform,
-            txtPantalla,
-            (btnText) =>
-            {
-                bool nuevoEstado = !Screen.fullScreen;
-
-                Screen.fullScreenMode =
-                    nuevoEstado
-                    ? FullScreenMode.ExclusiveFullScreen
-                    : FullScreenMode.Windowed;
-
-                Screen.fullScreen = nuevoEstado;
-
-                btnText.text =
-                    nuevoEstado
-                    ? "PANTALLA: COMPLETA"
-                    : "PANTALLA: VENTANA";
-            }
+            "MUSICA",
+            GameOptions.Music,
+            GameOptions.SetMusic
         );
 
-        // RESOLUCIÓN / CALIDAD / VSYNC / FPS
-        CrearBotonOpcion(tarjetaOpciones.transform, TextoResolucion(), CambiarResolucion);
-        CrearBotonOpcion(tarjetaOpciones.transform, TextoCalidad(), CambiarCalidad);
-        CrearBotonOpcion(tarjetaOpciones.transform, TextoVSync(), CambiarVSync);
-        CrearBotonOpcion(tarjetaOpciones.transform, TextoLimiteFps(), CambiarLimiteFps);
+        CrearControlSlider(
+            tarjetaOpciones.transform,
+            "EFECTOS",
+            GameOptions.Sfx,
+            GameOptions.SetSfx
+        );
 
-        CrearEspaciador(tarjetaOpciones.transform, 6f);
+        CrearControlSlider(
+            tarjetaOpciones.transform,
+            "SENSIBILIDAD",
+            GameOptions.Sensitivity,
+            GameOptions.MinSensitivity,
+            GameOptions.MaxSensitivity,
+            valor => valor.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture),
+            GameOptions.SetSensitivity
+        );
 
+        textoPantalla = CrearBotonOpcion(
+            tarjetaOpciones.transform,
+            TextoPantalla(),
+            CambiarPantalla
+        );
+
+        textoResolucion = CrearBotonOpcion(tarjetaOpciones.transform, TextoResolucion(), CambiarResolucion);
+        textoCalidad = CrearBotonOpcion(tarjetaOpciones.transform, TextoCalidad(), CambiarCalidad);
+        textoVSync = CrearBotonOpcion(tarjetaOpciones.transform, TextoVSync(), CambiarVSync);
+        textoFps = CrearBotonOpcion(tarjetaOpciones.transform, TextoLimiteFps(), CambiarLimiteFps);
+
+        CrearBotonMenu(tarjetaOpciones.transform, "APLICAR", AplicarOpcionesVideo, EstiloBoton.Primario);
         CrearBotonMenu(tarjetaOpciones.transform, "VOLVER AL MENU", CerrarOpciones, EstiloBoton.Secundario);
 
 
@@ -1857,14 +1859,14 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         if (networkManager.IsServer)
         {
             txtDetallesLobby.text =
-                $"CÓDIGO DE SALA: {codigoSala}" +
+                TextoCodigoSala("CÓDIGO DE SALA") +
                 (partidaGuardada != null ? "  |  PARTIDA GUARDADA" : "") + "\n" +
                 TextoDetallesPartida();
         }
         else if (networkManager.IsConnectedClient)
         {
             txtDetallesLobby.text =
-                $"SALA: {codigoSala}\n" +
+                TextoCodigoSala("SALA") + "\n" +
                 "ESPERANDO A QUE EL LÍDER INICIE LA PARTIDA";
         }
     }
@@ -1909,6 +1911,12 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                     Color.gray;
             }
         }
+    }
+
+    // El código de sala va en blanco; el resto de la línea usa el color del texto.
+    private string TextoCodigoSala(string prefijo)
+    {
+        return prefijo + ": <size=150%><color=#FFFFFF>" + codigoSala + "</color></size>";
     }
 
     private string TextoDetallesPartida()
@@ -2238,7 +2246,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         else
         {
             txtDetallesLobby.text =
-                $"CÓDIGO DE SALA: {codigoSala}\n" +
+                TextoCodigoSala("CÓDIGO DE SALA") + "\n" +
                 $"NO SE PUDO CARGAR LA ESCENA '{escenaACargar}'";
         }
     }
@@ -2296,6 +2304,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         OcultarTodosLosPaneles();
 
         panelOpciones.SetActive(true);
+        CargarBorradorVideo();
 
         LimpiarSeleccionUI();
     }
@@ -2342,6 +2351,15 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         panelPrincipal.SetActive(true);
 
         LimpiarSeleccionUI();
+    }
+
+    private void Update()
+    {
+        if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame)
+            return;
+
+        if (panelOpciones != null && panelOpciones.activeSelf)
+            CerrarOpciones();
     }
 
 
@@ -3252,13 +3270,33 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         System.Action<float> alCambiarValor
     )
     {
+        CrearControlSlider(
+            padre,
+            etiqueta,
+            valorInicial,
+            0f,
+            1f,
+            valor => Mathf.RoundToInt(valor * 100f) + "%",
+            alCambiarValor);
+    }
+
+    private void CrearControlSlider(
+        Transform padre,
+        string etiqueta,
+        float valorInicial,
+        float minimo,
+        float maximo,
+        System.Func<float, string> formato,
+        System.Action<float> alCambiarValor
+    )
+    {
         // ---------- contenedor ----------
         GameObject contenedor = new GameObject(
             "Control_Slider_" + etiqueta,
             typeof(RectTransform), typeof(LayoutElement));
         contenedor.transform.SetParent(padre, false);
 
-        FijarAltura(contenedor, 66f);
+        FijarAltura(contenedor, 56f);
 
         // ---------- etiqueta (izquierda) ----------
         TextMeshProUGUI txtEtiqueta = CrearTexto(
@@ -3279,11 +3317,11 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         rtEt.anchoredPosition = new Vector2(0f, 0f);
         rtEt.sizeDelta = new Vector2(-90f, 30f);
 
-        // ---------- valor en % (derecha) ----------
+        // ---------- valor (derecha) ----------
         TextMeshProUGUI txtValor = CrearTexto(
             contenedor.transform,
             "Valor",
-            Mathf.RoundToInt(valorInicial * 100f) + "%",
+            formato(valorInicial),
             24f,
             colorRojoHover,
             TextAlignmentOptions.MidlineRight,
@@ -3305,6 +3343,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         sliderObj.transform.SetParent(contenedor.transform, false);
 
         Slider slider = sliderObj.GetComponent<Slider>();
+        slider.minValue = minimo;
+        slider.maxValue = maximo;
         slider.value = valorInicial;
 
         EstilizarSlider(sliderObj);
@@ -3312,7 +3352,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         slider.onValueChanged.AddListener(
             (v) =>
             {
-                txtValor.text = Mathf.RoundToInt(v * 100f) + "%";
+                txtValor.text = formato(v);
                 alCambiarValor?.Invoke(v);
             }
         );
@@ -3388,13 +3428,22 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     }
 
     // ========================================================
-    // OPCIONES DE VIDEO (sin persistencia)
+    // OPCIONES DE VIDEO
     // ========================================================
     private List<Resolution> resolucionesDisponibles = new List<Resolution>();
     private int indiceResolucion;
+    private bool pantallaCompletaPendiente;
+    private int calidadPendiente;
+    private int vSyncPendiente;
 
     private readonly int[] limitesFps = { 30, 60, 120, 144,250, -1 }; // -1 = ilimitado
     private int indiceLimiteFps;
+
+    private TextMeshProUGUI textoPantalla;
+    private TextMeshProUGUI textoResolucion;
+    private TextMeshProUGUI textoCalidad;
+    private TextMeshProUGUI textoVSync;
+    private TextMeshProUGUI textoFps;
 
     private void InicializarOpcionesVideo()
     {
@@ -3411,28 +3460,61 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         if (resolucionesDisponibles.Count == 0)
             resolucionesDisponibles.Add(Screen.currentResolution);
 
-        // Buscar la resolución actual
+        CargarBorradorVideo();
+    }
+
+    // Lo que se ve en los botones hasta tocar APLICAR. Volver descarta esto.
+    private void CargarBorradorVideo()
+    {
+        pantallaCompletaPendiente = GameOptions.FullScreen;
+        calidadPendiente = GameOptions.Quality;
+        vSyncPendiente = GameOptions.VSync > 0 ? 1 : 0;
+
+        int ancho = GameOptions.Width > 0 ? GameOptions.Width : Screen.width;
+        int alto = GameOptions.Height > 0 ? GameOptions.Height : Screen.height;
         indiceResolucion = resolucionesDisponibles.Count - 1;
         for (int i = 0; i < resolucionesDisponibles.Count; i++)
         {
-            if (resolucionesDisponibles[i].width == Screen.width &&
-                resolucionesDisponibles[i].height == Screen.height)
+            if (resolucionesDisponibles[i].width == ancho &&
+                resolucionesDisponibles[i].height == alto)
             {
                 indiceResolucion = i;
                 break;
             }
         }
 
-        // Buscar el límite de FPS actual
         indiceLimiteFps = limitesFps.Length - 1;
         for (int i = 0; i < limitesFps.Length; i++)
         {
-            if (limitesFps[i] == Application.targetFrameRate)
+            if (limitesFps[i] == GameOptions.FrameRate)
             {
                 indiceLimiteFps = i;
                 break;
             }
         }
+
+        RefrescarTextosVideo();
+    }
+
+    private void RefrescarTextosVideo()
+    {
+        if (textoPantalla != null)
+            textoPantalla.text = TextoPantalla();
+        if (textoResolucion != null)
+            textoResolucion.text = TextoResolucion();
+        if (textoCalidad != null)
+            textoCalidad.text = TextoCalidad();
+        if (textoVSync != null)
+            textoVSync.text = TextoVSync();
+        if (textoFps != null)
+            textoFps.text = TextoLimiteFps();
+    }
+
+    private string TextoPantalla()
+    {
+        return pantallaCompletaPendiente
+            ? "PANTALLA: COMPLETA"
+            : "PANTALLA: VENTANA";
     }
 
     private string TextoResolucion()
@@ -3443,13 +3525,17 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     private string TextoCalidad()
     {
-        string nombre = QualitySettings.names[QualitySettings.GetQualityLevel()];
-        return "GRÁFICOS: " + nombre.ToUpper();
+        string[] nombres = QualitySettings.names;
+        if (nombres == null || nombres.Length == 0)
+            return "GRÁFICOS";
+
+        int nivel = Mathf.Clamp(calidadPendiente, 0, nombres.Length - 1);
+        return "GRÁFICOS: " + nombres[nivel].ToUpper();
     }
 
     private string TextoVSync()
     {
-        return QualitySettings.vSyncCount > 0
+        return vSyncPendiente > 0
             ? "VSYNC: ACTIVADO"
             : "VSYNC: DESACTIVADO";
     }
@@ -3460,32 +3546,50 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         return fps < 0 ? "LÍMITE FPS: ILIMITADO" : "LÍMITE FPS: " + fps;
     }
 
+    private void CambiarPantalla(TMPro.TMP_Text btnText)
+    {
+        pantallaCompletaPendiente = !pantallaCompletaPendiente;
+        btnText.text = TextoPantalla();
+    }
+
     private void CambiarResolucion(TMPro.TMP_Text btnText)
     {
         indiceResolucion = (indiceResolucion + 1) % resolucionesDisponibles.Count;
-        Resolution r = resolucionesDisponibles[indiceResolucion];
-        Screen.SetResolution(r.width, r.height, Screen.fullScreenMode);
         btnText.text = TextoResolucion();
     }
 
     private void CambiarCalidad(TMPro.TMP_Text btnText)
     {
-        int nivel = (QualitySettings.GetQualityLevel() + 1) % QualitySettings.names.Length;
-        QualitySettings.SetQualityLevel(nivel, true);
+        string[] nombres = QualitySettings.names;
+        if (nombres == null || nombres.Length == 0)
+            return;
+
+        calidadPendiente = (calidadPendiente + 1) % nombres.Length;
         btnText.text = TextoCalidad();
     }
 
     private void CambiarVSync(TMPro.TMP_Text btnText)
     {
-        QualitySettings.vSyncCount = QualitySettings.vSyncCount > 0 ? 0 : 1;
+        vSyncPendiente = vSyncPendiente > 0 ? 0 : 1;
         btnText.text = TextoVSync();
     }
 
     private void CambiarLimiteFps(TMPro.TMP_Text btnText)
     {
         indiceLimiteFps = (indiceLimiteFps + 1) % limitesFps.Length;
-        Application.targetFrameRate = limitesFps[indiceLimiteFps];
         btnText.text = TextoLimiteFps();
+    }
+
+    private void AplicarOpcionesVideo()
+    {
+        Resolution r = resolucionesDisponibles[indiceResolucion];
+        GameOptions.CommitVideo(
+            pantallaCompletaPendiente,
+            r.width,
+            r.height,
+            calidadPendiente,
+            vSyncPendiente,
+            limitesFps[indiceLimiteFps]);
     }
 
     // Vista previa 3D del personaje: a la DERECHA de la pantalla,

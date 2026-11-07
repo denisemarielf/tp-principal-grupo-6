@@ -146,23 +146,7 @@ public static class BloodSplatter
         if (material != null)
             return material;
 
-        Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
-        if (shader == null)
-            shader = Shader.Find("Particles/Standard Unlit");
-
-        material = new Material(shader);
-        material.mainTexture = DropletAtlas();
-        if (material.HasProperty("_BaseMap"))
-            material.SetTexture("_BaseMap", atlasTexture);
-        if (material.HasProperty("_BaseColor"))
-            material.SetColor("_BaseColor", Color.white);
-        if (material.HasProperty("_Surface"))
-            material.SetFloat("_Surface", 1f);
-        if (material.HasProperty("_ZWrite"))
-            material.SetFloat("_ZWrite", 0f);
-        material.SetOverrideTag("RenderType", "Transparent");
-        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-        material.renderQueue = (int)RenderQueue.Transparent;
+        material = BloodMaterials.Textured(DropletAtlas());
         return material;
     }
 

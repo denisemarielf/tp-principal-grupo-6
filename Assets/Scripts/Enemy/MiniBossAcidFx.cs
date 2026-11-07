@@ -6,7 +6,7 @@ public static class MiniBossAcidFx
     private static Texture2D softCircle;
     private static Material material;
 
-    public static void Spray(Transform boss, Vector3 localMouth, float duration, float range, float halfAngle)
+    public static void Spray(Transform boss, Vector3 localMouth, float duration, float range, float halfAngle, LayerMask blockMask)
     {
         if (boss == null)
             return;
@@ -65,6 +65,18 @@ public static class MiniBossAcidFx
         ParticleSystem.SizeOverLifetimeModule size = ps.sizeOverLifetime;
         size.enabled = true;
         size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 1.6f));
+
+        // Las particulas mueren al chocar con paredes/suelo (visual coherente con el hitbox).
+        ParticleSystem.CollisionModule collision = ps.collision;
+        collision.enabled = true;
+        collision.type = ParticleSystemCollisionType.World;
+        collision.mode = ParticleSystemCollisionMode.Collision3D;
+        collision.collidesWith = blockMask;
+        collision.dampen = 1f;
+        collision.bounce = 0f;
+        collision.lifetimeLoss = 1f;       // muere al primer choque
+        collision.radiusScale = 0.5f;
+        collision.sendCollisionMessages = false;
 
         ParticleSystemRenderer rendererComponent = go.GetComponent<ParticleSystemRenderer>();
         rendererComponent.renderMode = ParticleSystemRenderMode.Billboard;

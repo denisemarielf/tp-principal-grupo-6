@@ -3466,6 +3466,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::AIDirector
   enemyPrefab: {fileID: 100001, guid: c4e8a1b2d3f5476890abcdef12345005, type: 3}
+  miniBossPrefab: {fileID: 3852245103054994289, guid: 8b833f20ed3bb534a894632b92b4bb9e, type: 3}
+  maxMiniBossesPerWave: 2
+  maxMiniBossesAlive: 3
+  miniBossChance: 0.079
   normalWeight: 0.7
   fragilWeight: 0.1
   resistenteWeight: 0.2
@@ -3502,6 +3506,7 @@ MonoBehaviour:
   eyeHeight: 1.6
   attemptsPerSpawn: 12
   markerBias: 0.7
+  markersOnly: 0
   occlusionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -45273,6 +45278,8 @@ MonoBehaviour:
   checkInterval: 0.2
   minRescued: 0
   pointsPerNpc: 100
+  startLocked: 1
+  unlockVisuals: []
 --- !u!65 &1780346008
 BoxCollider:
   m_ObjectHideFlags: 0
