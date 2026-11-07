@@ -197,6 +197,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private Color colorRojoSangre = new Color(0.80f, 0.12f, 0.12f, 1f);
     private Color colorRojoHover = new Color(0.95f, 0.25f, 0.15f, 1f);
     private Color colorVerdeZombie = new Color(0.2f, 0.85f, 0.3f, 1f);   // lo usa el lobby
+    private Color colorAmbar = new Color(0.95f, 0.78f, 0.28f, 1f);
     private Color colorTexto = new Color(0.93f, 0.94f, 0.92f, 1f);
     private Color colorTextoSuave = new Color(0.68f, 0.71f, 0.70f, 1f);
     private Color colorTextoApagado = new Color(0.52f, 0.55f, 0.54f, 1f);
