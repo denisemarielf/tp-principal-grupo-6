@@ -92,6 +92,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private GameObject panelPartidasGuardadas;
 
     private GameObject panelCreditos;
+    private GameObject panelTutorial;
 
 
     // ============================================================
@@ -407,6 +408,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         );
 
         CrearBotonMenu(colPrincipal.transform, "JUGAR", AbrirSeleccionRed, EstiloBoton.Primario, true);
+        CrearBotonMenu(colPrincipal.transform, "TUTORIAL", AbrirTutorial, EstiloBoton.Normal, true);
         CrearBotonMenu(colPrincipal.transform, "LOGROS", AbrirLogros, EstiloBoton.Normal, true);
         CrearBotonMenu(colPrincipal.transform, "OPCIONES", AbrirOpciones, EstiloBoton.Normal, true);
         CrearBotonMenu(colPrincipal.transform, "CRÉDITOS", AbrirCreditos, EstiloBoton.Normal, true);   // NUEVO
@@ -950,6 +952,41 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
 
         // ========================================================
+        // 15. TUTORIAL
+        // ========================================================
+
+        panelTutorial = CrearPanelContenedor(canvasObj, "Panel_Tutorial");
+
+        CrearTitulo(
+            panelTutorial.transform,
+            "TUTORIAL",
+            "CONTROLES BÁSICOS"
+        );
+
+        const float altoMarcoTutorial = 600f;
+
+        GameObject marcoTutorial = CrearMarcoFijo(
+            panelTutorial.transform,
+            margenIzquierdo,
+            InicioContenidoY,
+            1500f,
+            altoMarcoTutorial
+        );
+
+        marcoTutorial.AddComponent<TutorialUI>().Build(ObtenerFuenteTexto(), escalaFuente);
+
+        GameObject colVolverTutorial = CrearColumna(
+            panelTutorial.transform,
+            margenIzquierdo,
+            InicioContenidoY + altoMarcoTutorial + 24f,
+            520f,
+            8f
+        );
+
+        CrearBotonMenu(colVolverTutorial.transform, "VOLVER", CerrarTutorial, EstiloBoton.Secundario);
+
+
+        // ========================================================
         // MOSTRAR MENÚ PRINCIPAL
         // ========================================================
 
@@ -1464,6 +1501,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         if (panelPartidasGuardadas)
             panelPartidasGuardadas.SetActive(false);
+
+        if (panelTutorial)
+            panelTutorial.SetActive(false);
     }
 
 
@@ -2307,6 +2347,20 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         panelOpciones.SetActive(true);
         CargarBorradorVideo();
 
+        LimpiarSeleccionUI();
+    }
+
+    public void AbrirTutorial()
+    {
+        OcultarTodosLosPaneles();
+        panelTutorial.SetActive(true);
+        LimpiarSeleccionUI();
+    }
+
+    public void CerrarTutorial()
+    {
+        OcultarTodosLosPaneles();
+        panelPrincipal.SetActive(true);
         LimpiarSeleccionUI();
     }
 
