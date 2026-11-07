@@ -318,6 +318,10 @@ public class SafeZoneUI : MonoBehaviour
     {
         return SceneManager.GetActiveScene().name == PlayerCarryOver.OfficesSceneName;
     }
+    public static bool IsEasterEggScene()
+    {
+        return SceneManager.GetActiveScene().name == PlayerCarryOver.EasterEggSceneName;
+    }
 
     private static bool HasNextScene()
     {
@@ -334,6 +338,12 @@ public class SafeZoneUI : MonoBehaviour
     public void ContinueToStation()
     {
         ContinueTo(PlayerCarryOver.StationSceneName);
+    }
+
+    // Solo el host. Al terminar Oficinas sigue la cadena hacia la estacion.
+    public void ContinueToEasterEgg()
+    {
+        ContinueTo(PlayerCarryOver.EasterEggSceneName);
     }
 
     private static void ContinueTo(string sceneName)

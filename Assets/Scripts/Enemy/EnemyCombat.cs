@@ -35,6 +35,7 @@ public class EnemyCombat : NetworkBehaviour
     public bool IsKnockedBack => Time.time < knockbackUntil;
     public bool IsBusy => IsStunned || IsCommitted || IsKnockedBack;
 
+
     [Header("Frenado")]
     public float hitSlowMultiplier = 1.7f;
     public float hitSlowDuration = 1.25f;
@@ -44,6 +45,11 @@ public class EnemyCombat : NetworkBehaviour
     private EnemyHealth enemyHealth;
     private EnemyAnimation enemyAnimation;
     private Transform currentTarget;
+    [Header("Dano por tiempo (si el clip no tiene evento)")]
+    [Tooltip("0 = solo por evento. Ej: 0.45 = pega al 45% del clip.")]
+    [Range(0f, 1f)] public float timedDamageAt = 0f;
+    private float attackStartTime, attackLength;
+    private bool timedDamageDone;
 
     private void Awake()
     {
@@ -152,7 +158,12 @@ public class EnemyCombat : NetworkBehaviour
 
         if (IsCommitted)
         {
-            // Termina el golpe completo aunque el jugador se haya movido: no apuntar ni cancelar.
+            if (timedDamageAt > 0f && !biteCycle && !timedDamageDone
+                && Time.time >= attackStartTime + attackLength * timedDamageAt)
+            {
+                timedDamageDone = true;
+                DealDamage();
+            }
             navMeshAgent.isStopped = true;
             return;
         }
@@ -186,6 +197,8 @@ public class EnemyCombat : NetworkBehaviour
             }
 
             attackEndTime = Time.time + duration;
+            attackLength = duration;
+            timedDamageDone = false;
         }
         else
         {

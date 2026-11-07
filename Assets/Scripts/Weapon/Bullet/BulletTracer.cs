@@ -19,10 +19,10 @@ public class BulletTracer
     {
         for (int i = 0; i < No_Of_Tracers; ++i)
         {
-            // Instanciamos SIN padre y reparenteamos después: Unity no permite
+            // Instanciamos SIN padre y reparenteamos despuï¿½s: Unity no permite
             // crear un objeto ya parentado a algo que vive en la escena
             // persistente (DontDestroyOnLoad, como Player) en la misma llamada
-            // a Instantiate, pero SetParent posterior sí es válido.
+            // a Instantiate, pero SetParent posterior sï¿½ es vï¿½lido.
             GameObject new_Tracer = UnityEngine.Object.Instantiate(bullet_Tracer_prefab);
             new_Tracer.transform.SetParent(bullet_Tracer_Holder, false);
             bullet_Tracer_List.Add(new_Tracer);
@@ -31,18 +31,19 @@ public class BulletTracer
     }
 
 
-    public void PlayTracer(Vector3 start_pos, Vector3 end_pos)
-    {
-        GameObject current_Trace = GetPoolBulletTracers(start_pos);
-        if (current_Trace == null) return;
-        current_Trace.SetActive(true);
-        BulletTracerMovement tracer_Movement = current_Trace.GetComponent<BulletTracerMovement>();
-        if (tracer_Movement != null)
-        {
-            tracer_Movement.Initialized(end_pos, tracer_Speed, tracer_Life_Time);
-        }
+  public void PlayTracer(Vector3 start_pos, Vector3 end_pos)
+{
+    GameObject current_Trace = GetPoolBulletTracers(start_pos);
+    if (current_Trace == null) return;
 
-    }
+    // Fuera del arma mientras vuela: la estela queda fija en el mundo
+    current_Trace.transform.SetParent(null, true);
+    current_Trace.SetActive(true);
+
+    BulletTracerMovement tracer_Movement = current_Trace.GetComponent<BulletTracerMovement>();
+    if (tracer_Movement != null)
+        tracer_Movement.Initialized(end_pos, tracer_Speed, tracer_Life_Time, bullet_Tracer_Holder);
+}
     private GameObject GetPoolBulletTracers(Vector3 emit_Pos)
     {
         int index = UnityEngine.Random.Range(0, bullet_Tracer_List.Count);
