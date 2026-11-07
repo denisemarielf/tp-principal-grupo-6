@@ -88,6 +88,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private GameObject panelUnirseSala;
     private GameObject panelLobby;
     private GameObject panelLogros;
+    private GameObject panelTipoPartida;
+    private GameObject panelPartidasGuardadas;
 
     private GameObject panelCreditos;
 
@@ -149,6 +151,36 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // Descripción del objetivo del mapa seleccionado
     private TextMeshProUGUI txtObjetivoMapa;
 
+    // Partida guardada elegida para continuar (null = partida nueva).
+    private GameSaveData partidaGuardada;
+    private Button btnContinuarPartida;
+    private Button btnContinuarElegida;
+    private SavedGameInfo partidaElegida;
+    private bool continuaEnSiguienteNivel;
+    private SavedGamesListUI listaPartidasGuardadas;
+    private TextMeshProUGUI txtAvisoPartidaGuardada;
+
+    private static readonly string[] NombresMapas =
+    {
+        "SUBURBIO",
+        "COMPLEJO DE OFICINAS",
+        "ESTACION DE TREN"
+    };
+
+    private static readonly string[] TextosBotonMapa =
+    {
+        "MAPA: SUBURBIO",
+        "MAPA: COMPLEJO DE OFICINAS",
+        "MAPA: ESTACION DE TREN"
+    };
+
+    private static readonly string[] TextosBotonDificultad =
+    {
+        "DIFICULTAD: FÁCIL",
+        "DIFICULTAD: NORMAL",
+        "DIFICULTAD: DIFÍCIL"
+    };
+
 
     // ============================================================
     // AUDIO
@@ -165,6 +197,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     private Color colorRojoSangre = new Color(0.80f, 0.12f, 0.12f, 1f);
     private Color colorRojoHover = new Color(0.95f, 0.25f, 0.15f, 1f);
     private Color colorVerdeZombie = new Color(0.2f, 0.85f, 0.3f, 1f);   // lo usa el lobby
+    private Color colorAmbar = new Color(0.95f, 0.78f, 0.28f, 1f);
     private Color colorTexto = new Color(0.93f, 0.94f, 0.92f, 1f);
     private Color colorTextoSuave = new Color(0.68f, 0.71f, 0.70f, 1f);
     private Color colorTextoApagado = new Color(0.52f, 0.55f, 0.54f, 1f);
@@ -400,7 +433,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             8f
         );
 
-        CrearBotonMenu(colRed.transform, "CREAR SALA", AbrirCrearSala, EstiloBoton.Primario, true);
+        CrearBotonMenu(colRed.transform, "CREAR SALA", AbrirTipoPartida, EstiloBoton.Primario, true);
         CrearBotonMenu(colRed.transform, "UNIRSE A SALA", AbrirUnirseSala, EstiloBoton.Normal, true);
         CrearBotonMenu(colRed.transform, "VOLVER", VolverAMenuPrincipal, EstiloBoton.Secundario, true);
 
@@ -423,6 +456,21 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             InicioContenidoY,
             anchoTarjeta
         );
+
+        txtAvisoPartidaGuardada = CrearTexto(
+            tarjetaCrear.transform,
+            "Texto_AvisoPartidaGuardada",
+            "",
+            18f,
+            colorAmbar,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            1.5f
+        );
+
+        txtAvisoPartidaGuardada.textWrappingMode = TextWrappingModes.Normal;
+        FijarAltura(txtAvisoPartidaGuardada.gameObject, 150f);
+        txtAvisoPartidaGuardada.gameObject.SetActive(false);
 
         inputNombreHost = CrearCampoTexto(
             tarjetaCrear.transform,
@@ -516,7 +564,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         CrearEspaciador(tarjetaCrear.transform, 6f);
 
         CrearBotonMenu(tarjetaCrear.transform, "CONFIRMAR Y CREAR", ConfirmarCrearSala, EstiloBoton.Primario);
-        CrearBotonMenu(tarjetaCrear.transform, "VOLVER", AbrirSeleccionRed, EstiloBoton.Secundario);
+        CrearBotonMenu(tarjetaCrear.transform, "VOLVER", VolverDeCrearSala, EstiloBoton.Secundario);
 
 
         // ========================================================
@@ -830,6 +878,75 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         CrearBotonMenu(colVolverCreditos.transform, "VOLVER", CerrarCreditos, EstiloBoton.Secundario);
 
+
+
+        // ========================================================
+        // 13. NUEVA PARTIDA / CONTINUAR PARTIDA
+        // ========================================================
+
+        panelTipoPartida = CrearPanelContenedor(canvasObj, "Panel_TipoPartida");
+
+        CrearTitulo(
+            panelTipoPartida.transform,
+            "CREAR SALA",
+            "ELEGÍ CÓMO EMPEZAR"
+        );
+
+        GameObject colTipoPartida = CrearColumna(
+            panelTipoPartida.transform,
+            margenIzquierdo,
+            InicioContenidoY + 10f,
+            520f,
+            8f
+        );
+
+        CrearBotonMenu(colTipoPartida.transform, "NUEVA PARTIDA", AbrirNuevaPartida, EstiloBoton.Primario, true);
+        btnContinuarPartida = CrearBotonMenu(colTipoPartida.transform, "CONTINUAR PARTIDA", AbrirPartidasGuardadas, EstiloBoton.Normal, true);
+        CrearBotonMenu(colTipoPartida.transform, "VOLVER", AbrirSeleccionRed, EstiloBoton.Secundario, true);
+
+
+        // ========================================================
+        // 14. PARTIDAS GUARDADAS
+        // ========================================================
+
+        panelPartidasGuardadas = CrearPanelContenedor(canvasObj, "Panel_PartidasGuardadas");
+
+        CrearTitulo(
+            panelPartidasGuardadas.transform,
+            "CONTINUAR PARTIDA",
+            "ELEGÍ UNA PARTIDA GUARDADA"
+        );
+
+        const float altoMarcoPartidas = 480f;
+
+        GameObject marcoPartidas = CrearMarcoFijo(
+            panelPartidasGuardadas.transform,
+            margenIzquierdo,
+            InicioContenidoY,
+            1000f,
+            altoMarcoPartidas
+        );
+
+        listaPartidasGuardadas = marcoPartidas.AddComponent<SavedGamesListUI>();
+        listaPartidasGuardadas.Build(
+            ObtenerFuenteTexto(),
+            escalaFuente,
+            NombreMapaDeEscena,
+            ElegirPartidaGuardada,
+            () => ReproducirSFX(sfxHover)
+        );
+
+        GameObject colVolverPartidas = CrearColumna(
+            panelPartidasGuardadas.transform,
+            margenIzquierdo,
+            InicioContenidoY + altoMarcoPartidas + 24f,
+            520f,
+            8f
+        );
+
+        btnContinuarElegida = CrearBotonMenu(colVolverPartidas.transform, "CONTINUAR", ContinuarPartidaElegida, EstiloBoton.Primario);
+        btnContinuarElegida.interactable = false;
+        CrearBotonMenu(colVolverPartidas.transform, "VOLVER", AbrirTipoPartida, EstiloBoton.Secundario);
 
 
         // ========================================================
@@ -1341,6 +1458,12 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         if (panelLogros)
             panelLogros.SetActive(false);
+
+        if (panelTipoPartida)
+            panelTipoPartida.SetActive(false);
+
+        if (panelPartidasGuardadas)
+            panelPartidasGuardadas.SetActive(false);
     }
 
 
@@ -1374,6 +1497,47 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     }
 
 
+    public void AbrirTipoPartida()
+    {
+        LimpiarPartidaGuardada();
+
+        OcultarTodosLosPaneles();
+
+        btnContinuarPartida.interactable = SaveSystem.AnySaveFile();
+
+        panelTipoPartida.SetActive(true);
+
+        LimpiarSeleccionUI();
+    }
+
+
+    public void AbrirNuevaPartida()
+    {
+        LimpiarPartidaGuardada();
+
+        AbrirCrearSala();
+    }
+
+
+    public void AbrirPartidasGuardadas()
+    {
+        OcultarTodosLosPaneles();
+
+        panelPartidasGuardadas.SetActive(true);
+
+        LimpiarSeleccionUI();
+    }
+
+
+    public void VolverDeCrearSala()
+    {
+        if (partidaGuardada != null)
+            AbrirPartidasGuardadas();
+        else
+            AbrirTipoPartida();
+    }
+
+
     public void AbrirUnirseSala()
     {
         OcultarTodosLosPaneles();
@@ -1381,6 +1545,138 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         panelUnirseSala.SetActive(true);
 
         LimpiarSeleccionUI();
+    }
+
+
+    // ============================================================
+    // CONTINUAR PARTIDA GUARDADA (HOST)
+    // ============================================================
+
+    private int IndiceMapaDeEscena(string escena)
+    {
+        if (escena == nombreEscenaMapa1) return 0;
+        if (escena == nombreEscenaMapa2) return 1;
+        if (escena == nombreEscenaMapa3) return 2;
+
+        return -1;
+    }
+
+
+    private string NombreMapaDeEscena(string escena)
+    {
+        int indice = IndiceMapaDeEscena(escena);
+
+        return indice >= 0 ? NombresMapas[indice] : null;
+    }
+
+
+    // Elegir una fila solo la marca: la partida se carga al apretar CONTINUAR.
+    private void ElegirPartidaGuardada(SavedGameInfo info)
+    {
+        partidaElegida = info;
+
+        if (btnContinuarElegida != null)
+            btnContinuarElegida.interactable = info != null;
+
+        if (info != null)
+            ReproducirSFX(sfxClick);
+    }
+
+
+    private void ContinuarPartidaElegida()
+    {
+        if (partidaElegida == null)
+            return;
+
+        if (!SaveSystem.TryRead(partidaElegida.Path, out GameSaveData datos, out string error))
+        {
+            Debug.LogWarning("GeneradorMenuPrincipal: " + error);
+
+            listaPartidasGuardadas.Refresh(
+                "NO SE PUDO LEER LA PARTIDA. EL ARCHIVO ESTÁ DAÑADO O YA NO EXISTE.");
+
+            return;
+        }
+
+        int mapa = IndiceMapaDeEscena(datos.sceneName);
+
+        if (mapa < 0)
+        {
+            listaPartidasGuardadas.Refresh("EL MAPA DE ESTA PARTIDA YA NO ESTÁ DISPONIBLE.");
+
+            return;
+        }
+
+        int mapaGuardado = mapa;
+        continuaEnSiguienteNivel = false;
+
+        if (datos.levelCompleted)
+        {
+            int siguiente = IndiceMapaDeEscena(PlayerCarryOver.NextSceneAfter(datos.sceneName));
+
+            if (siguiente >= 0)
+            {
+                mapa = siguiente;
+                continuaEnSiguienteNivel = true;
+            }
+        }
+
+        partidaGuardada = datos;
+        mapaSeleccionado = mapa;
+        dificultadSeleccionada = Mathf.Clamp(datos.difficulty, 0, TextosBotonDificultad.Length - 1);
+
+        txtBtnMapa.text = TextosBotonMapa[mapaSeleccionado];
+        txtBtnDificultad.text = TextosBotonDificultad[dificultadSeleccionada];
+        ActualizarObjetivoMapa();
+        BloquearSelectoresPartida(true);
+
+        PlayerSaveData host = datos.players.Find(jugador => jugador.isHost) ?? datos.players[0];
+        inputNombreHost.text = host.playerName;
+
+        List<string> nombres = new List<string>();
+
+        foreach (PlayerSaveData jugador in datos.players)
+            nombres.Add(jugador.playerName);
+
+        string encabezado = continuaEnSiguienteNivel
+            ? $"NIVEL COMPLETADO: {NombresMapas[mapaGuardado]}\nCONTINÚA EN: {NombresMapas[mapa]}\n"
+            : $"PARTIDA GUARDADA: {NombresMapas[mapa]}  |  MODO {SaveSystem.ModeLabel(datos.mode)}\n";
+
+        txtAvisoPartidaGuardada.text =
+            encabezado +
+            "SOLO RECUPERAN SU ESTADO LOS JUGADORES CON EL MISMO NOMBRE: " +
+            string.Join(", ", nombres).ToUpperInvariant();
+
+        txtAvisoPartidaGuardada.gameObject.SetActive(true);
+
+        AbrirCrearSala();
+    }
+
+
+    private void LimpiarPartidaGuardada()
+    {
+        if (partidaGuardada == null)
+            return;
+
+        partidaGuardada = null;
+        continuaEnSiguienteNivel = false;
+        mapaSeleccionado = 0;
+        dificultadSeleccionada = 1;
+
+        txtBtnMapa.text = TextosBotonMapa[mapaSeleccionado];
+        txtBtnDificultad.text = TextosBotonDificultad[dificultadSeleccionada];
+        ActualizarObjetivoMapa();
+        BloquearSelectoresPartida(false);
+
+        txtAvisoPartidaGuardada.gameObject.SetActive(false);
+    }
+
+
+    // Al continuar una partida el mapa y la dificultad no se pueden cambiar.
+    private void BloquearSelectoresPartida(bool bloquear)
+    {
+        txtBtnMapa.GetComponentInParent<Button>(true).interactable = !bloquear;
+        txtBtnDificultad.GetComponentInParent<Button>(true).interactable = !bloquear;
     }
 
 
@@ -1564,7 +1860,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         if (networkManager.IsServer)
         {
             txtDetallesLobby.text =
-                TextoCodigoSala("CÓDIGO DE SALA") + "\n" +
+                TextoCodigoSala("CÓDIGO DE SALA") +
+                (partidaGuardada != null ? "  |  PARTIDA GUARDADA" : "") + "\n" +
                 TextoDetallesPartida();
         }
         else if (networkManager.IsConnectedClient)
@@ -1587,13 +1884,24 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                     ? nombresLobbyActuales[i]
                     : $"Jugador {i + 1}";
 
+                bool recupera =
+                    partidaGuardada != null &&
+                    SavedGameLoader.FindSavedPlayer(partidaGuardada, nombre) != null;
+
+                string marca =
+                    partidaGuardada == null
+                    ? ""
+                    : (recupera ? "  (RECUPERA ESTADO)" : "  (EMPIEZA DE CERO)");
+
                 listaRanurasJugadores[i].text =
                     (i == 0)
-                    ? $"1. {nombre} (LÍDER)"
-                    : $"{i + 1}. {nombre}";
+                    ? $"1. {nombre} (LÍDER){marca}"
+                    : $"{i + 1}. {nombre}{marca}";
 
                 listaRanurasJugadores[i].color =
-                    colorVerdeZombie;
+                    (partidaGuardada != null && !recupera)
+                    ? colorAmbar
+                    : colorVerdeZombie;
             }
             else
             {
@@ -1732,6 +2040,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         nm.CustomMessagingManager.RegisterNamedMessageHandler(
             MsgLista, AlRecibirListaLobby);
 
+        SavedGameLoader.RegisterHandlers(nm);
+
         mensajesRegistrados = true;
     }
 
@@ -1859,6 +2169,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         nombresLobby.Clear();
         nombresLobbyActuales.Clear();
         mensajesRegistrados = false;
+        PlayerCarryOver.Clear();
+        SavedGameLoader.Clear();
         DesuscribirDeRed();
 
         NetworkManager networkManager = NetworkManager.Singleton;
@@ -1926,6 +2238,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             escenaACargar =
                 nombreEscenaMapa3;
 
+        PrepararSesionDePartida();
+
         if (GameSessionManager.StartGame(escenaACargar))
         {
             btnIniciarPartida.interactable = false;
@@ -1936,6 +2250,40 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 TextoCodigoSala("CÓDIGO DE SALA") + "\n" +
                 $"NO SE PUDO CARGAR LA ESCENA '{escenaACargar}'";
         }
+    }
+
+
+    // Partida nueva: arranca limpia. Partida guardada: deja listo el estado de
+    // los jugadores cuyo nombre coincide con el de la partida.
+    private void PrepararSesionDePartida()
+    {
+        if (partidaGuardada == null)
+        {
+            PlayerCarryOver.Clear();
+            SavedGameLoader.Clear();
+            CurrentGame.StartNew(dificultadSeleccionada);
+
+            return;
+        }
+
+        CurrentGame.Continue(partidaGuardada);
+
+        List<KeyValuePair<ulong, string>> jugadores =
+            new List<KeyValuePair<ulong, string>>();
+
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        {
+            string nombre;
+
+            if (clientId == NetworkManager.ServerClientId)
+                nombre = NombrePlayer.NombreJugador;
+            else
+                nombresLobby.TryGetValue(clientId, out nombre);
+
+            jugadores.Add(new KeyValuePair<ulong, string>(clientId, nombre ?? ""));
+        }
+
+        SavedGameLoader.Stage(partidaGuardada, jugadores, continuaEnSiguienteNivel);
     }
 
 

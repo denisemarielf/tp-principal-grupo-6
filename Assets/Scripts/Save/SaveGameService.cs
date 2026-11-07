@@ -225,7 +225,7 @@ public class SaveGameService : MonoBehaviour
             yield break;
         }
 
-        GameSaveData data = BuildSaveData(manager, out string missing);
+        GameSaveData data = BuildSaveData(manager, automatic, out string missing);
         saving = false;
 
         if (data == null)
@@ -240,19 +240,23 @@ public class SaveGameService : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"SaveGameService: partida guardada ({data.players.Count} jugadores) en {SaveSystem.DefaultPath}");
+        Debug.Log($"SaveGameService: partida guardada ({data.players.Count} jugadores) en {SaveSystem.PathFor(data.gameId)}");
         onDone?.Invoke(true, "Partida guardada.");
     }
 
     // Arma el guardado con el estado actual de todos los jugadores. Devuelve null si falta la municion de alguno.
-    private GameSaveData BuildSaveData(NetworkManager manager, out string missingPlayer)
+    private GameSaveData BuildSaveData(NetworkManager manager, bool levelCompleted, out string missingPlayer)
     {
         missingPlayer = null;
 
         GameSaveData data = new GameSaveData
         {
             savedAtUtc = DateTime.UtcNow.ToString("o"),
-            sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+            sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name,
+            gameId = CurrentGame.EnsureId(),
+            mode = SaveSystem.ModeExtraction,
+            difficulty = CurrentGame.Difficulty,
+            levelCompleted = levelCompleted
         };
 
         foreach (NetworkClient client in manager.ConnectedClientsList)
@@ -261,6 +265,12 @@ public class SaveGameService : MonoBehaviour
             if (playerObject == null) continue;
 
             bool isHost = client.ClientId == NetworkManager.ServerClientId;
+            if (isHost)
+            {
+                data.safePoint = playerObject.transform.position;
+                data.hasSafePoint = true;
+            }
+
             Character character = playerObject.GetComponent<Character>();
             string playerName = character != null ? character.PlayerName : "Jugador " + (client.ClientId + 1);
 
