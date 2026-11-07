@@ -27,6 +27,12 @@ public class SafeZone : NetworkBehaviour
     [SerializeField] private int minRescued = 0;
     [Tooltip("Puntos del equipo por cada civil rescatado.")]
     [SerializeField] private int pointsPerNpc = 100;
+    [Header("Zona secreta")]
+    [Tooltip("Si está marcado, esta zona no cierra el nivel: lleva a la escena del secreto. No cuenta civiles ni espera al helicóptero.")]
+    [SerializeField] private bool isSecret = false;
+    public static SafeZone LastCompleted { get; private set; }
+    public bool IsSecret => isSecret;
+    public string NextScene => isSecret ? PlayerCarryOver.EasterEggSceneName : null;
 
     private NetworkVariable<int> playersInside = new NetworkVariable<int>(
         0,
@@ -124,12 +130,12 @@ public class SafeZone : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        Current = this;
+        if (!isSecret) Current = this;
         completed.OnValueChanged += OnCompletedChanged;
         unlocked.OnValueChanged += OnUnlockedChanged;
 
         if (IsServer)
-            unlocked.Value = !DebeEsperarHelicoptero();
+            unlocked.Value = isSecret || !DebeEsperarHelicoptero();
         ApplyUnlockVisuals(unlocked.Value);
 
         if (!GetComponent<Collider>().isTrigger)
@@ -194,11 +200,13 @@ public class SafeZone : NetworkBehaviour
                 aliveInside++;
         }
 
+
         if (alivePlayers.Value != alive) alivePlayers.Value = alive;
         if (playersInside.Value != aliveInside) playersInside.Value = aliveInside;
 
-        int rescued = CheckNpcs();
-        int required = Mathf.Min(minRescued, totalNpcs.Value);
+        int rescued = isSecret ? 0 : CheckNpcs();
+        int required = isSecret ? 0 : Mathf.Min(minRescued, totalNpcs.Value);
+
 
         if (RequirementsMet(alive, aliveInside, rescued, required))
         {
@@ -262,7 +270,8 @@ public class SafeZone : NetworkBehaviour
 
     private void OnCompletedChanged(bool previous, bool current)
     {
-        if (current)
-            LevelCompleted?.Invoke();
+        if (!current) return;
+        LastCompleted = this;
+        LevelCompleted?.Invoke();
     }
 }

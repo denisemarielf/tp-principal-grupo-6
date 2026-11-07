@@ -21,6 +21,13 @@ public class CrosshairController : NetworkBehaviour
 private float markerTimer;
 private float markerDuration = 0.18f;
 private Color markerColor;
+[Header("Headshot")]
+[SerializeField] private Color headshotColor = new Color(1f, 0.85f, 0.1f);
+[SerializeField] private float headshotPunchScale = 1.9f;
+[SerializeField] private AudioClip headshotSound;
+[SerializeField] private AudioClip headshotKillSound;
+
+private float markerPunch = 1.4f;
 
     private PMovement playerMovement;
     private float shootTimer;
@@ -48,7 +55,7 @@ private Color markerColor;
     Color c = markerColor;
     c.a = t;
     hitMarker.color = c;
-    hitMarker.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, punchScale, t);
+    hitMarker.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, markerPunch, t);
 
     if (markerTimer <= 0f)
         hitMarker.enabled = false;
@@ -77,17 +84,22 @@ private Color markerColor;
             crosshair.cross_Hair.gameObject.SetActive(visible);
         }
     }
-    public void NotifyHit(bool killed)
+  public void NotifyHit(bool killed, bool headshot = false)
 {
     if (hitMarker != null)
     {
-        markerColor = killed ? killColor : hitColor;
+        markerColor = killed ? killColor : (headshot ? headshotColor : hitColor);
         markerDuration = killed ? killMarkerDuration : hitMarkerDuration;
+        markerPunch = headshot ? headshotPunchScale : punchScale;
         markerTimer = markerDuration;
         hitMarker.enabled = true;
     }
 
-    AudioClip clip = killed ? killSound : hitSound;
+    AudioClip clip;
+    if (headshot && killed && headshotKillSound != null) clip = headshotKillSound;
+    else if (headshot && headshotSound != null)          clip = headshotSound;
+    else                                                 clip = killed ? killSound : hitSound;
+
     if (hitAudio != null && clip != null)
     {
         hitAudio.pitch = Random.Range(hitPitchRange.x, hitPitchRange.y);

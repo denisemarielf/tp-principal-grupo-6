@@ -5,6 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections;
 
 // HUD de la zona segura (US Zona Segura). Va dentro del HUD del Player prefab.
 // - Muestra cuantos jugadores vivos estan en la zona segura mientras haya alguno adentro.
@@ -141,6 +142,16 @@ public class SafeZoneUI : MonoBehaviour
 
     private void OnLevelCompleted()
     {
+        SafeZone zone = SafeZone.LastCompleted;
+        if (zone != null && zone.IsSecret)
+        {
+            OnSecretZoneCompleted();
+            return;
+        }
+
+        if (statusText != null)
+            statusText.gameObject.SetActive(false);
+
         if (statusText != null)
             statusText.gameObject.SetActive(false);
 
@@ -171,7 +182,33 @@ public class SafeZoneUI : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
+    private void OnSecretZoneCompleted()
+    {
+        if (statusText != null)
+            statusText.gameObject.SetActive(false);
 
+        // Cada cliente captura su munición/arma antes de que cambie la escena.
+        NetworkObject localPlayer = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClient?.PlayerObject : null;
+        if (localPlayer != null)
+        {
+            PMovement movement = localPlayer.GetComponent<PMovement>();
+            if (movement != null)
+                movement.ResetMovement();
+
+            PlayerCarryOver.CaptureLocalOwner(localPlayer.gameObject);
+        }
+
+        // Solo el host cambia de escena.
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            StartCoroutine(GoToEasterEggDelayed());
+    }
+
+    // Pequeña espera para que todos los clientes alcancen a capturar su estado antes del cambio de escena.
+    private IEnumerator GoToEasterEggDelayed()
+    {
+        yield return new WaitForSeconds(0.5f);
+        ContinueToEasterEgg();
+    }
     private void SetupContinueUi()
     {
         if (levelCompletePanel == null || !HasNextScene()) return;
