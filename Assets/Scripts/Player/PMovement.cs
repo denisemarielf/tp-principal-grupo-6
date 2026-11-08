@@ -2,6 +2,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(CharacterController))]
 public class PMovement : NetworkBehaviour
@@ -63,6 +64,34 @@ public class PMovement : NetworkBehaviour
     {
         if (IsServer) frozen.Value = value;
     }
+    // Lista de jugadores activos. Evita FindObjectsByType en cada enemigo (lo usa Ai).
+    public static readonly List<PMovement> All = new List<PMovement>();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() => All.Clear();
+
+    private PlayerHealth cachedHealth;
+    public PlayerHealth Health
+    {
+        get
+        {
+            if (cachedHealth == null)
+                cachedHealth = GetComponent<PlayerHealth>();
+            return cachedHealth;
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (!All.Contains(this))
+            All.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        All.Remove(this);
+    }
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();

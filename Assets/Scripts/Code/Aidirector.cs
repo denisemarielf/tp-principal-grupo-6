@@ -7,12 +7,12 @@ using UnityEngine.AI;
 // AI Director estilo Left 4 Dead 2. Solo corre en el server.
 //
 // Idea: en vez de plantar enemigos fijos por el mapa, el Director mide la "intensidad"
-// emocional de cada jugador y decide cuándo apretar y cuándo dar respiro:
+// emocional de cada jugador y decide cuï¿½ndo apretar y cuï¿½ndo dar respiro:
 //
 //   BuildUp -> SustainPeak -> PeakFade -> Relax -> BuildUp ...
 //
-//   BuildUp     : va llenando el mapa de zombies (fuera de la vista) y cuenta para la próxima horda.
-//   SustainPeak : la intensidad llegó al tope; sigue spawneando 3-5 s más.
+//   BuildUp     : va llenando el mapa de zombies (fuera de la vista) y cuenta para la prï¿½xima horda.
+//   SustainPeak : la intensidad llegï¿½ al tope; sigue spawneando 3-5 s mï¿½s.
 //   PeakFade    : deja de spawnear hasta que el grupo se calme (matan o se alejan).
 //   Relax       : 30-45 s sin spawns nuevos. Respiro.
 //
@@ -24,7 +24,7 @@ public class AIDirector : MonoBehaviour
 
     public static AIDirector Instance { get; private set; }
 
-    // (enemigo, vino de horda). Útil para ponerle objetivo a la horda en tu script Ai.
+    // (enemigo, vino de horda). ï¿½til para ponerle objetivo a la horda en tu script Ai.
     public static event System.Action<EnemyHealth, bool> EnemySpawned;
 
     [Header("Prefab")]
@@ -72,7 +72,7 @@ public class AIDirector : MonoBehaviour
     [Tooltip("Sube la intensidad de TODOS cuando cae un jugador.")]
     [SerializeField] private float playerDownGain = 0.5f;
 
-    [Header("Población de fondo")]
+    [Header("Poblaciï¿½n de fondo")]
     [SerializeField] private int baseWanderers = 12;
     [SerializeField] private int extraPerPlayer = 6;
     [SerializeField] private int hardCap = 70;
@@ -82,7 +82,7 @@ public class AIDirector : MonoBehaviour
     [Header("Hordas")]
     [SerializeField] private Vector2 mobInterval = new Vector2(90f, 150f);
     [SerializeField] private Vector2Int mobSize = new Vector2Int(20, 35);
-    [Tooltip("Multiplicador extra de tamaño por cada jugador además del primero.")]
+    [Tooltip("Multiplicador extra de tamaï¿½o por cada jugador ademï¿½s del primero.")]
     [SerializeField] private float mobPerExtraPlayer = 0.25f;
     [SerializeField] private int mobBatch = 4;
     [SerializeField] private float mobBatchInterval = 0.4f;
@@ -94,10 +94,10 @@ public class AIDirector : MonoBehaviour
     [Tooltip("Para la musica: intensidad del equipo alta (pico) activa la musica de combate aunque no haya horda.")]
     [SerializeField] private bool highIntensityTriggersMusic = true;
 
-    [Header("Dónde aparecen")]
+    [Header("Dï¿½nde aparecen")]
     [SerializeField] private float minSpawnDistance = 20f;
     [SerializeField] private float maxSpawnDistance = 55f;
-    [Tooltip("Largo máximo del camino por NavMesh hasta el jugador (evita spawns 'del otro lado de la pared').")]
+    [Tooltip("Largo mï¿½ximo del camino por NavMesh hasta el jugador (evita spawns 'del otro lado de la pared').")]
     [SerializeField] private float maxPathLength = 150f;
     [Range(0f, 1f)]
     [SerializeField] private float behindBias = 0.6f;
@@ -109,9 +109,9 @@ public class AIDirector : MonoBehaviour
     [SerializeField] private float markerBias = 0.7f;
     [Tooltip("Si hay EnemySpawnPoint en la escena, usa SOLO esos y nunca puntos al azar. Asi no aparecen enemigos donde no pusiste marcadores (la calle, por ejemplo).")]
     [SerializeField] private bool markersOnly = false;
-    [Tooltip("Qué bloquea la vista de los jugadores. Idealmente solo geometría del mapa.")]
+    [Tooltip("Quï¿½ bloquea la vista de los jugadores. Idealmente solo geometrï¿½a del mapa.")]
     [SerializeField] private LayerMask occlusionMask = ~0;
-    [Tooltip("Zombis más lejos que esto y fuera de vista se guardan.")]
+    [Tooltip("Zombis mï¿½s lejos que esto y fuera de vista se guardan.")]
     [SerializeField] private float despawnDistance = 110f;
 
     [Header("Avance (calle recta)")]
@@ -284,7 +284,7 @@ public class AIDirector : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("AIDirector: advanceTarget no está cerca del NavMesh; se usa advanceDirection.", this);
+                Debug.LogWarning("AIDirector: advanceTarget no estï¿½ cerca del NavMesh; se usa advanceDirection.", this);
             }
         }
 
@@ -294,9 +294,9 @@ public class AIDirector : MonoBehaviour
         running = true;
     }
 
-    // ---------------------------------------------------------------- API pública
+    // ---------------------------------------------------------------- API pï¿½blica
 
-    // Para alarmas, eventos de mapa, botones, etc. size <= 0 usa el tamaño normal.
+    // Para alarmas, eventos de mapa, botones, etc. size <= 0 usa el tamaï¿½o normal.
     public void TriggerMob(int size = -1)
     {
         if (!running)
@@ -402,7 +402,7 @@ public class AIDirector : MonoBehaviour
 
             if (enemy.IsDead())
             {
-                // Matar zombis cerca sube un poco la intensidad: estás peleando.
+                // Matar zombis cerca sube un poco la intensidad: estï¿½s peleando.
                 foreach (PlayerState state in players)
                 {
                     if (!state.IsDead && FlatDistance(state.move.transform.position, enemy.transform.position) <= threatRange)
@@ -424,8 +424,8 @@ public class AIDirector : MonoBehaviour
 
         foreach (PlayerState state in players)
         {
-            // El daño se detecta leyendo la vida. Si cambió la vida máxima (boost que
-            // empieza o termina) no se cuenta como daño.
+            // El daï¿½o se detecta leyendo la vida. Si cambiï¿½ la vida mï¿½xima (boost que
+            // empieza o termina) no se cuenta como daï¿½o.
             if (state.health != null)
             {
                 float max = state.health.MaxHealth;
@@ -482,7 +482,7 @@ public class AIDirector : MonoBehaviour
             team = Mathf.Max(team, state.intensity);
         }
 
-        // Como en L4D: manda el jugador más estresado.
+        // Como en L4D: manda el jugador mï¿½s estresado.
         TeamIntensity = team;
     }
 
@@ -560,7 +560,7 @@ public class AIDirector : MonoBehaviour
 
     private void UpdateMob(float dt)
     {
-        // La horda toca cuando venía el reloj y estamos en BuildUp; una vez arrancada, termina de salir.
+        // La horda toca cuando venï¿½a el reloj y estamos en BuildUp; una vez arrancada, termina de salir.
         if (mobPending <= 0)
         {
             if (phase == Phase.BuildUp && mobTimer <= 0f && alivePlayers.Count > 0)
@@ -590,7 +590,7 @@ public class AIDirector : MonoBehaviour
             mobFailTime += mobBatchInterval;
             if (mobFailTime >= mobGiveUpTime)
             {
-                Debug.LogWarning("AIDirector: no encontró dónde spawnear la horda, se cancela el resto ("
+                Debug.LogWarning("AIDirector: no encontrï¿½ dï¿½nde spawnear la horda, se cancela el resto ("
                     + mobPending + "). Motivos de rechazo:" + RejectSummary());
                 ResetRejects();
                 mobPending = 0;
@@ -707,7 +707,7 @@ public class AIDirector : MonoBehaviour
         return EnemyVariant.Resistente;
     }
 
-    // ---------------------------------------------------------------- búsqueda de punto
+    // ---------------------------------------------------------------- bï¿½squeda de punto
 
     private bool TryFindSpawnPoint(out Vector3 result)
     {
@@ -1078,14 +1078,16 @@ public class AIDirector : MonoBehaviour
 
     // ---------------------------------------------------------------- utilidades
 
-    private static float PathLength(NavMeshPath p)
-    {
-        Vector3[] corners = p.corners;
-        float length = 0f;
-        for (int i = 1; i < corners.Length; i++)
-            length += Vector3.Distance(corners[i - 1], corners[i]);
-        return length;
-    }
+   private static readonly Vector3[] cornerBuffer = new Vector3[64];
+
+private static float PathLength(NavMeshPath p)
+{
+    int n = p.GetCornersNonAlloc(cornerBuffer);
+    float length = 0f;
+    for (int i = 1; i < n; i++)
+        length += Vector3.Distance(cornerBuffer[i - 1], cornerBuffer[i]);
+    return length;
+}
 
     private static float FlatSqrDistance(Vector3 a, Vector3 b)
     {
