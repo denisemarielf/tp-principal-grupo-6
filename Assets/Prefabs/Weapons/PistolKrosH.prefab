@@ -25101,6 +25101,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 119
   hitscanImpactEffect: {fileID: 39281035044144115, guid: 320e02664be69b34d813593ce5a35b26, type: 3}
+  headshotMargin: 0.3
   bulletTracer:
     bullet_Tracer_prefab: {fileID: 1898068084250203151, guid: b3b8dd34eec1f60469efccd89a47f182, type: 3}
     bullet_Tracer_Holder: {fileID: 2809628831887813522}
@@ -25113,6 +25114,7 @@ MonoBehaviour:
   weaponSway: {fileID: 8571081039872229491}
   cameraRecoil: {fileID: 3232017488082613912}
   crosshairController: {fileID: 0}
+  closeRangeDismember: 0
 --- !u!82 &4486189096107744166
 AudioSource:
   m_ObjectHideFlags: 0
@@ -25229,6 +25231,7 @@ MonoBehaviour:
   reloadSound: {fileID: 8300000, guid: 544538693245ef04ea3630acdba418d9, type: 3}
   emptySound: {fileID: 8300000, guid: 1a1d08bada427b34c815e52edd0b33f1, type: 3}
   weaponSway: {fileID: 0}
+  maxReserveAmmo: 120
 --- !u!114 &3232017488082613912
 MonoBehaviour:
   m_ObjectHideFlags: 0

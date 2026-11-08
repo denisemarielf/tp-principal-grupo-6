@@ -24966,6 +24966,100 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.006120601, y: 0.005595302, z: 0.011663953}
   m_Center: {x: -0.0007, y: 0.000000015333331, z: 0.0004312361}
+--- !u!1 &657322127
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 657322130}
+  - component: {fileID: 657322129}
+  - component: {fileID: 657322128}
+  m_Layer: 0
+  m_Name: MusicDirector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &657322128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 657322127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 886baa74f03b38648984d6dd8f9f212e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::MusicDirector
+  ShowTopMostFoldoutHeaderGroup: 1
+  calmTracks:
+  - {fileID: 8300000, guid: 4a502f3190161754bb503983f0c2182c, type: 3}
+  - {fileID: 8300000, guid: eee409b19fb9e6e4e86909e87f5dcb17, type: 3}
+  - {fileID: 8300000, guid: 1ef6a156eb667ac4aa1dddb27e7cce76, type: 3}
+  - {fileID: 8300000, guid: b95399b841eb75c489a6ae45cbf0c4e8, type: 3}
+  combatTracks:
+  - {fileID: 8300000, guid: 6f3512e0d6f9663478f7348c373c3f8e, type: 3}
+  - {fileID: 8300000, guid: 4c4a61165e892774a80a6a48b62044c4, type: 3}
+  calmVolume: 0.094
+  combatVolume: 0.255
+  mixerGroup: {fileID: 0}
+  combatFadeIn: 1.5
+  combatFadeOut: 5
+  calmFadeIn: 4
+  calmFadeOut: 1.5
+  calmStartDelay: 3
+  trackFade: 2
+  calmGap: {x: 2, y: 8}
+  combatGap: {x: 0, y: 0}
+  minCombatTime: 8
+  pollInterval: 0.25
+--- !u!114 &657322129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 657322127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 302952901
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!4 &657322130
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 657322127}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -72.27388, y: 78.93337, z: -55.19013}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &658896536
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -95610,3 +95704,4 @@ SceneRoots:
   - {fileID: 121556960}
   - {fileID: 620282490}
   - {fileID: 1758023584}
+  - {fileID: 657322130}
