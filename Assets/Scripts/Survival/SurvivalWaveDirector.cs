@@ -8,6 +8,9 @@ using UnityEngine.AI;
 public class SurvivalWaveDirector : NetworkBehaviour
 {
     [SerializeField] private GameObject enemyPrefab;
+    [SerializeField] private GameObject miniBossPrefab;
+    [Tooltip("En estas rondas (2, 4, 6...) aparece un mini jefe ademas de los zombies.")]
+    [SerializeField] private int bossEveryRounds = 2;
     [SerializeField] private float firstWaveDelay = 5f;
     [SerializeField] private float delayAfterClear = 2f;
     [Tooltip("Si no se pudo ubicar a ningun zombie de la oleada, reintenta en este tiempo.")]
@@ -149,10 +152,33 @@ public class SurvivalWaveDirector : NetworkBehaviour
             return false;
         }
 
+        int round = waveIndex + 1;
+        bool withBoss = SpawnBoss(round, center, refugeHit.position, used);
+
         waveIndex++;
         waveNumber.Value = waveIndex;
         zombiesRemaining.Value = currentWave.Count;
-        Debug.Log($"SurvivalWaveDirector: ronda {waveIndex} con {currentWave.Count} enemigos.");
+        Debug.Log($"SurvivalWaveDirector: ronda {waveIndex} con {currentWave.Count} enemigos{(withBoss ? " y un mini jefe" : "")}.");
+        return true;
+    }
+
+    // Rondas 2, 4, 6... El jefe entra en la oleada: la ronda no termina hasta que muera.
+    private bool SpawnBoss(int round, Vector3 center, Vector3 refuge, List<Vector3> used)
+    {
+        if (miniBossPrefab == null || bossEveryRounds <= 0 || round % bossEveryRounds != 0)
+            return false;
+
+        if (!EnemySceneSetup.TryFindWaveSpawn(center, refuge, minRadius, maxRadius, used, out Vector3 point))
+        {
+            Debug.LogWarning($"SurvivalWaveDirector: ronda {round} sin lugar para el mini jefe.");
+            return false;
+        }
+
+        EnemyHealth boss = EnemySceneSetup.SpawnWaveEnemy(miniBossPrefab, point, EnemyVariant.Normal);
+        if (boss == null)
+            return false;
+
+        currentWave.Add(boss);
         return true;
     }
 }
