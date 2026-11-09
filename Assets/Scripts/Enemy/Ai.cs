@@ -47,13 +47,14 @@ public class Ai : NetworkBehaviour
     public Transform CurrentPlayer => (aggroTimer > 0f && aggroTarget != null) ? aggroTarget : player;
 
     // US 7.2: normal 4, fragil 7 y duro 3. El jugador camina a 7.
+    // US 7.5: la dificultad del host escala la velocidad.
     public void Configure(EnemyVariant variant)
     {
         if (navMeshAgent == null)
             navMeshAgent = GetComponent<NavMeshAgent>();
         if (navMeshAgent != null)
         {
-            baseSpeed = SpeedFor(variant);
+            baseSpeed = SpeedFor(variant) * DifficultyTuning.SpeedMul;
             navMeshAgent.speed = baseSpeed;
         }
     }

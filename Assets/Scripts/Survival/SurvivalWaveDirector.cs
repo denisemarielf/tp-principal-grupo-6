@@ -96,7 +96,7 @@ public class SurvivalWaveDirector : NetworkBehaviour
     private void SpawnWave()
     {
         currentWave.Clear();
-        int count = startCount + waveIndex * increment;
+        int count = DifficultyTuning.ScaleCount(startCount + waveIndex * increment);
         waveIndex++;
         waveNumber.Value = waveIndex;
         Vector3 center = transform.position;

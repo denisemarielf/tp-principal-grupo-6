@@ -49,6 +49,8 @@ public static class GameSessionManager
         if (mode != GameMode.None)
             MatchSettings.SetAndBroadcast(mode);
 
+        MatchSettings.SetAndBroadcastDifficulty(CurrentGame.Difficulty);
+
         gameStarted = true;
         networkManager.SceneManager.OnLoadEventCompleted += OnGameSceneLoaded;
 

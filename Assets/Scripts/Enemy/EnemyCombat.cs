@@ -13,6 +13,8 @@ public class EnemyCombat : NetworkBehaviour
     [Range(0f, 1f)] public float biteChance = 0.25f;     // probabilidad de morder en cada ciclo (solo contra jugadores)
     public float biteDamage = 15f;                        // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
 
+    private bool difficultyApplied;
+
     [Header("Empuje al recibir disparos")]
     public float knockbackSpeed = 5f;        // 0 = sin empuje. Distancia aprox = velocidad x duracion / 2
     public float knockbackDuration = 0.18f;
@@ -45,6 +47,7 @@ public class EnemyCombat : NetworkBehaviour
     private EnemyHealth enemyHealth;
     private EnemyAnimation enemyAnimation;
     private Transform currentTarget;
+
     [Header("Dano por tiempo (si el clip no tiene evento)")]
     [Tooltip("0 = solo por evento. Ej: 0.45 = pega al 45% del clip.")]
     [Range(0f, 1f)] public float timedDamageAt = 0f;
@@ -57,6 +60,17 @@ public class EnemyCombat : NetworkBehaviour
         ai = GetComponent<Ai>();
         enemyHealth = GetComponent<EnemyHealth>();
         enemyAnimation = GetComponent<EnemyAnimation>();
+    }
+
+    // US 7.5: la dificultad del host escala el dano de golpe y mordida (una sola vez).
+    public void ApplyDifficultyScale()
+    {
+        if (difficultyApplied)
+            return;
+
+        attackDamage *= DifficultyTuning.DamageMul;
+        biteDamage *= DifficultyTuning.DamageMul;
+        difficultyApplied = true;
     }
 
     public override void OnNetworkDespawn()

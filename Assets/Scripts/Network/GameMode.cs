@@ -11,7 +11,7 @@ public enum GameMode
     Supervivencia = 2
 }
 
-// Modo de la partida en curso. Estatico: sobrevive a los cambios de escena.
+// Modo y dificultad de la partida en curso. Estatico: sobrevive a los cambios de escena.
 // El host lo fija al iniciar la partida y lo envia a todos los clientes (MatchSettingsSync).
 public static class MatchSettings
 {
@@ -21,11 +21,13 @@ public static class MatchSettings
     public const int MapEstacion = 2;
 
     private const string ModeMessage = "MatchSettings.Mode";
+    private const string DifficultyMessage = "MatchSettings.Difficulty";
 
     private static readonly GameMode[] ModosExtraccion = { GameMode.Extraccion };
     private static readonly GameMode[] ModosEstacion = { GameMode.Extraccion, GameMode.Supervivencia };
 
     public static GameMode Mode { get; private set; }
+    public static int Difficulty { get; private set; } = 1;
 
     // Cada mapa solo ofrece los modos que le corresponden. El primero es el que viene elegido por defecto.
     public static GameMode[] ModesForMap(int mapIndex)
@@ -79,6 +81,7 @@ public static class MatchSettings
     public static void Reset()
     {
         Mode = GameMode.None;
+        Difficulty = 1;
     }
 
     // Solo el host: fija el modo y se lo manda a los clientes conectados.
@@ -104,10 +107,35 @@ public static class MatchSettings
         }
     }
 
+    // Solo el host: fija la dificultad y se la manda a los clientes conectados.
+    public static void SetAndBroadcastDifficulty(int difficulty)
+    {
+        Difficulty = Mathf.Clamp(difficulty, 0, 2);
+        CurrentGame.ApplyHostDifficulty(Difficulty);
+
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null || !manager.IsServer || manager.CustomMessagingManager == null)
+            return;
+
+        foreach (ulong clientId in manager.ConnectedClientsIds)
+        {
+            if (clientId == NetworkManager.ServerClientId)
+                continue;
+
+            using (FastBufferWriter writer =
+                new FastBufferWriter(4, Allocator.Temp))
+            {
+                writer.WriteValueSafe(Difficulty);
+                manager.CustomMessagingManager.SendNamedMessage(DifficultyMessage, clientId, writer);
+            }
+        }
+    }
+
     // Cliente: llega el modo elegido por el host.
     internal static void RegisterClientHandler(NetworkManager manager)
     {
         manager.CustomMessagingManager.RegisterNamedMessageHandler(ModeMessage, OnModeReceived);
+        manager.CustomMessagingManager.RegisterNamedMessageHandler(DifficultyMessage, OnDifficultyReceived);
     }
 
     private static void OnModeReceived(ulong senderClientId, FastBufferReader reader)
@@ -115,6 +143,14 @@ public static class MatchSettings
         reader.ReadValueSafe(out int value);
         Mode = (GameMode)value;
         Debug.Log("MatchSettings: modo de la partida -> " + Mode);
+    }
+
+    private static void OnDifficultyReceived(ulong senderClientId, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out int value);
+        Difficulty = Mathf.Clamp(value, 0, 2);
+        CurrentGame.ApplyHostDifficulty(Difficulty);
+        Debug.Log("MatchSettings: dificultad de la partida -> " + Difficulty);
     }
 }
 

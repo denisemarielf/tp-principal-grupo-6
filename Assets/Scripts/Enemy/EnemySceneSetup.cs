@@ -119,12 +119,15 @@ public class EnemySceneSetup : MonoBehaviour
 
         hasRoad = false;
         Vector3 playerSpawn = PlayerSpawnPosition();
+        int targetCount = DifficultyTuning.ScaleCount(enemyCount);
         int added = 0;
 
         foreach (EnemySpawnPoint marker in points)
         {
             if (marker == null)
                 continue;
+            if (added >= targetCount)
+                break;
 
             Vector3 position = marker.transform.position;
             if (NavMesh.SamplePosition(position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
@@ -161,10 +164,11 @@ public class EnemySceneSetup : MonoBehaviour
         hasRoad = true;
         float margin = RoadMargin(roadBounds);
         Vector3 playerSpawn = PlayerSpawnPosition();
-        var chosen = new List<Vector3>(enemyCount);
-        int attempts = Mathf.Max(enemyCount * 100, 1);
+        int targetCount = DifficultyTuning.ScaleCount(enemyCount);
+        var chosen = new List<Vector3>(targetCount);
+        int attempts = Mathf.Max(targetCount * 100, 1);
 
-        for (int i = 0; i < attempts && chosen.Count < enemyCount; i++)
+        for (int i = 0; i < attempts && chosen.Count < targetCount; i++)
         {
             // Solo sobre el asfalto. Si el punto cae en un auto, el NavMesh lo corre y se descarta si sale de la calle.
             Vector3 candidate = new Vector3(
@@ -193,8 +197,8 @@ public class EnemySceneSetup : MonoBehaviour
             });
         }
 
-        if (planned.Count < enemyCount)
-            Debug.LogWarning("EnemySceneSetup: quedaron " + planned.Count + " de " + enemyCount + " puntos de enemigos.", this);
+        if (planned.Count < targetCount)
+            Debug.LogWarning("EnemySceneSetup: quedaron " + planned.Count + " de " + targetCount + " puntos de enemigos.", this);
     }
 
     // Solo existen los que están cerca de alguien. El resto espera a que el grupo avance.
@@ -253,23 +257,13 @@ public class EnemySceneSetup : MonoBehaviour
         }
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
-        EnemyHealth health = enemy.GetComponent<EnemyHealth>();
-        if (health != null)
-            health.Configure(variant);
-
-        EnemyAppearance appearance = enemy.GetComponent<EnemyAppearance>();
-        if (appearance != null)
-            appearance.Configure(variant);
-
-        Ai ai = enemy.GetComponent<Ai>();
-        if (ai != null)
-            ai.Configure(variant);
+        ConfigureSpawnedEnemy(enemy, variant);
 
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
         if (netObj != null)
             netObj.Spawn(true);
 
-        return health;
+        return enemy.GetComponent<EnemyHealth>();
     }
 
     // Spawn de un enemigo en red, sobre el NavMesh. Lo usan las oleadas de Supervivencia.
@@ -287,6 +281,17 @@ public class EnemySceneSetup : MonoBehaviour
             position += Vector3.up * FeetLift(enemyPrefab);
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        ConfigureSpawnedEnemy(enemy, variant);
+
+        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
+        if (netObj != null)
+            netObj.Spawn(true);
+
+        return enemy.GetComponent<EnemyHealth>();
+    }
+
+    private static void ConfigureSpawnedEnemy(GameObject enemy, EnemyVariant variant)
+    {
         EnemyHealth health = enemy.GetComponent<EnemyHealth>();
         if (health != null)
             health.Configure(variant);
@@ -299,11 +304,9 @@ public class EnemySceneSetup : MonoBehaviour
         if (ai != null)
             ai.Configure(variant);
 
-        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
-        if (netObj != null)
-            netObj.Spawn(true);
-
-        return health;
+        EnemyCombat combat = enemy.GetComponent<EnemyCombat>();
+        if (combat != null)
+            combat.ApplyDifficultyScale();
     }
 
     private static void DespawnEnemy(EnemyHealth health)
