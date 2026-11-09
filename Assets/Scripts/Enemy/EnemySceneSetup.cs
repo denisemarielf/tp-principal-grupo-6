@@ -83,7 +83,7 @@ public class EnemySceneSetup : MonoBehaviour
         NavMeshReady?.Invoke();
 
         // Supervivencia usa oleadas propias. El horneado igual hace falta para zombies y civiles.
-        if (FindAnyObjectByType<SurvivalMatchBootstrap>() != null)
+        if (SurvivalMatchBootstrap.IsSurvivalMatch())
         {
             Debug.Log("EnemySceneSetup: modo Supervivencia, no se planifican enemigos de mapa abierto.");
             yield break;
