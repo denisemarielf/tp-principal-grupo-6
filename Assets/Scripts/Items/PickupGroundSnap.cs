@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Baja pickups (armas, botiquines, municion) hasta el suelo con un raycast.
-// Se ejecuta en cada cliente para objetos de escena: no hace falta NetworkTransform.
+// Preferible solo en el server: en clientes puede dejar el objeto bajo el piso.
 public static class PickupGroundSnap
 {
     private const float RayStartHeight = 5f;
