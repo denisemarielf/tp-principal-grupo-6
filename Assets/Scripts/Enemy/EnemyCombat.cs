@@ -167,7 +167,7 @@ public class EnemyCombat : NetworkBehaviour
         if (player != null && player.TryGetComponent(out RescuableNpc targetNpc) && !targetNpc.IsTargetable)
             player = null;
         float distanceToPlayer = player != null
-            ? Vector3.Distance(transform.position, player.position)
+            ? DistanceTo(player)
             : Mathf.Infinity;
 
         if (IsCommitted)
@@ -223,6 +223,30 @@ public class EnemyCombat : NetworkBehaviour
         }
     }
 
+    // Distancia horizontal desde el zombie hasta el cuerpo del objetivo, no hasta su pivote.
+    // Un civil escalado a 2x o con el pivote en otro lado dejaba al zombie parado afuera del rango de ataque.
+    public float DistanceTo(Transform target)
+    {
+        if (target == null) return Mathf.Infinity;
+
+        Vector3 self = transform.position;
+        Collider body = target.GetComponentInChildren<Collider>();
+        if (body == null || body.isTrigger)
+        {
+            Vector3 pivot = target.position;
+            self.y = 0f;
+            pivot.y = 0f;
+            return Vector3.Distance(self, pivot);
+        }
+
+        Bounds bounds = body.bounds;
+        Vector3 level = new Vector3(self.x, bounds.center.y, self.z);
+        Vector3 closest = bounds.ClosestPoint(level);
+        self.y = 0f;
+        closest.y = 0f;
+        return Vector3.Distance(self, closest);
+    }
+
     public void DealDamage()
     {
         if (!IsServer || currentTarget == null) return;
@@ -235,7 +259,7 @@ public class EnemyCombat : NetworkBehaviour
 
         // La mordida pega una sola vez (el fallback de Update cubre el caso de que el clip no tenga evento).
         if (biteCycle && biteDamageDealt) return;
-        if (Vector3.Distance(transform.position, currentTarget.position) > attackRange * 1.2f) return;
+        if (DistanceTo(currentTarget) > attackRange * 1.2f) return;
 
         ApplyDamage(biteCycle ? biteDamage : attackDamage, biteCycle);
     }

@@ -8,9 +8,22 @@ public static class DifficultyTuning
     public static float DamageMul => DamageFor(CurrentGame.Difficulty);
     public static float CountMul => CountFor(CurrentGame.Difficulty);
 
+    // Supervivencia: cantidad de rondas que hay que superar para ganar.
+    public static int RoundsToWin => RoundsFor(CurrentGame.Difficulty);
+
     public static int ScaleCount(int baseCount)
     {
         return Mathf.Max(1, Mathf.RoundToInt(baseCount * CountMul));
+    }
+
+    private static int RoundsFor(int difficulty)
+    {
+        switch (Clamp(difficulty))
+        {
+            case 0: return 3;
+            case 2: return 7;
+            default: return 5;
+        }
     }
 
     private static float HealthFor(int difficulty)
@@ -18,7 +31,7 @@ public static class DifficultyTuning
         switch (Clamp(difficulty))
         {
             case 0: return 0.75f;
-            case 2: return 1.25f;
+            case 2: return 2f;
             default: return 1f;
         }
     }
@@ -28,7 +41,7 @@ public static class DifficultyTuning
         switch (Clamp(difficulty))
         {
             case 0: return 0.85f;
-            case 2: return 1.15f;
+            case 2: return 2f;
             default: return 1f;
         }
     }
@@ -38,7 +51,7 @@ public static class DifficultyTuning
         switch (Clamp(difficulty))
         {
             case 0: return 0.75f;
-            case 2: return 1.25f;
+            case 2: return 2f;
             default: return 1f;
         }
     }
@@ -48,7 +61,7 @@ public static class DifficultyTuning
         switch (Clamp(difficulty))
         {
             case 0: return 0.7f;
-            case 2: return 1.3f;
+            case 2: return 2f;
             default: return 1f;
         }
     }

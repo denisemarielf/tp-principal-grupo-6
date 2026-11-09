@@ -133,11 +133,10 @@ public class MatchStatsService : MonoBehaviour
         if (mode == null)
             return;
 
-        int total = Mathf.CeilToInt(Mathf.Max(0f, mode.TimeRemaining));
-        string extra = $"Tiempo restante {total / 60:00}:{total % 60:00}";
         SurvivalWaveDirector waves = mode.GetComponent<SurvivalWaveDirector>();
-        if (waves != null)
-            extra += $"    Ronda {waves.WaveNumber}";
+        string extra = waves != null
+            ? $"Rondas superadas {waves.RoundsCleared}/{mode.RoundsTarget}"
+            : "";
 
         Publish(new MatchTeamSummary
         {

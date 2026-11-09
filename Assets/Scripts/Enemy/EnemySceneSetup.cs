@@ -266,7 +266,56 @@ public class EnemySceneSetup : MonoBehaviour
         return enemy.GetComponent<EnemyHealth>();
     }
 
-    // Spawn de un enemigo en red, sobre el NavMesh. Lo usan las oleadas de Supervivencia.
+    // Area 0 del NavMesh (caminable). Los autos se hornean como area 1 (no caminable).
+    public const int WalkableMask = 1 << 0;
+
+    // Busca un punto de piso para un zombie de oleada. Descarta copas de arboles, techos de autos,
+    // lomitas, puntos dentro de colliders y puntos sin camino al refugio: ahi el zombie queda trabado.
+    public static bool TryFindWaveSpawn(Vector3 center, Vector3 refuge, float minRadius, float maxRadius, List<Vector3> used, out Vector3 point)
+    {
+        const int attempts = 30;
+        const float minSeparation = 3f;
+        const float maxHeightDiff = 1.5f;
+
+        var path = new NavMeshPath();
+        for (int i = 0; i < attempts; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            float radius = Random.Range(minRadius, maxRadius);
+            Vector3 desired = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+            if (!NavMesh.SamplePosition(desired, out NavMeshHit hit, 2f, WalkableMask))
+                continue;
+
+            Vector3 candidate = hit.position;
+            if (Mathf.Abs(candidate.y - center.y) > maxHeightDiff)
+                continue;
+            if (NearAnyPoint(candidate, used, minSeparation))
+                continue;
+            if (BlocksSpawn(candidate))
+                continue;
+            if (!NavMesh.CalculatePath(candidate, refuge, WalkableMask, path) || path.status != NavMeshPathStatus.PathComplete)
+                continue;
+
+            point = candidate;
+            return true;
+        }
+
+        point = center;
+        return false;
+    }
+
+    private static bool NearAnyPoint(Vector3 point, List<Vector3> others, float distance)
+    {
+        foreach (Vector3 other in others)
+        {
+            if (FlatDistance(point, other) < distance)
+                return true;
+        }
+
+        return false;
+    }
+
+    // Spawn de un enemigo en red, sobre el NavMesh. Lo usa el AIDirector.
     public static EnemyHealth SpawnNetworkEnemy(GameObject enemyPrefab, Vector3 position, EnemyVariant variant)
     {
         if (enemyPrefab == null)
@@ -282,6 +331,36 @@ public class EnemySceneSetup : MonoBehaviour
 
         GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
         ConfigureSpawnedEnemy(enemy, variant);
+
+        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
+        if (netObj != null)
+            netObj.Spawn(true);
+
+        return enemy.GetComponent<EnemyHealth>();
+    }
+
+    // Spawn de un zombie de oleada de Supervivencia en un punto ya validado por TryFindWaveSpawn.
+    public static EnemyHealth SpawnWaveEnemy(GameObject enemyPrefab, Vector3 position, EnemyVariant variant)
+    {
+        if (enemyPrefab == null)
+        {
+            Debug.LogError("EnemySceneSetup: falta el prefab del enemigo.");
+            return null;
+        }
+
+        position += Vector3.up * FeetLift(enemyPrefab);
+
+        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        ConfigureSpawnedEnemy(enemy, variant);
+
+        // Solo puede caminar por piso: no se sube a techos de autos ni copas.
+        NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
+        if (agent != null)
+            agent.areaMask = WalkableMask;
+
+        Ai ai = enemy.GetComponent<Ai>();
+        if (ai != null)
+            ai.StartShelterSiege();
 
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
         if (netObj != null)
