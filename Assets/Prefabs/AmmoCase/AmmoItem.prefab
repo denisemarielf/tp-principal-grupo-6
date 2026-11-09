@@ -174,14 +174,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 451929566
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 2950394332
+  InScenePlacedSourceGlobalObjectIdHash: 451929566
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -583,7 +583,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 0.039408445, g: 0.93207544, b: 0, a: 1}
-  m_Intensity: 3
+  m_Intensity: 0.21
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
