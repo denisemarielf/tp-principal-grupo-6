@@ -267,7 +267,7 @@ public class AIDirector : MonoBehaviour
         while (NavMesh.CalculateTriangulation().vertices.Length == 0)
             yield return new WaitForSeconds(0.5f);
 
-        if (FindAnyObjectByType<SurvivalMatchBootstrap>() != null)
+        if (SurvivalMatchBootstrap.IsSurvivalMatch())
         {
             Debug.Log("AIDirector: modo Supervivencia, el Director queda apagado.");
             enabled = false;

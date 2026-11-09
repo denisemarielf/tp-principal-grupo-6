@@ -9,6 +9,12 @@ public class SurvivalMatchBootstrap : MonoBehaviour
 
     private bool started;
 
+    // La escena trae la partida de Supervivencia, pero en modo Extraccion (nivel de la plaza) no corre.
+    public static bool IsSurvivalMatch()
+    {
+        return MatchSettings.SurvivalEnabled && FindAnyObjectByType<SurvivalMatchBootstrap>() != null;
+    }
+
     private void OnEnable()
     {
         EnemySceneSetup.NavMeshReady += OnNavMeshReady;
@@ -21,7 +27,7 @@ public class SurvivalMatchBootstrap : MonoBehaviour
 
     private void OnNavMeshReady()
     {
-        if (started)
+        if (started || !MatchSettings.SurvivalEnabled)
             return;
 
         NetworkManager networkManager = NetworkManager.Singleton;
