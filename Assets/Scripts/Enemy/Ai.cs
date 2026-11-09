@@ -31,7 +31,7 @@ public class Ai : NetworkBehaviour
     private Vector3 lastPlayerPosition;
     private float repathThreshold = 0.5f;
     private bool isFollowingPlayer;
-    private float playerSearchInterval = 0.25f;
+    private float playerSearchInterval = 0.5f;
     private float playerSearchTimer;
     private Transform aggroTarget;
     private float aggroTimer;
@@ -87,6 +87,10 @@ public class Ai : NetworkBehaviour
 
         homePosition = transform.position;
         wanderTimer = Random.Range(0f, wanderPause.y);
+
+        // Desincroniza las busquedas para que una horda no las haga todas en el mismo frame.
+        playerSearchTimer = Random.Range(0f, playerSearchInterval);
+        repathTimer = Random.Range(0f, 0.3f);
 
         RefreshNearestPlayer();
         PlaceOnNavMesh();
@@ -179,14 +183,14 @@ public class Ai : NetworkBehaviour
 
     private void RefreshNearestPlayer()
     {
-        PMovement[] allPlayers = FindObjectsByType<PMovement>();
         Transform nearest = null;
         float nearestDist = Mathf.Infinity;
 
-        foreach (PMovement candidate in allPlayers)
+        foreach (PMovement candidate in PMovement.All)
         {
             if (candidate == null) continue;
-            if (candidate.TryGetComponent(out PlayerHealth health) && health.IsDead) continue;
+            PlayerHealth health = candidate.Health;
+            if (health != null && health.IsDead) continue;
             float dist = Vector3.Distance(transform.position, candidate.transform.position);
             if (dist < nearestDist)
             {
@@ -210,14 +214,25 @@ public class Ai : NetworkBehaviour
         player = nearest;
     }
 
+    private float repathTimer;
+
     private void FollowTarget(Transform target)
     {
         if (target == null || !navMeshAgent.isOnNavMesh) return;
-        if (Vector3.Distance(target.position, lastPlayerPosition) <= repathThreshold) return;
+
+        // Limita la frecuencia de repath: con una horda, cada zombi pidiendo ruta cada frame es caro.
+        repathTimer -= Time.deltaTime;
+        if (repathTimer > 0f) return;
+
+        // Lejos del objetivo no hace falta tanta precision.
+        float dist = Vector3.Distance(transform.position, target.position);
+        float threshold = Mathf.Max(repathThreshold, dist * 0.05f);
+        if (Vector3.Distance(target.position, lastPlayerPosition) <= threshold) return;
 
         navMeshAgent.isStopped = false;
         navMeshAgent.destination = target.position;
         lastPlayerPosition = target.position;
+        repathTimer = Random.Range(0.2f, 0.4f);
     }
 
     private void GoToDestination()

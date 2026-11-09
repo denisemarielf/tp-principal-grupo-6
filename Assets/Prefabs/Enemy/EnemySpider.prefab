@@ -1979,8 +1979,8 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
-  m_Volume: 1
+  m_PlayOnAwake: 0
+  m_Volume: 0.303
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -2147,12 +2147,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::EnemyAnimation
   ShowTopMostFoldoutHeaderGroup: 1
   audioSource: {fileID: 5490909947503339829}
-  stepClips: []
+  stepClips:
+  - {fileID: 8300000, guid: a548270f518a9ec47a8a385995525112, type: 3}
+  - {fileID: 8300000, guid: cc6d5dbc1264f534ca3fad2543ee44ef, type: 3}
+  - {fileID: 8300000, guid: f58c50311a4ab8a4184dd0e3af7c64ac, type: 3}
   attackClips:
   - {fileID: 8300000, guid: 002024daa88c3a947bdb12038d0cedda, type: 3}
-  landedClips: []
+  landedClips:
+  - {fileID: 8300000, guid: 002024daa88c3a947bdb12038d0cedda, type: 3}
   biteLandedClips: []
-  landedVolume: 1
+  landedVolume: 0.231
   impactClips:
   - {fileID: 8300000, guid: e4e87d9b52fc5f14ab7351820f5983f7, type: 3}
   impactVolume: 1
