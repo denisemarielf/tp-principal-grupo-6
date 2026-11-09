@@ -535,6 +535,13 @@ public class MiniBossBrain : NetworkBehaviour
             if (held && (movement == null || victimHealth == null))
                 held = false; // el jugador se desconecto
 
+            if (held && GameFinished)
+            {
+                held = false;
+                Free(movement, DropPointInFront());
+                yield break;
+            }
+
             if (held && !victimHealth.IsDead && ticksDone < grabTicks && t >= strangleStart + ticksDone * tickEvery)
             {
                 victimHealth.TakeDamage(grabTotalDamage / Mathf.Max(1, grabTicks));

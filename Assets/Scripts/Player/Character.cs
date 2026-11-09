@@ -69,6 +69,19 @@ public class Character : NetworkBehaviour
 
         if (IsOwner)
         {
+            if (health != null)
+            {
+                health.Died += OnLocalPlayerDied;
+                health.Revived += OnLocalPlayerRevived;
+                if (health.IsDead)
+                {
+                    SetGameplayHudVisible(false);
+                    PlayerInput deadInput = GetComponent<PlayerInput>();
+                    if (deadInput != null)
+                        deadInput.enabled = false;
+                }
+            }
+
             string nombre = NombrePlayer.NombreJugador;
             ElectricPanel.LocalMinigameChanged += SetMinigameMode;
             CodeKeypad.LocalMinigameChanged += SetMinigameMode;
@@ -91,9 +104,42 @@ public class Character : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        if (health != null)
+        {
+            health.Died -= OnLocalPlayerDied;
+            health.Revived -= OnLocalPlayerRevived;
+        }
+
         ElectricPanel.LocalMinigameChanged -= SetMinigameMode;
         CodeKeypad.LocalMinigameChanged -= SetMinigameMode;
         RestoreSceneCameras();
+    }
+
+    private void OnLocalPlayerDied()
+    {
+        if (!IsOwner) return;
+        SetGameplayHudVisible(false);
+    }
+
+    private void OnLocalPlayerRevived()
+    {
+        if (!IsOwner) return;
+        SetGameplayHudVisible(true);
+    }
+
+    private void SetGameplayHudVisible(bool visible)
+    {
+        if (localHud != null)
+            localHud.SetActive(visible);
+
+        if (extraLocalHud == null)
+            return;
+
+        foreach (GameObject go in extraLocalHud)
+        {
+            if (go != null)
+                go.SetActive(visible);
+        }
     }
 
     public override void OnDestroy()

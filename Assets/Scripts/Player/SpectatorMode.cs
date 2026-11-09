@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Cuando el dueño muere, la cámara deja el cuerpo y sigue a un compañero vivo.
-// Q cambia de objetivo. Al reaparecer (personaje nuevo) este objeto ya no existe.
+// Q cambia de objetivo. Muestra el tiempo restante para reaparecer.
 public class SpectatorMode : MonoBehaviour
 {
     private const float FollowDistance = 3.2f;
@@ -44,7 +44,7 @@ public class SpectatorMode : MonoBehaviour
         RefreshTargets();
         if (living.Count == 0)
         {
-            HideLabel();
+            ShowWaitingOnly();
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             return;
@@ -171,9 +171,36 @@ public class SpectatorMode : MonoBehaviour
 
         Character character = target.GetComponent<Character>();
         string name = character != null ? character.PlayerName : "Jugador";
-        label.text = "Espectando a " + name + "\nQ para cambiar";
+        label.text = "Espectando a " + name + "\nQ para cambiar" + FormatRespawnCountdownSuffix();
         if (canvas != null)
             canvas.SetActive(true);
+    }
+
+    private void ShowWaitingOnly()
+    {
+        following = false;
+        if (label == null)
+            BuildLabel();
+
+        string countdown = FormatRespawnCountdownSuffix();
+        label.text = string.IsNullOrEmpty(countdown)
+            ? "Sin compañeros vivos"
+            : "Sin compañeros vivos" + countdown;
+        if (canvas != null)
+            canvas.SetActive(true);
+    }
+
+    // Solo en multi hay timer de revive; en solo no se muestra.
+    private string FormatRespawnCountdownSuffix()
+    {
+        float remaining = health != null ? health.RespawnSecondsRemaining : 0f;
+        if (remaining <= 0f)
+            return string.Empty;
+
+        int total = Mathf.CeilToInt(remaining);
+        int minutes = total / 60;
+        int seconds = total % 60;
+        return "\nReaparición en " + minutes + ":" + seconds.ToString("00");
     }
 
     private void HideLabel()
@@ -203,6 +230,6 @@ public class SpectatorMode : MonoBehaviour
         rect.anchorMax = new Vector2(0.5f, 0f);
         rect.pivot = new Vector2(0.5f, 0f);
         rect.anchoredPosition = new Vector2(0f, 48f);
-        rect.sizeDelta = new Vector2(900f, 90f);
+        rect.sizeDelta = new Vector2(900f, 120f);
     }
 }

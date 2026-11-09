@@ -66,7 +66,8 @@ public class ObjectiveHUD : MonoBehaviour
 
         if (zone.IsCompleted)
         {
-            Show("¡Nivel completado!", null, true);
+            // El panel de SafeZoneUI ya muestra el resumen; no duplicar el objetivo.
+            Hide();
             return;
         }
 

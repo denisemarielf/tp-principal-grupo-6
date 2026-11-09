@@ -129,6 +129,8 @@ public class EnemyCombat : NetworkBehaviour
     private void Update()
     {
         if (!IsServer) return;
+        if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
+        if (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished) return;
 
         // Termino el clip de mordida: el jugador queda libre aunque el resto del Update se corte antes.
         if (frozenTarget != null && !IsCommitted)
@@ -142,8 +144,6 @@ public class EnemyCombat : NetworkBehaviour
         }
 
         if (enemyHealth != null && enemyHealth.IsDead()) return;
-        if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
-        if (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished) return;
         if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
 
         // Empuje: se desliza hacia atras con velocidad decreciente (NavMeshAgent.Move respeta los bordes del NavMesh).
