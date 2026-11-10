@@ -165,6 +165,19 @@ public class PlayerInventory : NetworkBehaviour
         return quantity - remaining;
     }
 
+    // Cambia el ítem de un slot por otro sin tocar la cantidad (bidón vacío <-> bidón lleno).
+    public bool ServerReplaceItemInSlot(int slotIndex, int fromItemId, int toItemId)
+    {
+        if (!IsServer || slotIndex < 0 || slotIndex >= slots.Count) return false;
+
+        InventorySlot slot = slots[slotIndex];
+        if (slot.IsEmpty || slot.itemId != fromItemId) return false;
+
+        slot.itemId = toItemId;
+        slots[slotIndex] = slot;
+        return true;
+    }
+
     public bool TryRemove(int itemId, int quantity)
     {
         if (!IsServer || CountOf(itemId) < quantity) return false;

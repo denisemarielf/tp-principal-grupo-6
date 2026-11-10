@@ -1599,6 +1599,7 @@ GameObject:
   - component: {fileID: 7100162145622258601}
   - component: {fileID: 2319105055433980074}
   - component: {fileID: 7246564124639301237}
+  - component: {fileID: 620846315263803533}
   m_Layer: 6
   m_Name: PlayerWithModel(ARMS)
   m_TagString: Player
@@ -2675,6 +2676,29 @@ MonoBehaviour:
   maxAlpha: 0.85
   fadeSpeed: 1.8
   sortingOrder: 20
+--- !u!114 &620846315263803533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1338943456637610382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1393619ac309e044a066d2cef07dcdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::HeldItemDisplay
+  ShowTopMostFoldoutHeaderGroup: 1
+  inventory: {fileID: 3185707815294336632}
+  switcher: {fileID: 3088416575911931480}
+  binder: {fileID: 2776481025474554011}
+  view: {fileID: 1690441814624466559}
+  handPosition: {x: 0, y: 0.29, z: 0}
+  handEuler: {x: 0, y: 90, z: 180}
+  handScale: 0.65
+  firstPersonPosition: {x: 0.32, y: -0.42, z: 0.65}
+  firstPersonEuler: {x: 0, y: -20, z: 0}
+  firstPersonScale: 1.3
 --- !u!1 &1390964396608293640
 GameObject:
   m_ObjectHideFlags: 0
