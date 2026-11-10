@@ -1647,7 +1647,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 375657675
+  GlobalObjectIdHash: 2480460361
   InScenePlacedSourceGlobalObjectIdHash: 2480460361
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -12546,6 +12546,19 @@ MonoBehaviour:
   weaponSwitcher: {fileID: 3088416575911931480}
   thirdPersonDistance: 3.2
   thirdPersonOffset: {x: 0.45, y: 0.35, z: 0}
+  cameraCollisionMask:
+    serializedVersion: 2
+    m_Bits: 6583
+  cameraRadius: 0.3
+  thirdPersonNearClip: 0.1
+  aimDistance: 1.8
+  aimOffset: {x: 0.6, y: 0.25, z: 0}
+  aimFovDelta: -12
+  movePullBack: 0.6
+  moveFovBoost: 7
+  referenceSpeed: 6
+  strafeRoll: 0.5
+  releaseSmoothTime: 0.18
   hitPitch: 3.5
   hitYaw: 2
   hitRoll: 3
