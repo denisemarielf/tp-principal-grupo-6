@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2847193650
+  GlobalObjectIdHash: 4012028322
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -75,7 +75,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game::SurvivalModeController
   ShowTopMostFoldoutHeaderGroup: 1
-  matchDuration: 180
   civilianCount: 4
   pointsPerCivilian: 100
   civilianRingRadius: 6
@@ -94,9 +93,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::SurvivalWaveDirector
   ShowTopMostFoldoutHeaderGroup: 1
   enemyPrefab: {fileID: 100001, guid: c4e8a1b2d3f5476890abcdef12345005, type: 3}
+  miniBossPrefab: {fileID: 3852245103054994289, guid: 8b833f20ed3bb534a894632b92b4bb9e, type: 3}
+  bossEveryRounds: 2
   firstWaveDelay: 5
-  delayAfterClear: 2
-  startCount: 4
+  delayAfterClear: 30
+  retryDelay: 1
+  startCount: 8
   increment: 2
   minRadius: 40
   maxRadius: 52
@@ -112,6 +114,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c1e9a4b2d8f4e6a9b0c1d2e3f405168, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::SurvivalLootSpawner
+  ShowTopMostFoldoutHeaderGroup: 1
   weaponPrefabs:
   - {fileID: 105282843008529942, guid: 925d72dca8d18f3439819c306b818f80, type: 3}
   - {fileID: 1345453787564450841, guid: 4365a0b4b00471b4980b9dd2e917dc31, type: 3}

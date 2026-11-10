@@ -12,7 +12,7 @@ public enum SurvivalMatchOutcome : byte
 }
 
 // Partida de Supervivencia (US 4.3). Solo el server decide el resultado y lo replica.
-// Victoria: se acaba el tiempo y queda al menos un civil vivo.
+// Victoria: se superan todas las rondas de la dificultad elegida y queda al menos un civil vivo.
 // Derrota: mueren todos los jugadores o todos los civiles del refugio.
 [RequireComponent(typeof(NetworkObject))]
 public class SurvivalModeController : NetworkBehaviour
@@ -20,14 +20,13 @@ public class SurvivalModeController : NetworkBehaviour
     public static SurvivalModeController Current { get; private set; }
     public static event Action<SurvivalMatchOutcome> MatchEnded;
 
-    [SerializeField] private float matchDuration = 180f;
     [SerializeField] private int civilianCount = 4;
     [SerializeField] private int pointsPerCivilian = 100;
     [SerializeField] private float civilianRingRadius = 6f;
     [SerializeField] private GameObject civilianPrefab;
 
-    private readonly NetworkVariable<float> timeRemaining = new NetworkVariable<float>(
-        180f,
+    private readonly NetworkVariable<int> roundsTarget = new NetworkVariable<int>(
+        0,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
     );
@@ -50,12 +49,11 @@ public class SurvivalModeController : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
-    private float durationLeft;
-    private float timeSyncTimer;
     private int spawnedCivilians;
     private bool civiliansReady;
+    private SurvivalWaveDirector waves;
 
-    public float TimeRemaining => timeRemaining.Value;
+    public int RoundsTarget => roundsTarget.Value;
     public SurvivalMatchOutcome Outcome => outcome.Value;
     public int AliveCivilians => aliveCivilians.Value;
     public int EndScore => endScore.Value;
@@ -65,12 +63,12 @@ public class SurvivalModeController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         Current = this;
+        waves = GetComponent<SurvivalWaveDirector>();
         outcome.OnValueChanged += OnOutcomeChanged;
 
         if (IsServer)
         {
-            durationLeft = matchDuration;
-            timeRemaining.Value = matchDuration;
+            roundsTarget.Value = DifficultyTuning.RoundsToWin;
             SnapToNavMesh();
             SpawnCivilians();
         }
@@ -94,14 +92,6 @@ public class SurvivalModeController : NetworkBehaviour
         if (!civiliansReady)
             return;
 
-        durationLeft -= Time.deltaTime;
-        timeSyncTimer -= Time.deltaTime;
-        if (timeSyncTimer <= 0f)
-        {
-            timeSyncTimer = 0.25f;
-            timeRemaining.Value = Mathf.Max(0f, durationLeft);
-        }
-
         int alive = CountAliveShelterCivilians();
         if (aliveCivilians.Value != alive)
             aliveCivilians.Value = alive;
@@ -118,7 +108,9 @@ public class SurvivalModeController : NetworkBehaviour
             return;
         }
 
-        if (durationLeft <= 0f && alive > 0)
+        // Gana al limpiar la ultima ronda con al menos un civil vivo. El director no arma rondas de mas.
+        if (roundsTarget.Value > 0 && waves != null
+            && waves.RoundsCleared >= roundsTarget.Value && alive > 0)
             Finish(SurvivalMatchOutcome.Victory, alive * pointsPerCivilian);
     }
 
@@ -255,7 +247,6 @@ public class SurvivalModeController : NetworkBehaviour
             return;
 
         endScore.Value = score;
-        timeRemaining.Value = Mathf.Max(0f, durationLeft);
         outcome.Value = result;
         Debug.Log($"SurvivalModeController: {result}. Puntos {score}.");
     }

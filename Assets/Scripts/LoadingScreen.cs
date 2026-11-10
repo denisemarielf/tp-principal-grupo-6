@@ -24,6 +24,9 @@ public class LoadingScreen : MonoBehaviour
 
     public static LoadingScreen Instance { get; private set; }
 
+    // True mientras la pantalla tapa la escena (incluye el fundido de salida).
+    public static bool EstaVisible => Instance != null && Instance.visible;
+
     [Header("Fondos (se elige uno al azar en cada carga)")]
     public Sprite[] fondos;
 
@@ -42,7 +45,8 @@ public class LoadingScreen : MonoBehaviour
     {
         new MapaInfo { nombreEscena = "SampleScene",     nombreMostrado = "SUBURBIO" },
         new MapaInfo { nombreEscena = "MapaOficina",     nombreMostrado = "COMPLEJO DE OFICINAS" },
-        new MapaInfo { nombreEscena = "ExtraccionScene", nombreMostrado = "ESTACION DE TREN" }
+        new MapaInfo { nombreEscena = "ExtraccionScene", nombreMostrado = "ESTACION DE TREN" },
+        new MapaInfo { nombreEscena = "SupervivenciaScene", nombreMostrado = "ESTACION DE TREN" }
     };
 
     [Header("Tipografía (arrastrá tus font assets TMP)")]

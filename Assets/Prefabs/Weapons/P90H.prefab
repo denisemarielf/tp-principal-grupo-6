@@ -20417,6 +20417,7 @@ GameObject:
   - component: {fileID: 918158630020485163}
   - component: {fileID: 2259312646588432603}
   - component: {fileID: 6597277613858925467}
+  - component: {fileID: 6148197629832009467}
   m_Layer: 0
   m_Name: P90H
   m_TagString: Untagged
@@ -20460,11 +20461,17 @@ MonoBehaviour:
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 1500
   damageAmount: 25
+  pelletCount: 1
+  useDamageFalloff: 0
+  falloffStart: 15
+  falloffEnd: 40
+  minDamageMultiplier: 0.3
   hitscanRange: 100
   hitscanLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   hitscanImpactEffect: {fileID: 39281035044144115, guid: 320e02664be69b34d813593ce5a35b26, type: 3}
+  headshotMargin: 0.3
   bulletTracer:
     bullet_Tracer_prefab: {fileID: 1898068084250203151, guid: b3b8dd34eec1f60469efccd89a47f182, type: 3}
     bullet_Tracer_Holder: {fileID: 8518825746866725326}
@@ -20477,6 +20484,7 @@ MonoBehaviour:
   weaponSway: {fileID: 5061709711396892598}
   cameraRecoil: {fileID: 6597277613858925467}
   crosshairController: {fileID: 0}
+  closeRangeDismember: 0
 --- !u!114 &5814232421975051772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20496,6 +20504,7 @@ MonoBehaviour:
   reloadSound: {fileID: 8300000, guid: fd4c73c8f64e05c44a8ec565a08f9765, type: 3}
   emptySound: {fileID: 8300000, guid: 1a1d08bada427b34c815e52edd0b33f1, type: 3}
   weaponSway: {fileID: 5061709711396892598}
+  maxReserveAmmo: 120
 --- !u!114 &918158630020485163
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20628,6 +20637,30 @@ MonoBehaviour:
   recoil_Snapiness: 13
   recoil_Return_Speed: 10
   max_Vetical_Recoil: 12
+--- !u!114 &6148197629832009467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6439111100732154287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b678a20a6da7d448659f8cb5066a07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::WeaponSpread
+  baseSpread: 0.4
+  maxSpread: 6
+  speedReference: 6
+  moveSpreadAdd: 1.5
+  airSpreadAdd: 3
+  aimMultiplier: 0.4
+  crouchMultiplier: 0.7
+  bloomPerShot: 0.6
+  bloomMax: 4
+  bloomRecoverDelay: 0.15
+  bloomRecoverRate: 6
+  stateSmoothTime: 0.08
 --- !u!1 &6447152319505653060
 GameObject:
   m_ObjectHideFlags: 0

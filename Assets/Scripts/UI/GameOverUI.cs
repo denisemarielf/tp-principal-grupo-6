@@ -153,7 +153,7 @@ public class GameOverUI : MonoBehaviour
         switch (mode.Outcome)
         {
             case SurvivalMatchOutcome.Victory:
-                Show("VICTORIA", $"Sobreviviste\nPuntos: {mode.EndScore}", new Color(0.25f, 0.85f, 0.35f));
+                Show("VICTORIA", $"Superaste las {mode.RoundsTarget} rondas\nPuntos: {mode.EndScore}", new Color(0.25f, 0.85f, 0.35f));
                 break;
             case SurvivalMatchOutcome.DefeatCivilians:
                 Show("DERROTA", "Todos los civiles murieron", new Color(0.85f, 0.15f, 0.15f));
@@ -214,23 +214,26 @@ public class GameOverUI : MonoBehaviour
         if (hudText == null || mode.IsFinished)
             return;
 
-        int total = Mathf.CeilToInt(Mathf.Max(0f, mode.TimeRemaining));
-        int minutes = total / 60;
-        int seconds = total % 60;
         SurvivalWaveDirector waves = mode.GetComponent<SurvivalWaveDirector>();
         int round = waves != null ? waves.WaveNumber : 0;
         int zombies = waves != null ? waves.ZombiesRemaining : 0;
-        string roundLabel = round > 0 ? round.ToString() : "-";
+        int totalRounds = mode.RoundsTarget;
 
         string accent = ColorUtility.ToHtmlStringRGB(RedHover);
         string soft = ColorUtility.ToHtmlStringRGB(TextSoft);
+        int breakSecs = waves != null ? waves.BreakSecondsLeft : 0;
+        bool onBreak = breakSecs > 0 && zombies <= 0;
+
+        // Durante el receso, la línea de zombies se reemplaza por la cuenta regresiva.
+        string lastLine = onBreak
+            ? $"<color=#{accent}>PRÓXIMA RONDA EN</color>  {breakSecs}"
+            : $"<color=#{soft}>ZOMBIES</color>  {zombies}";
 
         hudText.text =
             $"<size=68%><color=#{accent}><cspace=0.2em>SUPERVIVENCIA</cspace></color></size>\n" +
-            $"<size=135%>{minutes:00}:{seconds:00}</size>\n" +
+            $"<size=135%>RONDA {round}/{totalRounds}</size>\n" +
             $"<color=#{soft}>CIVILES VIVOS</color>  {mode.AliveCivilians}\n" +
-            $"<color=#{soft}>RONDA</color>  {roundLabel}\n" +
-            $"<color=#{soft}>ZOMBIES</color>  {zombies}";
+            lastLine;
     }
 
     // ============================================================

@@ -6,12 +6,14 @@ public class EnemyCombat : NetworkBehaviour
 {
     [Header("Ataque")]
     public float attackDamage = 15f;
-    public float attackRange = 15.5f;
+    public float attackRange = 1.5f;
     public float attackDuration = 1.2f; // solo de respaldo: la duracion real es la del clip de ataque elegido
 
     [Header("Mordida")]
     [Range(0f, 1f)] public float biteChance = 0.25f;     // probabilidad de morder en cada ciclo (solo contra jugadores)
     public float biteDamage = 15f;                        // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
+
+    private bool difficultyApplied;
 
     [Header("Empuje al recibir disparos")]
     public float knockbackSpeed = 5f;        // 0 = sin empuje. Distancia aprox = velocidad x duracion / 2
@@ -36,6 +38,11 @@ public class EnemyCombat : NetworkBehaviour
     public bool IsBusy => IsStunned || IsCommitted || IsKnockedBack;
 
 
+    [Header("Linea de vision")]
+    [Tooltip("Capas que bloquean el ataque (paredes/entorno). Idealmente NO incluir jugadores ni zombies.")]
+    public LayerMask obstacleMask = ~0;
+    public float eyeHeight = 1.2f;
+
     [Header("Frenado")]
     public float hitSlowMultiplier = 1.7f;
     public float hitSlowDuration = 1.25f;
@@ -45,6 +52,7 @@ public class EnemyCombat : NetworkBehaviour
     private EnemyHealth enemyHealth;
     private EnemyAnimation enemyAnimation;
     private Transform currentTarget;
+
     [Header("Dano por tiempo (si el clip no tiene evento)")]
     [Tooltip("0 = solo por evento. Ej: 0.45 = pega al 45% del clip.")]
     [Range(0f, 1f)] public float timedDamageAt = 0f;
@@ -57,6 +65,17 @@ public class EnemyCombat : NetworkBehaviour
         ai = GetComponent<Ai>();
         enemyHealth = GetComponent<EnemyHealth>();
         enemyAnimation = GetComponent<EnemyAnimation>();
+    }
+
+    // US 7.5: la dificultad del host escala el dano de golpe y mordida (una sola vez).
+    public void ApplyDifficultyScale()
+    {
+        if (difficultyApplied)
+            return;
+
+        attackDamage *= DifficultyTuning.DamageMul;
+        biteDamage *= DifficultyTuning.DamageMul;
+        difficultyApplied = true;
     }
 
     public override void OnNetworkDespawn()
@@ -115,6 +134,8 @@ public class EnemyCombat : NetworkBehaviour
     private void Update()
     {
         if (!IsServer) return;
+        if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
+        if (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished) return;
 
         // Termino el clip de mordida: el jugador queda libre aunque el resto del Update se corte antes.
         if (frozenTarget != null && !IsCommitted)
@@ -128,8 +149,6 @@ public class EnemyCombat : NetworkBehaviour
         }
 
         if (enemyHealth != null && enemyHealth.IsDead()) return;
-        if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
-        if (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished) return;
         if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
 
         // Empuje: se desliza hacia atras con velocidad decreciente (NavMeshAgent.Move respeta los bordes del NavMesh).
@@ -153,11 +172,21 @@ public class EnemyCombat : NetworkBehaviour
         if (player != null && player.TryGetComponent(out RescuableNpc targetNpc) && !targetNpc.IsTargetable)
             player = null;
         float distanceToPlayer = player != null
-            ? Vector3.Distance(transform.position, player.position)
+            ? DistanceTo(player)
             : Mathf.Infinity;
 
         if (IsCommitted)
         {
+            // Si el jugador ya no esta al alcance en plena mordida, lo suelta y corta el ataque.
+            if (biteCycle && frozenTarget != null
+                && (currentTarget == null || DistanceTo(currentTarget) > attackRange * 1.2f))
+            {
+                ReleaseBiteTarget();
+                attackEndTime = Time.time;
+                navMeshAgent.isStopped = true;
+                return;
+            }
+
             if (timedDamageAt > 0f && !biteCycle && !timedDamageDone
                 && Time.time >= attackStartTime + attackLength * timedDamageAt)
             {
@@ -167,7 +196,7 @@ public class EnemyCombat : NetworkBehaviour
             navMeshAgent.isStopped = true;
             return;
         }
-        if (distanceToPlayer <= attackRange)
+        if (player != null && CanAttack(player))
         {
             currentTarget = player;
             navMeshAgent.isStopped = true;
@@ -209,6 +238,67 @@ public class EnemyCombat : NetworkBehaviour
         }
     }
 
+    // Distancia horizontal desde el zombie hasta el cuerpo del objetivo, no hasta su pivote.
+    // Un civil escalado a 2x o con el pivote en otro lado dejaba al zombie parado afuera del rango de ataque.
+    public float DistanceTo(Transform target)
+    {
+        if (target == null) return Mathf.Infinity;
+
+        Vector3 self = transform.position;
+        Collider body = target.GetComponentInChildren<Collider>();
+        if (body == null || body.isTrigger)
+        {
+            Vector3 pivot = target.position;
+            self.y = 0f;
+            pivot.y = 0f;
+            return Vector3.Distance(self, pivot);
+        }
+
+        Bounds bounds = body.bounds;
+        Vector3 level = new Vector3(self.x, bounds.center.y, self.z);
+        Vector3 closest = bounds.ClosestPoint(level);
+        self.y = 0f;
+        closest.y = 0f;
+        return Vector3.Distance(self, closest);
+    }
+
+    // Rango + linea de vision. Lo usan Ai y EnemyCombat para decidir lo mismo.
+    public bool CanAttack(Transform target)
+    {
+        // El && corta antes: el raycast solo se hace cuando ya esta cerca (barato en hordas).
+        return target != null
+            && DistanceTo(target) <= attackRange
+            && HasLineOfSight(target);
+    }
+
+    private bool HasLineOfSight(Transform target)
+    {
+        if (target == null) return false;
+
+        Vector3 origin = transform.position + Vector3.up * eyeHeight;
+        Collider body = target.GetComponentInChildren<Collider>();
+        Vector3 dest = body != null ? body.bounds.center : target.position + Vector3.up;
+
+        Vector3 dir = dest - origin;
+        float dist = dir.magnitude;
+        if (dist < 0.01f) return true;
+
+        RaycastHit[] hits = Physics.RaycastAll(origin, dir / dist, dist,
+            obstacleMask, QueryTriggerInteraction.Ignore);
+
+        foreach (RaycastHit h in hits)
+        {
+            Transform t = h.collider.transform;
+            if (t.IsChildOf(transform) || t.IsChildOf(target)) continue;   // yo mismo / el objetivo
+            // otros zombies, jugadores o civiles no cuentan como pared
+            if (h.collider.GetComponentInParent<EnemyCombat>() != null) continue;
+            if (h.collider.GetComponentInParent<PlayerHealth>() != null) continue;
+            if (h.collider.GetComponentInParent<RescuableNpc>() != null) continue;
+            return false;
+        }
+        return true;
+    }
+
     public void DealDamage()
     {
         if (!IsServer || currentTarget == null) return;
@@ -221,7 +311,8 @@ public class EnemyCombat : NetworkBehaviour
 
         // La mordida pega una sola vez (el fallback de Update cubre el caso de que el clip no tenga evento).
         if (biteCycle && biteDamageDealt) return;
-        if (Vector3.Distance(transform.position, currentTarget.position) > attackRange * 1.2f) return;
+        if (DistanceTo(currentTarget) > attackRange * 1.2f) return;
+        if (!HasLineOfSight(currentTarget)) return;
 
         ApplyDamage(biteCycle ? biteDamage : attackDamage, biteCycle);
     }
