@@ -37,7 +37,22 @@ public class ItemPickup : NetworkPickup
     public override void OnNetworkSpawn()
     {
         active.Add(this);
-        PickupGroundSnap.SnapToGround(transform);
+
+        // Solo el server acomoda al piso. En el cliente el SnapToGround a veces lo deja
+        // bajo el asfalto: se puede agarrar con E pero no se ve.
+        if (IsServer)
+            PickupGroundSnap.SnapToGround(transform);
+
+        foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
+        {
+            if (renderer != null)
+                renderer.enabled = true;
+        }
+
+        Light glow = GetComponentInChildren<Light>(true);
+        if (glow != null)
+            glow.enabled = true;
+
         if (IsServer) quantity.Value = initialQuantity;
         if (usePrompt != null) usePrompt.SetActive(false);
     }

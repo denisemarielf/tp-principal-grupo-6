@@ -125,14 +125,12 @@ public class EnemyHealth : NetworkBehaviour
         All.Add(this);
         isDead.OnValueChanged += OnDeadChanged;
 
-        if (healthOverride > 0f)
-            maxHealth = healthOverride; // tambien en clientes, para que la barra tenga el maximo
+        // Tambien en clientes: la barra necesita el maximo (override o variante), ya escalado por dificultad.
+        float baseHealth = healthOverride > 0f ? healthOverride : HealthFor(variant);
+        maxHealth = baseHealth * DifficultyTuning.HealthMul;
 
         if (IsServer)
-        {
-            maxHealth = healthOverride > 0f ? healthOverride : HealthFor(variant);
             currentHealth.Value = maxHealth;
-        }
 
         if (isDead.Value)
             PlayDeath();
@@ -155,7 +153,7 @@ public class EnemyHealth : NetworkBehaviour
     public void Configure(EnemyVariant newVariant)
     {
         variant = newVariant;
-        maxHealth = HealthFor(variant);
+        maxHealth = HealthFor(variant) * DifficultyTuning.HealthMul;
     }
 
     public static float HealthFor(EnemyVariant value)

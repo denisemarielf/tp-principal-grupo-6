@@ -127,7 +127,7 @@ public class SafeZoneUI : MonoBehaviour
     private void UpdateRescueText()
     {
         SafeZone zone = SafeZone.Current;
-        bool show = zone != null && zone.TotalNpcs > 0;
+        bool show = zone != null && !zone.IsCompleted && zone.TotalNpcs > 0;
 
         // Si hay panel, se prende/apaga todo junto (texto + iconos).
         if (rescuePanel != null)
@@ -151,14 +151,19 @@ public class SafeZoneUI : MonoBehaviour
 
         if (statusText != null)
             statusText.gameObject.SetActive(false);
-
-        if (statusText != null)
-            statusText.gameObject.SetActive(false);
+        if (rescuePanel != null)
+            rescuePanel.SetActive(false);
+        else if (rescueText != null)
+            rescueText.gameObject.SetActive(false);
 
         StyleLevelCompletePanel();
+        HideGameplayHudKeepSummary();
 
         if (levelCompletePanel != null)
+        {
             levelCompletePanel.SetActive(true);
+            levelCompletePanel.transform.SetAsLastSibling();
+        }
 
         // El jugador deja de moverse y puede usar el mouse para los botones del panel.
         NetworkObject localPlayer = NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClient?.PlayerObject : null;
@@ -172,6 +177,13 @@ public class SafeZoneUI : MonoBehaviour
             if (playerInput != null)
                 playerInput.enabled = false;
 
+            // Sin arma en pantalla: es pantalla de fin, no de combate.
+            foreach (Camera cam in localPlayer.GetComponentsInChildren<Camera>(true))
+            {
+                if (cam != null && cam.gameObject.name == "WeaponCamera")
+                    cam.enabled = false;
+            }
+
             if (HasNextScene())
                 PlayerCarryOver.CaptureLocalOwner(localPlayer.gameObject);
         }
@@ -181,6 +193,30 @@ public class SafeZoneUI : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+    }
+
+    // Apaga inventario, vida, objetivos, etc. Deja solo el panel de nivel completado.
+    private void HideGameplayHudKeepSummary()
+    {
+        if (levelCompletePanel == null)
+            return;
+
+        Transform hudRoot = levelCompletePanel.transform.parent;
+        if (hudRoot == null)
+            return;
+
+        for (int i = 0; i < hudRoot.childCount; i++)
+        {
+            Transform child = hudRoot.GetChild(i);
+            if (child == null || child == levelCompletePanel.transform)
+                continue;
+
+            child.gameObject.SetActive(false);
+        }
+
+        Image panelImage = levelCompletePanel.GetComponent<Image>();
+        if (panelImage != null)
+            panelImage.color = new Color(0.01f, 0.012f, 0.015f, 0.88f);
     }
     private void OnSecretZoneCompleted()
     {
@@ -230,8 +266,24 @@ public class SafeZoneUI : MonoBehaviour
         Button menuButton = levelCompletePanel.GetComponentInChildren<Button>(true);
         RectTransform menuRect = menuButton != null ? menuButton.GetComponent<RectTransform>() : null;
 
+        // Columna derecha: titulo + botones. El resumen queda a la izquierda (EnsureMatchBoard).
+        const float rightColumnX = 380f;
+
         if (menuRect != null)
-            menuRect.anchoredPosition = new Vector2(menuRect.anchoredPosition.x, -110f);
+            menuRect.anchoredPosition = new Vector2(rightColumnX, -110f);
+
+        foreach (TMP_Text title in levelCompletePanel.GetComponentsInChildren<TMP_Text>(true))
+        {
+            if (title == null || title.GetComponentInParent<Button>() != null)
+                continue;
+
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(rightColumnX, 90f);
+            titleRect.sizeDelta = new Vector2(520f, 80f);
+        }
 
         TMP_FontAsset panelFont = null;
         if (menuButton != null)
@@ -248,7 +300,7 @@ public class SafeZoneUI : MonoBehaviour
             applyMenuStyle
                 ? (toStation ? "CONTINUAR A LA ESTACION" : "CONTINUAR A OFICINAS")
                 : (toStation ? "Continuar a la estacion" : "Continuar a Oficinas"),
-            new Vector2(0f, -30f),
+            new Vector2(rightColumnX, -20f),
             toStation ? ContinueToStation : ContinueToOffices,
             panelFont,
             applyMenuStyle);
@@ -259,7 +311,7 @@ public class SafeZoneUI : MonoBehaviour
         waitingRect.anchorMin = new Vector2(0.5f, 0.5f);
         waitingRect.anchorMax = new Vector2(0.5f, 0.5f);
         waitingRect.pivot = new Vector2(0.5f, 0.5f);
-        waitingRect.anchoredPosition = new Vector2(0f, -30f);
+        waitingRect.anchoredPosition = new Vector2(rightColumnX, -20f);
         waitingRect.sizeDelta = new Vector2(420f, 40f);
 
         waitingHostText = waitingGo.AddComponent<TextMeshProUGUI>();
@@ -284,16 +336,30 @@ public class SafeZoneUI : MonoBehaviour
 
         if (boardWidget == null)
         {
+            // Columna izquierda; los botones van a la derecha para no superponerse.
             boardWidget = MatchBoardWidget.Create(
                 levelCompletePanel.transform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -350f),
-                new Vector2(860f, 340f));
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(56f, 0f),
+                new Vector2(560f, 380f));
+        }
+        else
+        {
+            RectTransform boardRect = boardWidget.GetComponent<RectTransform>();
+            if (boardRect != null)
+            {
+                boardRect.anchorMin = new Vector2(0f, 0.5f);
+                boardRect.anchorMax = new Vector2(0f, 0.5f);
+                boardRect.pivot = new Vector2(0f, 0.5f);
+                boardRect.anchoredPosition = new Vector2(56f, 0f);
+                boardRect.sizeDelta = new Vector2(560f, 380f);
+            }
         }
 
         boardWidget.Apply(MatchStatsService.Current);
+        boardWidget.transform.SetAsFirstSibling();
     }
 
     private static GameObject CreatePanelButton(

@@ -46,7 +46,8 @@ public class MiniBossSpawner : MonoBehaviour
             return;
         if (SafeZone.Current != null && SafeZone.Current.IsCompleted)
             return;
-        if (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished)
+        // En Supervivencia el jefe sale con las oleadas (cada 2 rondas), no por este temporizador.
+        if (SurvivalModeController.Current != null)
             return;
 
         if (TrySpawn())

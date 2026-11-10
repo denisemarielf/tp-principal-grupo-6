@@ -26,6 +26,16 @@ public class Ai : NetworkBehaviour
     [Tooltip("Si no llega en este tiempo, elige otro punto.")]
     [SerializeField] private float maxWanderTravelTime = 15f;
 
+    [Header("Asedio al refugio (Supervivencia)")]
+    [Tooltip("Un jugador solo los desvia del refugio si esta a menos de esta distancia.")]
+    [SerializeField] private float playerDistractRange = 12f;
+    [Tooltip("Cada cuanto revisa si quedo trabado.")]
+    [SerializeField] private float stuckCheckInterval = 0.5f;
+    [Tooltip("Segundos sin avanzar y sin camino completo antes de reubicarlo.")]
+    [SerializeField] private float stuckTime = 2.5f;
+    [SerializeField] private float relocateRadius = 6f;
+    [SerializeField] private float relocateMinTargetDistance = 4f;
+
     private Transform player;
     private EnemyCombat enemyCombat;
     private Vector3 lastPlayerPosition;
@@ -39,6 +49,12 @@ public class Ai : NetworkBehaviour
     // Hordas: persiguen sin importar la distancia (lo activa el AIDirector).
     private bool alwaysChase;
 
+    // Supervivencia: el objetivo por defecto son los civiles del refugio, no los jugadores.
+    private bool shelterSiege;
+    private float stuckSampleTimer;
+    private float stuckTimer;
+    private Vector3 lastStuckSample;
+
     private float baseSpeed;
     private Vector3 homePosition;
     private bool isWanderMoving;
@@ -47,13 +63,14 @@ public class Ai : NetworkBehaviour
     public Transform CurrentPlayer => (aggroTimer > 0f && aggroTarget != null) ? aggroTarget : player;
 
     // US 7.2: normal 4, fragil 7 y duro 3. El jugador camina a 7.
+    // US 7.5: la dificultad del host escala la velocidad.
     public void Configure(EnemyVariant variant)
     {
         if (navMeshAgent == null)
             navMeshAgent = GetComponent<NavMeshAgent>();
         if (navMeshAgent != null)
         {
-            baseSpeed = SpeedFor(variant);
+            baseSpeed = SpeedFor(variant) * DifficultyTuning.SpeedMul;
             navMeshAgent.speed = baseSpeed;
         }
     }
@@ -121,6 +138,9 @@ public class Ai : NetworkBehaviour
             return;
 
         Transform target = CurrentPlayer;
+        if (shelterSiege)
+            CheckStuck(target);
+
         if (target == null)
         {
             if (isFollowingPlayer)
@@ -135,7 +155,9 @@ public class Ai : NetworkBehaviour
             return;
         }
 
-        float distanceToPlayer = Vector3.Distance(transform.position, target.position);
+        float distanceToPlayer = enemyCombat != null
+            ? enemyCombat.DistanceTo(target)
+            : Vector3.Distance(transform.position, target.position);
         bool isInAttackRange = enemyCombat != null && distanceToPlayer <= enemyCombat.attackRange;
         bool withinFollowRange = alwaysChase || (isFollowingPlayer
             ? distanceToPlayer < distanceToLosePlayer
@@ -175,6 +197,13 @@ public class Ai : NetworkBehaviour
         alwaysChase = true;
     }
 
+    // Lo llama SurvivalWaveDirector (via EnemySceneSetup) al spawnear un zombie de oleada.
+    public void StartShelterSiege()
+    {
+        alwaysChase = true;
+        shelterSiege = true;
+    }
+
     private void ClearAggro()
     {
         aggroTarget = null;
@@ -183,6 +212,12 @@ public class Ai : NetworkBehaviour
 
     private void RefreshNearestPlayer()
     {
+        if (shelterSiege)
+        {
+            RefreshShelterTarget();
+            return;
+        }
+
         Transform nearest = null;
         float nearestDist = Mathf.Infinity;
 
@@ -212,6 +247,114 @@ public class Ai : NetworkBehaviour
         }
 
         player = nearest;
+    }
+
+    // Asedio: un jugador cerca los desvia; si no, van al civil vivo del refugio mas cercano.
+    private void RefreshShelterTarget()
+    {
+        Transform nearestPlayer = null;
+        float playerDist = playerDistractRange;
+        foreach (PMovement candidate in PMovement.All)
+        {
+            if (candidate == null) continue;
+            PlayerHealth health = candidate.Health;
+            if (health != null && health.IsDead) continue;
+            float dist = Vector3.Distance(transform.position, candidate.transform.position);
+            if (dist < playerDist)
+            {
+                playerDist = dist;
+                nearestPlayer = candidate.transform;
+            }
+        }
+
+        if (nearestPlayer != null)
+        {
+            player = nearestPlayer;
+            return;
+        }
+
+        Transform nearestCivilian = null;
+        float civilianDist = Mathf.Infinity;
+        foreach (RescuableNpc npc in RescuableNpc.All)
+        {
+            if (npc == null || !npc.IsShelter || !npc.IsTargetable) continue;
+            float dist = Vector3.Distance(transform.position, npc.transform.position);
+            if (dist < civilianDist)
+            {
+                civilianDist = dist;
+                nearestCivilian = npc.transform;
+            }
+        }
+
+        player = nearestCivilian;
+    }
+
+    // Si no avanza, esta lejos de su objetivo y no tiene camino completo, lo reubica a un piso cercano que si lo tenga.
+    private void CheckStuck(Transform target)
+    {
+        if (target == null || enemyCombat == null)
+        {
+            stuckTimer = 0f;
+            return;
+        }
+
+        stuckSampleTimer -= Time.deltaTime;
+        if (stuckSampleTimer > 0f)
+            return;
+
+        stuckSampleTimer = stuckCheckInterval;
+        float moved = Vector3.Distance(transform.position, lastStuckSample);
+        lastStuckSample = transform.position;
+
+        bool farFromTarget = enemyCombat.DistanceTo(target) > enemyCombat.attackRange;
+        if (!farFromTarget || moved > 0.2f)
+        {
+            stuckTimer = 0f;
+            return;
+        }
+
+        stuckTimer += stuckCheckInterval;
+        if (stuckTimer < stuckTime)
+            return;
+
+        stuckTimer = 0f;
+        if (!HasCompletePath(transform.position, target.position))
+            Relocate(target);
+    }
+
+    private void Relocate(Transform target)
+    {
+        for (int i = 0; i < 12; i++)
+        {
+            Vector2 offset = Random.insideUnitCircle * relocateRadius;
+            Vector3 candidate = transform.position + new Vector3(offset.x, 0f, offset.y);
+            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2f, navMeshAgent.areaMask))
+                continue;
+
+            // Mismo nivel que el objetivo (piso), no encima de un techo o una copa.
+            if (Mathf.Abs(hit.position.y - target.position.y) > 1.5f)
+                continue;
+            if (Vector3.Distance(hit.position, target.position) < relocateMinTargetDistance)
+                continue;
+            if (!HasCompletePath(hit.position, target.position))
+                continue;
+
+            navMeshAgent.Warp(hit.position);
+            navMeshAgent.ResetPath();
+            isWanderMoving = false;
+            lastPlayerPosition = Vector3.one * 1000000f;
+            return;
+        }
+    }
+
+    private bool HasCompletePath(Vector3 from, Vector3 to)
+    {
+        if (!NavMesh.SamplePosition(to, out NavMeshHit end, 3f, navMeshAgent.areaMask))
+            return false;
+
+        var path = new NavMeshPath();
+        return NavMesh.CalculatePath(from, end.position, navMeshAgent.areaMask, path)
+            && path.status == NavMeshPathStatus.PathComplete;
     }
 
     private float repathTimer;
@@ -272,7 +415,7 @@ public class Ai : NetworkBehaviour
         {
             Vector2 offset = Random.insideUnitCircle * wanderRadius;
             Vector3 candidate = homePosition + new Vector3(offset.x, 0f, offset.y);
-            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+            if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 3f, navMeshAgent.areaMask))
                 continue;
 
             navMeshAgent.isStopped = false;

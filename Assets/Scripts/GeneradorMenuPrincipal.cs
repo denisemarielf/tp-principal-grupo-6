@@ -21,6 +21,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     public string nombreEscenaMapa1 = "SampleScene";
     public string nombreEscenaMapa2 = "MapaOficina";
     public string nombreEscenaMapa3 = "TestConexion";
+    public string nombreEscenaSupervivencia = "SupervivenciaScene";
 
     [Header("Objetivos de los Mapas")]
     [TextArea(2, 5)]
@@ -33,7 +34,11 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     [TextArea(2, 5)]
     public string objetivoMapa3 =
-        "Estacion de tren. Modo Supervivencia: defende el refugio frente a oleadas. La victoria es sobrevivir el tiempo con al menos un civil vivo.";
+        "Estacion de tren. Modo Supervivencia: defende el refugio frente a oleadas. La victoria es superar todas las rondas (3, 5 o 7 segun la dificultad) con al menos un civil vivo.";
+
+    [TextArea(2, 5)]
+    public string objetivoMapa3Extraccion =
+        "Estacion de tren, nivel de la plaza. Modo Extraccion: recolecta los suministros de la plaza y llega a la zona segura.";
 
     [Header("Ambientación y Arte")]
     public Sprite imagenFondoCustom;
@@ -148,6 +153,11 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     private TextMeshProUGUI txtBtnMapa;
     private TextMeshProUGUI txtBtnDificultad;
+
+    // Modo de juego: cada mapa solo ofrece los que le corresponden (MatchSettings.ModesForMap).
+    private GameMode modoSeleccionado = GameMode.Extraccion;
+    private TextMeshProUGUI txtBtnModo;
+    private bool selectoresBloqueados;
 
     // Descripción del objetivo del mapa seleccionado
     private TextMeshProUGUI txtObjetivoMapa;
@@ -496,9 +506,30 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 };
 
                 txtBtnMapa.text = mapas[mapaSeleccionado];
+
+                // Si el modo elegido no existe en el mapa nuevo, pasa al primero que ofrece.
+                if (!MatchSettings.IsAllowed(mapaSeleccionado, modoSeleccionado))
+                    modoSeleccionado = MatchSettings.ModesForMap(mapaSeleccionado)[0];
+
+                ActualizarBotonModo();
                 ActualizarObjetivoMapa();
             }
         );
+
+        // MODO (depende del mapa elegido)
+        txtBtnModo = CrearBotonCiclico(
+            tarjetaCrear.transform,
+            "MODO: " + MatchSettings.Label(modoSeleccionado),
+            () =>
+            {
+                modoSeleccionado = MatchSettings.NextMode(mapaSeleccionado, modoSeleccionado);
+
+                ActualizarBotonModo();
+                ActualizarObjetivoMapa();
+            }
+        );
+
+        ActualizarBotonModo();
 
         // PERSONAJE (la vista previa va a la derecha de la pantalla)
         RawImage raw = CrearVistaPreviewPersonaje(panelCrearSala.transform);
@@ -1369,6 +1400,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             objetivos.Length - 1
         );
 
+        // En la Estación el objetivo depende del modo elegido.
+        if (indice == MatchSettings.MapEstacion && modoSeleccionado == GameMode.Extraccion)
+            objetivos[indice] = objetivoMapa3Extraccion;
+
         string objetivo = objetivos[indice] ?? "";
 
         objetivo = objetivo
@@ -1378,7 +1413,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         txtObjetivoMapa.text =
             "<size=70%><color=#8C9490><cspace=0.15em>INFORMACIÓN DEL MAPA</cspace></color></size>\n" +
-            "<size=135%><color=#FFFFFF>" + nombresMapas[indice] + "</color></size>\n\n" +
+            "<size=135%><color=#FFFFFF>" + nombresMapas[indice] + "</color></size>\n" +
+            "<size=80%><color=#8C9490>MODO: " + MatchSettings.Label(modoSeleccionado) + "</color></size>\n\n" +
             objetivo;
 
         txtObjetivoMapa.textWrappingMode =
@@ -1596,7 +1632,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     {
         if (escena == nombreEscenaMapa1) return 0;
         if (escena == nombreEscenaMapa2) return 1;
-        if (escena == nombreEscenaMapa3) return 2;
+        if (escena == nombreEscenaMapa3 || escena == nombreEscenaSupervivencia) return 2;
 
         return -1;
     }
@@ -1665,6 +1701,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         mapaSeleccionado = mapa;
         dificultadSeleccionada = Mathf.Clamp(datos.difficulty, 0, TextosBotonDificultad.Length - 1);
 
+        // Las partidas guardadas son de Extracción (solo se guarda en zonas seguras).
+        modoSeleccionado = GameMode.Extraccion;
+
         txtBtnMapa.text = TextosBotonMapa[mapaSeleccionado];
         txtBtnDificultad.text = TextosBotonDificultad[dificultadSeleccionada];
         ActualizarObjetivoMapa();
@@ -1701,6 +1740,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         partidaGuardada = null;
         continuaEnSiguienteNivel = false;
         mapaSeleccionado = 0;
+        modoSeleccionado = MatchSettings.ModesForMap(mapaSeleccionado)[0];
         dificultadSeleccionada = 1;
 
         txtBtnMapa.text = TextosBotonMapa[mapaSeleccionado];
@@ -1712,11 +1752,28 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     }
 
 
-    // Al continuar una partida el mapa y la dificultad no se pueden cambiar.
+    // Al continuar una partida el mapa, el modo y la dificultad no se pueden cambiar.
     private void BloquearSelectoresPartida(bool bloquear)
     {
+        selectoresBloqueados = bloquear;
+
         txtBtnMapa.GetComponentInParent<Button>(true).interactable = !bloquear;
         txtBtnDificultad.GetComponentInParent<Button>(true).interactable = !bloquear;
+        ActualizarBotonModo();
+    }
+
+
+    // Muestra el modo elegido. Si el mapa ofrece un solo modo (Suburbio y Oficinas: Extracción) no hay nada que elegir.
+    private void ActualizarBotonModo()
+    {
+        if (txtBtnModo == null)
+            return;
+
+        txtBtnModo.text = "MODO: " + MatchSettings.Label(modoSeleccionado);
+
+        txtBtnModo.GetComponentInParent<Button>(true).interactable =
+            !selectoresBloqueados &&
+            MatchSettings.ModesForMap(mapaSeleccionado).Length > 1;
     }
 
 
@@ -1978,6 +2035,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
         return
             $"MAPA: {nombresMapas[mapaSeleccionado].ToUpper()}  |  " +
+            $"MODO: {MatchSettings.Label(modoSeleccionado)}  |  " +
             $"DIFICULTAD: {nombresDifs[dificultadSeleccionada].ToUpper()}";
     }
 
@@ -2275,12 +2333,14 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 nombreEscenaMapa2;
 
         if (mapaSeleccionado == 2)
-            escenaACargar =
-                nombreEscenaMapa3;
+            escenaACargar = modoSeleccionado == GameMode.Supervivencia
+                ? nombreEscenaSupervivencia
+                : nombreEscenaMapa3;
 
         PrepararSesionDePartida();
 
-        if (GameSessionManager.StartGame(escenaACargar))
+        // El modo viaja junto con la escena a todos los clientes.
+        if (GameSessionManager.StartGame(escenaACargar, modoSeleccionado))
         {
             btnIniciarPartida.interactable = false;
         }
