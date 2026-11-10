@@ -221,12 +221,19 @@ public class GameOverUI : MonoBehaviour
 
         string accent = ColorUtility.ToHtmlStringRGB(RedHover);
         string soft = ColorUtility.ToHtmlStringRGB(TextSoft);
+        int breakSecs = waves != null ? waves.BreakSecondsLeft : 0;
+        bool onBreak = breakSecs > 0 && zombies <= 0;
+
+        // Durante el receso, la línea de zombies se reemplaza por la cuenta regresiva.
+        string lastLine = onBreak
+            ? $"<color=#{accent}>PRÓXIMA RONDA EN</color>  {breakSecs}"
+            : $"<color=#{soft}>ZOMBIES</color>  {zombies}";
 
         hudText.text =
             $"<size=68%><color=#{accent}><cspace=0.2em>SUPERVIVENCIA</cspace></color></size>\n" +
             $"<size=135%>RONDA {round}/{totalRounds}</size>\n" +
             $"<color=#{soft}>CIVILES VIVOS</color>  {mode.AliveCivilians}\n" +
-            $"<color=#{soft}>ZOMBIES</color>  {zombies}";
+            lastLine;
     }
 
     // ============================================================

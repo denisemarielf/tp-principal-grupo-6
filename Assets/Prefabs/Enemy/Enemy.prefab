@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3745137013
+  GlobalObjectIdHash: 3945232058
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -250,6 +250,11 @@ MonoBehaviour:
   wanderSpeedMultiplier: 0.35
   wanderPause: {x: 2, y: 6}
   maxWanderTravelTime: 15
+  playerDistractRange: 12
+  stuckCheckInterval: 0.5
+  stuckTime: 2.5
+  relocateRadius: 6
+  relocateMinTargetDistance: 4
 --- !u!114 &100010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -272,6 +277,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 352872183567db6459913a60f8a6f518, type: 3}
   - {fileID: 8300000, guid: a8ea40b806c40b14896b1f00aef07328, type: 3}
   deathVolume: 1
+  healthOverride: 0
 --- !u!114 &100011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -289,12 +295,17 @@ MonoBehaviour:
   attackRange: 2
   attackDuration: 1.2
   biteChance: 0.25
-  biteDamageMultiplier: 1.5
+  biteDamage: 15
   knockbackSpeed: 5
   knockbackDuration: 0.18
   knockbackCooldown: 0.4
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  eyeHeight: 1.2
   hitSlowMultiplier: 0.05
   hitSlowDuration: 2
+  timedDamageAt: 0
 --- !u!114 &100012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -372,6 +383,7 @@ MonoBehaviour:
   debugLogs: 0
   defaultHitLength: 0.7
   hitCooldown: 1
+  useRootAnimator: 0
 --- !u!114 &7521268938438895098
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -105,6 +105,7 @@ GameObject:
   - component: {fileID: 7979470844365289384}
   - component: {fileID: 6341825439096368236}
   - component: {fileID: 1291396453117071399}
+  - component: {fileID: 4522323526593945906}
   m_Layer: 8
   m_Name: ShotGunPickUp
   m_TagString: Untagged
@@ -288,6 +289,29 @@ MonoBehaviour:
   pulseSpeed: 4
   minIntensity: 3
   maxIntensity: 5
+  outline: {fileID: 4522323526593945906}
+  outlineColor: {r: 0.30588236, g: 1, b: 0.019607844, a: 1}
+  outlineWidth: 4
+  highlightRadius: 3
+  playerTag: Player
+--- !u!114 &4522323526593945906
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1345453787564450841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::QuickOutline.Outline
+  outlineMode: 0
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineWidth: 2
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!1 &1351746353940155906
 GameObject:
   m_ObjectHideFlags: 0
@@ -962,7 +986,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 0.26648098, g: 1, b: 0, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0.55
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208

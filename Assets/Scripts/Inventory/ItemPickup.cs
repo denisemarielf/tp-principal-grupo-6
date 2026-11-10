@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
+
 // Pickup genérico de cualquier ítem del inventario.
 // El jugador local pide recogerlo con E; el host valida y lo despawnea.
 public class ItemPickup : NetworkPickup
@@ -17,6 +18,10 @@ public class ItemPickup : NetworkPickup
     [SerializeField] private Transform spinTarget;
     [SerializeField] private float spinSpeed = 45f;
 
+    [Header("Audio")]
+    [SerializeField, Range(0f, 1f)] private float unlockedVolume = 1f;
+
+
     private readonly NetworkVariable<int> quantity = new NetworkVariable<int>(1);
     private bool consumed;
 
@@ -26,6 +31,8 @@ public class ItemPickup : NetworkPickup
     // Si el rigidbody cae, en el cliente atraviesa el piso y el botiquín desaparece.
     private void Awake()
     {
+
+  
         Rigidbody body = GetComponent<Rigidbody>();
         if (body == null)
             return;

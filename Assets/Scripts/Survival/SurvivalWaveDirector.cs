@@ -20,6 +20,13 @@ public class SurvivalWaveDirector : NetworkBehaviour
     [SerializeField] private float minRadius = 40f;
     [SerializeField] private float maxRadius = 52f;
 
+    private readonly NetworkVariable<int> breakSecondsLeft = new NetworkVariable<int>(
+    0,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
+
+public int BreakSecondsLeft => breakSecondsLeft.Value;
     private readonly NetworkVariable<int> waveNumber = new NetworkVariable<int>(
         0,
         NetworkVariableReadPermission.Everyone,
@@ -87,7 +94,12 @@ public class SurvivalWaveDirector : NetworkBehaviour
         if (!waitingToSpawn)
             return;
 
-        timer -= Time.deltaTime;
+       timer -= Time.deltaTime;
+
+        int shown = Mathf.Max(0, Mathf.CeilToInt(timer));
+        if (breakSecondsLeft.Value != shown)
+            breakSecondsLeft.Value = shown;
+
         if (timer > 0f)
             return;
 

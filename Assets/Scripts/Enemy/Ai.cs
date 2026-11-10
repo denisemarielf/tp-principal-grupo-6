@@ -158,7 +158,7 @@ public class Ai : NetworkBehaviour
         float distanceToPlayer = enemyCombat != null
             ? enemyCombat.DistanceTo(target)
             : Vector3.Distance(transform.position, target.position);
-        bool isInAttackRange = enemyCombat != null && distanceToPlayer <= enemyCombat.attackRange;
+        bool isInAttackRange = enemyCombat != null && enemyCombat.CanAttack(target);
         bool withinFollowRange = alwaysChase || (isFollowingPlayer
             ? distanceToPlayer < distanceToLosePlayer
             : distanceToPlayer < distanceToFollowPlayer);
@@ -306,7 +306,7 @@ public class Ai : NetworkBehaviour
         float moved = Vector3.Distance(transform.position, lastStuckSample);
         lastStuckSample = transform.position;
 
-        bool farFromTarget = enemyCombat.DistanceTo(target) > enemyCombat.attackRange;
+        bool farFromTarget = !enemyCombat.CanAttack(target);
         if (!farFromTarget || moved > 0.2f)
         {
             stuckTimer = 0f;

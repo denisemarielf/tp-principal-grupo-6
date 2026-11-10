@@ -7,7 +7,7 @@ using Unity.Netcode;
 public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
 {
     public float shootRate = 0.5f;
-    public bool isAutomatic = true; // false = semiautom·tica (un disparo por apretÛn)
+    public bool isAutomatic = true; // false = semiautom√°tica (un disparo por apret√≥n)
 
     private float shootRateTime = 0;
     private InputAction shootAction;
@@ -25,18 +25,21 @@ public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
 
     /// <summary>Llamado por WeaponSwitcher cada vez que cambia el arma equipada,
     /// para que esta arma solo reaccione al input cuando es la activa (el
-    /// GameObject sigue vivo y corriendo aunque no estÈ equipada).</summary>
+    /// GameObject sigue vivo y corriendo aunque no est√© equipada).</summary>
     public override void SetEquipped(bool equipped) { isEquipped = equipped; }
 
     private void Update()
     {
-        // Mientras el botÛn siga apretado (consultado directamente, no vÌa
-        // eventos) y el arma sea autom·tica, seguimos intentando disparar cada
+        // Mientras el bot√≥n siga apretado (consultado directamente, no v√≠a
+        // eventos) y el arma sea autom√°tica, seguimos intentando disparar cada
         // frame; TryShoot respeta el cooldown solo. isEquipped evita que un
-        // arma guardada (no equipada) siga disparando porque el botÛn fÌsico
+        // arma guardada (no equipada) siga disparando porque el bot√≥n f√≠sico
         // es el mismo para todas.
         if (!IsOwner || !isEquipped || PauseMenuUI.IsOpen) return;
-       
+
+        // La mira refleja la dispersi√≥n del arma equipada.
+        weaponLogic.UpdateCrosshairSpread();
+
         if (isAutomatic && shootAction != null && shootAction.IsPressed())
         {
             TryShoot();
@@ -58,7 +61,7 @@ public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
     private void TryShoot()
     {
         if (Time.time < shootRateTime) return;
-        if (ammoManager.IsReloading) return; 
+        if (ammoManager.IsReloading) return;
 
         shootRateTime = Time.time + shootRate;
 
@@ -85,24 +88,17 @@ public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
     // otros scripts (WeaponSwitcher, WeaponPowerUps, AmmoUI, etc.)
     public void AddReserveAmmo(int amount) => ammoManager.AddReserveAmmo(amount);
 
-   
-
     public int CurrentAmmo => ammoManager.CurrentAmmo;
     public int ReserveAmmo => ammoManager.ReserveAmmo;
-    public int MagazineSize => ammoManager.MagazineSize; //nueva
+    public int MagazineSize => ammoManager.MagazineSize;
     public bool IsReloading => ammoManager.IsReloading;
 
     [Header("Icono del HUD")]
     [SerializeField] private Sprite hudIcon;
 
-    
     public int DamageAmount
     {
         get => weaponLogic.damageAmount;
         set => weaponLogic.damageAmount = value;
     }
-
-
-
-
 }
