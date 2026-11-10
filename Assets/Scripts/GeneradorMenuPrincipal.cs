@@ -33,7 +33,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     [TextArea(2, 5)]
     public string objetivoMapa3 =
-        "Estacion de tren. Modo Supervivencia: defende el refugio frente a oleadas. La victoria es sobrevivir el tiempo con al menos un civil vivo.";
+        "Estacion de tren. Modo Supervivencia: defende el refugio frente a oleadas. La victoria es superar todas las rondas (3, 5 o 7 segun la dificultad) con al menos un civil vivo.";
 
     [TextArea(2, 5)]
     public string objetivoMapa3Extraccion =

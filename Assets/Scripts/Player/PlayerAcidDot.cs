@@ -40,6 +40,13 @@ public class PlayerAcidDot : MonoBehaviour
             return;
         }
 
+        if ((SafeZone.Current != null && SafeZone.Current.IsCompleted)
+            || (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished))
+        {
+            enabled = false;
+            return;
+        }
+
         tickTimer -= Time.deltaTime;
         while (tickTimer <= 0f && ticksLeft > 0)
         {

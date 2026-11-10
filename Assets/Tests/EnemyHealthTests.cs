@@ -83,10 +83,10 @@ public class EnemyHealthTests
         EnemyHealth enemigo = ObtenerEnemigoSpawneado();
 
         Assert.AreEqual(
-            EnemyHealth.HealthFor(enemigo.Variant),
+            EnemyHealth.HealthFor(enemigo.Variant) * DifficultyTuning.HealthMul,
             enemigo.GetCurrentHealth(),
             0.01f,
-            "La vida inicial debería coincidir con la variante del enemigo."
+            "La vida inicial debería coincidir con la variante del enemigo y la dificultad."
         );
 
         Assert.AreEqual(

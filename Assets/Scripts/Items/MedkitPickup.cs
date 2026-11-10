@@ -25,7 +25,20 @@ public class MedkitPickup : NetworkPickup
     public override void OnNetworkSpawn()
     {
         active.Add(this);
-        PickupGroundSnap.SnapToGround(transform);
+        // Solo el server acomoda al piso; el cliente usa la posicion replicada del NetworkObject.
+        if (IsServer)
+            PickupGroundSnap.SnapToGround(transform);
+
+        foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
+        {
+            if (renderer != null)
+                renderer.enabled = true;
+        }
+
+        Light glow = GetComponentInChildren<Light>(true);
+        if (glow != null)
+            glow.enabled = true;
+
         if (usePrompt != null)
             usePrompt.SetActive(false);
     }

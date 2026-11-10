@@ -33,6 +33,8 @@ public class MatchBoardWidget : MonoBehaviour
         Image card = root.AddComponent<Image>();
         card.color = Glass;
         card.raycastTarget = false;
+        // Recorta el texto si no entra: evita que el resumen se dibuje fuera de pantalla.
+        root.AddComponent<RectMask2D>();
         AddBorder(rect);
 
         GameObject textGo = new GameObject("Texto", typeof(RectTransform));
@@ -44,12 +46,12 @@ public class MatchBoardWidget : MonoBehaviour
         textRect.offsetMax = new Vector2(-22f, -16f);
 
         TextMeshProUGUI label = textGo.AddComponent<TextMeshProUGUI>();
-        label.fontSize = 24f;
+        label.fontSize = 22f;
         label.alignment = TextAlignmentOptions.TopLeft;
         label.color = TextMain;
         label.raycastTarget = false;
         label.textWrappingMode = TextWrappingModes.Normal;
-        label.overflowMode = TextOverflowModes.Overflow;
+        label.overflowMode = TextOverflowModes.Truncate;
         label.richText = true;
 
         TMP_FontAsset font = GeneradorMenuPrincipal.FuenteTextoActual;

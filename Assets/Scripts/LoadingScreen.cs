@@ -24,6 +24,9 @@ public class LoadingScreen : MonoBehaviour
 
     public static LoadingScreen Instance { get; private set; }
 
+    // True mientras la pantalla tapa la escena (incluye el fundido de salida).
+    public static bool EstaVisible => Instance != null && Instance.visible;
+
     [Header("Fondos (se elige uno al azar en cada carga)")]
     public Sprite[] fondos;
 
