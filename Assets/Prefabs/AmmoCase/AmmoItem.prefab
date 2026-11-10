@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 1974266438786174809}
   - component: {fileID: 4487394635723024853}
   - component: {fileID: 8505094386148969047}
+  - component: {fileID: 1673473654081714894}
   m_Layer: 0
   m_Name: AmmoItem
   m_TagString: Untagged
@@ -114,6 +115,11 @@ MonoBehaviour:
   pulseSpeed: 1
   minIntensity: 1
   maxIntensity: 2.5
+  outline: {fileID: 1673473654081714894}
+  outlineColor: {r: 0.30588236, g: 1, b: 0.019607844, a: 1}
+  outlineWidth: 4
+  highlightRadius: 3
+  playerTag: Player
 --- !u!65 &6438207609476111757
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -174,14 +180,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2950394332
+  GlobalObjectIdHash: 451929566
   InScenePlacedSourceGlobalObjectIdHash: 451929566
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -208,6 +214,25 @@ MonoBehaviour:
   usePrompt: {fileID: 5530681630707716344}
   spinTarget: {fileID: 8268889908741432021}
   spinSpeed: 0
+  unlockedVolume: 1
+--- !u!114 &1673473654081714894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3544098695751023613}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::QuickOutline.Outline
+  outlineMode: 0
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineWidth: 2
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!1 &5494984041930308378
 GameObject:
   m_ObjectHideFlags: 0
@@ -582,7 +607,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 2
-  m_Color: {r: 0.039408445, g: 0.93207544, b: 0, a: 1}
+  m_Color: {r: 0.93333334, g: 0, b: 0.028679227, a: 1}
   m_Intensity: 0.21
   m_Range: 10
   m_SpotAngle: 30
