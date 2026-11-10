@@ -22,6 +22,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     public string nombreEscenaMapa2 = "MapaOficina";
     public string nombreEscenaMapa3 = "TestConexion";
     public string nombreEscenaSupervivencia = "SupervivenciaScene";
+    public string nombreEscenaRecoleccion = "EstacionRecoleccion";
 
     [Header("Objetivos de los Mapas")]
     [TextArea(2, 5)]
@@ -39,6 +40,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     [TextArea(2, 5)]
     public string objetivoMapa3Extraccion =
         "Estacion de tren, nivel de la plaza. Modo Extraccion: recolecta los suministros de la plaza y llega a la zona segura.";
+
+    [TextArea(2, 5)]
+    public string objetivoMapa3Recoleccion =
+        "Estacion de tren. Modo Recoleccion: encontra los bidones vacios en las carpas, llenalos con la nafta de los autos y carga los generadores para activar el tren.";
 
     [Header("Ambientación y Arte")]
     public Sprite imagenFondoCustom;
@@ -1403,6 +1408,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         // En la Estación el objetivo depende del modo elegido.
         if (indice == MatchSettings.MapEstacion && modoSeleccionado == GameMode.Extraccion)
             objetivos[indice] = objetivoMapa3Extraccion;
+        else if (indice == MatchSettings.MapEstacion && modoSeleccionado == GameMode.Recoleccion)
+            objetivos[indice] = objetivoMapa3Recoleccion;
 
         string objetivo = objetivos[indice] ?? "";
 
@@ -1632,7 +1639,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     {
         if (escena == nombreEscenaMapa1) return 0;
         if (escena == nombreEscenaMapa2) return 1;
-        if (escena == nombreEscenaMapa3 || escena == nombreEscenaSupervivencia) return 2;
+        if (escena == nombreEscenaMapa3 || escena == nombreEscenaSupervivencia || escena == nombreEscenaRecoleccion) return 2;
 
         return -1;
     }
@@ -2333,9 +2340,14 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 nombreEscenaMapa2;
 
         if (mapaSeleccionado == 2)
-            escenaACargar = modoSeleccionado == GameMode.Supervivencia
-                ? nombreEscenaSupervivencia
-                : nombreEscenaMapa3;
+        {
+            if (modoSeleccionado == GameMode.Supervivencia)
+                escenaACargar = nombreEscenaSupervivencia;
+            else if (modoSeleccionado == GameMode.Recoleccion)
+                escenaACargar = nombreEscenaRecoleccion;
+            else
+                escenaACargar = nombreEscenaMapa3;
+        }
 
         PrepararSesionDePartida();
 

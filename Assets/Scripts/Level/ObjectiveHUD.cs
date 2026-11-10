@@ -17,6 +17,7 @@ public class ObjectiveHUD : MonoBehaviour
 
     [Header("Escenas")]
     [SerializeField] private string extractionSceneName = "ExtraccionScene";
+    [SerializeField] private string collectionSceneName = "EstacionRecoleccion";
 
     [Header("Estilo (mismo look que el menú)")]
     [Tooltip("Aplica la tipografía y los colores del menú principal a este HUD.")]
@@ -28,8 +29,18 @@ public class ObjectiveHUD : MonoBehaviour
     private static readonly Color StyleAmber = new Color(0.95f, 0.78f, 0.28f, 1f);
     private static readonly Color StyleText = new Color(0.93f, 0.94f, 0.92f, 1f);
 
+    private static readonly Color StyleMuted = new Color(0.55f, 0.57f, 0.56f, 1f);
+
+    private float descriptionHeight;
+    private bool cansFound;
+    private FuelGeneratorGroup generatorGroup;
+    private float nextGroupSearch;
+
     private void Awake()
     {
+        if (objectiveDescription != null)
+            descriptionHeight = objectiveDescription.rectTransform.sizeDelta.y;
+
         if (applyMenuStyle)
         {
             StyleLabel(objectiveTitle, StyleRedHover, 4f);
@@ -51,8 +62,49 @@ public class ObjectiveHUD : MonoBehaviour
             Show("Atravesá la horda de enemigos y llega al punto seguro", null);
         else if (scene == extractionSceneName)
             Show("Llegá al tren y haz lo necesario para huir", null);
+        else if (scene == collectionSceneName)
+            UpdateStation();
         else
             Hide();
+    }
+
+    // Estación: objetivo general + los pasos de la nafta, en orden. Lo hecho se pinta en verde.
+    private void UpdateStation()
+    {
+        const string goal = "Llegá al tren y haz lo necesario para huir";
+
+        if (generatorGroup == null && Time.unscaledTime >= nextGroupSearch)
+        {
+            generatorGroup = FindFirstObjectByType<FuelGeneratorGroup>();
+            nextGroupSearch = Time.unscaledTime + 1f;
+        }
+
+        if (generatorGroup == null || generatorGroup.Total == 0)
+        {
+            Show(goal, null);
+            return;
+        }
+
+        int powered = generatorGroup.PoweredCount;
+        bool allPowered = powered >= generatorGroup.Total;
+
+        // Una vez que se encontró un bidón (o ya hay generadores cargándose), el paso queda hecho.
+        if (!cansFound && (generatorGroup.LocalPlayerHasCan() || powered > 0))
+            cansFound = true;
+
+        bool step2Done = allPowered;
+
+        string step1 = Step("1. Encontrá los bidones vacíos que están en las carpas", cansFound, true);
+        string step2 = Step($"2. Cargá los generadores con la nafta de los autos ({powered}/{generatorGroup.Total})", step2Done, cansFound);
+
+        Show($"{goal}\n{step1}\n{step2}", null);
+    }
+
+    // Hecho = verde, el que toca ahora = blanco, el que todavía no = gris.
+    private static string Step(string text, bool done, bool current)
+    {
+        Color color = done ? StyleGreen : (current ? StyleText : StyleMuted);
+        return $"<color=#{ColorUtility.ToHtmlStringRGB(color)}>{text}</color>";
     }
 
     private void UpdateSuburb()
@@ -109,6 +161,12 @@ public class ObjectiveHUD : MonoBehaviour
 
             if (applyMenuStyle)
                 objectiveDescription.color = success ? StyleGreen : StyleText;
+
+            // El texto largo crece hacia abajo sin pisar nada ni salirse del fondo.
+            RectTransform rect = objectiveDescription.rectTransform;
+            float needed = Mathf.Max(descriptionHeight, objectiveDescription.GetPreferredValues(description, rect.rect.width, 0f).y);
+            if (!Mathf.Approximately(rect.sizeDelta.y, needed))
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, needed);
         }
 
         if (distanceText != null)

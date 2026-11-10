@@ -268,6 +268,8 @@ public class Character : NetworkBehaviour
        
         if (!IsOwner || IsDead() || !context.performed) return;
 
+        if (FuelInteraction.TryInteract(transform.position)) return;
+
         ItemPickup item = ItemPickup.FindNearest(transform.position);
         float itemDist = item != null
             ? Vector3.Distance(transform.position, item.transform.position)
