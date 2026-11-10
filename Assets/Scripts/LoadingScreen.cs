@@ -45,7 +45,8 @@ public class LoadingScreen : MonoBehaviour
     {
         new MapaInfo { nombreEscena = "SampleScene",     nombreMostrado = "SUBURBIO" },
         new MapaInfo { nombreEscena = "MapaOficina",     nombreMostrado = "COMPLEJO DE OFICINAS" },
-        new MapaInfo { nombreEscena = "ExtraccionScene", nombreMostrado = "ESTACION DE TREN" }
+        new MapaInfo { nombreEscena = "ExtraccionScene", nombreMostrado = "ESTACION DE TREN" },
+        new MapaInfo { nombreEscena = "SupervivenciaScene", nombreMostrado = "ESTACION DE TREN" }
     };
 
     [Header("Tipografía (arrastrá tus font assets TMP)")]

@@ -21,6 +21,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     public string nombreEscenaMapa1 = "SampleScene";
     public string nombreEscenaMapa2 = "MapaOficina";
     public string nombreEscenaMapa3 = "TestConexion";
+    public string nombreEscenaSupervivencia = "SupervivenciaScene";
 
     [Header("Objetivos de los Mapas")]
     [TextArea(2, 5)]
@@ -1631,7 +1632,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     {
         if (escena == nombreEscenaMapa1) return 0;
         if (escena == nombreEscenaMapa2) return 1;
-        if (escena == nombreEscenaMapa3) return 2;
+        if (escena == nombreEscenaMapa3 || escena == nombreEscenaSupervivencia) return 2;
 
         return -1;
     }
@@ -2332,8 +2333,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
                 nombreEscenaMapa2;
 
         if (mapaSeleccionado == 2)
-            escenaACargar =
-                nombreEscenaMapa3;
+            escenaACargar = modoSeleccionado == GameMode.Supervivencia
+                ? nombreEscenaSupervivencia
+                : nombreEscenaMapa3;
 
         PrepararSesionDePartida();
 
