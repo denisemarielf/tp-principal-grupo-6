@@ -96,13 +96,29 @@ public class ObjectivePanelToggle : NetworkBehaviour
         ApplyBackdrop();
     }
 
-    public override void OnNetworkSpawn()
+    /*public override void OnNetworkSpawn()
     {
         if (!IsOwner)
             enabled = false;
     }
+    */
+    public override void OnNetworkSpawn()
+    {
+        if (IsOwner) return;
 
-  
+        // Es el HUD de otro jugador: no tiene que verse en mi pantalla.
+        foreach (RectTransform panel in panels)
+        {
+            if (panel != null)
+                panel.gameObject.SetActive(false);
+        }
+
+        if (backdrop != null)
+            backdrop.gameObject.SetActive(false);
+
+        enabled = false;
+    }
+
 
     private void Update()
     {
