@@ -17,6 +17,7 @@ public class ObjectiveHUD : MonoBehaviour
 
     [Header("Escenas")]
     [SerializeField] private string extractionSceneName = "ExtraccionScene";
+    [SerializeField] private string collectionSceneName = "EstacionRecoleccion";
 
     [Header("Estilo (mismo look que el menú)")]
     [Tooltip("Aplica la tipografía y los colores del menú principal a este HUD.")]
@@ -60,6 +61,8 @@ public class ObjectiveHUD : MonoBehaviour
         else if (scene == PlayerCarryOver.OfficesSceneName)
             Show("Atravesá la horda de enemigos y llega al punto seguro", null);
         else if (scene == extractionSceneName)
+            Show("Llegá al tren y haz lo necesario para huir", null);
+        else if (scene == collectionSceneName)
             UpdateStation();
         else
             Hide();

@@ -8,7 +8,8 @@ public enum GameMode
 {
     None = 0,          // todavia no se eligio (escenas abiertas directo desde el editor)
     Extraccion = 1,
-    Supervivencia = 2
+    Supervivencia = 2,
+    Recoleccion = 3
 }
 
 // Modo y dificultad de la partida en curso. Estatico: sobrevive a los cambios de escena.
@@ -24,7 +25,7 @@ public static class MatchSettings
     private const string DifficultyMessage = "MatchSettings.Difficulty";
 
     private static readonly GameMode[] ModosExtraccion = { GameMode.Extraccion };
-    private static readonly GameMode[] ModosEstacion = { GameMode.Extraccion, GameMode.Supervivencia };
+    private static readonly GameMode[] ModosEstacion = { GameMode.Extraccion, GameMode.Supervivencia, GameMode.Recoleccion };
 
     public static GameMode Mode { get; private set; }
     public static int Difficulty { get; private set; } = 1;
@@ -55,21 +56,27 @@ public static class MatchSettings
         {
             case GameMode.Extraccion: return "EXTRACCIÓN";
             case GameMode.Supervivencia: return "SUPERVIVENCIA";
+            case GameMode.Recoleccion: return "RECOLECCIÓN";
             default: return "SIN DEFINIR";
         }
     }
 
-    // La Estacion de tren trae la partida de Supervivencia armada en la escena; en modo Extraccion
-    // (el nivel de la plaza) no tiene que arrancar. En el resto de las escenas y sin modo definido
-    // (escena abierta desde el editor) todo funciona como siempre.
+    // Las escenas de la Estacion de tren pueden traer la partida de Supervivencia armada; en modo
+    // Extraccion (nivel de la plaza) y en modo Recoleccion (bidones y generadores) no tiene que arrancar.
+    // En el resto de las escenas y sin modo definido (escena abierta desde el editor) todo funciona como siempre.
     public static bool SurvivalEnabled
     {
         get
         {
-            if (Mode != GameMode.Extraccion)
-                return true;
+            string scene = SceneManager.GetActiveScene().name;
 
-            return SceneManager.GetActiveScene().name != PlayerCarryOver.StationSceneName;
+            if (Mode == GameMode.Extraccion)
+                return scene != PlayerCarryOver.StationSceneName;
+
+            if (Mode == GameMode.Recoleccion)
+                return scene != PlayerCarryOver.CollectionSceneName;
+
+            return true;
         }
     }
 
