@@ -25037,6 +25037,7 @@ GameObject:
   - component: {fileID: 4486189096107744166}
   - component: {fileID: 5372038465850882972}
   - component: {fileID: 3232017488082613912}
+  - component: {fileID: -5699643605031808349}
   m_Layer: 0
   m_Name: PistolKrosH
   m_TagString: Untagged
@@ -25096,6 +25097,11 @@ MonoBehaviour:
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 1500
   damageAmount: 20
+  pelletCount: 1
+  useDamageFalloff: 0
+  falloffStart: 15
+  falloffEnd: 40
+  minDamageMultiplier: 0.3
   hitscanRange: 100
   hitscanLayers:
     serializedVersion: 2
@@ -25251,6 +25257,30 @@ MonoBehaviour:
   recoil_Snapiness: 18
   recoil_Return_Speed: 10
   max_Vetical_Recoil: 8
+--- !u!114 &-5699643605031808349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7660902400009791403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b678a20a6da7d448659f8cb5066a07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::WeaponSpread
+  baseSpread: 0.4
+  maxSpread: 6
+  speedReference: 6
+  moveSpreadAdd: 1.5
+  airSpreadAdd: 3
+  aimMultiplier: 0.4
+  crouchMultiplier: 0.7
+  bloomPerShot: 0.6
+  bloomMax: 4
+  bloomRecoverDelay: 0.15
+  bloomRecoverRate: 6
+  stateSmoothTime: 0.08
 --- !u!1 &8965050006773625605
 GameObject:
   m_ObjectHideFlags: 0
