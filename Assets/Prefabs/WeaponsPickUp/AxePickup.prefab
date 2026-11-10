@@ -44,7 +44,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 0.26648098, g: 1, b: 0, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0.39
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -144,6 +144,7 @@ GameObject:
   - component: {fileID: 1708096846991173669}
   - component: {fileID: 8133494811826463935}
   - component: {fileID: 391461024123040178}
+  - component: {fileID: 3017229149919903809}
   m_Layer: 8
   m_Name: AxePickup
   m_TagString: Untagged
@@ -327,6 +328,11 @@ MonoBehaviour:
   pulseSpeed: 4
   minIntensity: 2
   maxIntensity: 5
+  outline: {fileID: 3017229149919903809}
+  outlineColor: {r: 0.30588236, g: 1, b: 0.019607844, a: 1}
+  outlineWidth: 4
+  highlightRadius: 3
+  playerTag: Player
 --- !u!54 &8133494811826463935
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -375,3 +381,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.07362894, y: 1.0793616, z: 0.3208067}
   m_Center: {x: 0.000007645419, y: 0.5396808, z: 0.06379673}
+--- !u!114 &3017229149919903809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6500948213656111164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::QuickOutline.Outline
+  outlineMode: 0
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineWidth: 2
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
