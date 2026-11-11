@@ -47,7 +47,7 @@ public class ItemPickup : NetworkPickup
 
         // Solo el server acomoda al piso. En el cliente el SnapToGround a veces lo deja
         // bajo el asfalto: se puede agarrar con E pero no se ve.
-        if (IsServer)
+       if (IsServer)
             PickupGroundSnap.SnapToGround(transform);
 
         foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))

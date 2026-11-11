@@ -18,6 +18,28 @@ public class EnemyHealth : NetworkBehaviour
     [SerializeField] private AudioClip[] deathSounds;
     [SerializeField, Range(0f, 1f)] private float deathVolume = 1f;
     [SerializeField] private float healthOverride = 0f;
+
+    [System.Serializable]
+    public class LootEntry
+    {
+        [Tooltip("Prefab con NetworkObject (ItemPickup de medikit, municion, etc.). Debe estar registrado en NetworkPrefabs.")]
+        public GameObject prefab;
+        [Tooltip("Peso relativo: mas alto = sale mas seguido entre los items del array.")]
+        [Min(0f)] public float weight = 1f;
+        [Tooltip("Cantidad que da el drop (solo aplica si el prefab tiene ItemPickup).")]
+        [Min(1)] public int minQuantity = 1;
+        [Min(1)] public int maxQuantity = 1;
+    }
+
+    [Header("Loot")]
+    [SerializeField, Range(0f, 1f)] private float lootDropChance = 0.25f;
+    [SerializeField] private LootEntry[] lootTable;
+    [SerializeField] private float lootHeightOffset = 0f;
+    [SerializeField] private float lootScatterRadius = 0.4f;
+    [SerializeField] private LayerMask lootGroundMask = ~0;
+    [Tooltip("Segundos hasta que el drop desaparece si nadie lo agarra. 0 = no desaparece.")]
+    [SerializeField] private float lootLifetime = 30f;
+
     private NetworkVariable<float> currentHealth = new NetworkVariable<float>(
         0f,
         NetworkVariableReadPermission.Everyone,
@@ -224,6 +246,8 @@ public class EnemyHealth : NetworkBehaviour
         deathVariant.Value = count > 1 ? Random.Range(0, count) : 0;
         isDead.Value = true;
 
+        TryDropLoot();
+
         // Si estaba mordiendo a un jugador, lo suelta.
         if (enemyCombat != null)
             enemyCombat.ReleaseBiteTarget();
@@ -245,6 +269,103 @@ public class EnemyHealth : NetworkBehaviour
 
         PlayDeath();
         StartCoroutine(RemoveAfterDeath());
+    }
+
+    // Solo el servidor decide y spawnea; los clientes reciben el objeto por Netcode.
+    private void TryDropLoot()
+    {
+        if (!IsServer) return;
+        if (lootTable == null || lootTable.Length == 0) return;
+        if (Random.value > lootDropChance) return;
+
+        LootEntry entry = PickLootEntry();
+        if (entry == null) return;
+
+        Vector2 circle = Random.insideUnitCircle * lootScatterRadius;
+        Vector3 pos = transform.position + new Vector3(circle.x, 0f, circle.y);
+
+        pos = FindLootGround(pos) + Vector3.up * lootHeightOffset;
+
+        GameObject instance = Instantiate(entry.prefab, pos, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+        NetworkObject netObj = instance.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            Debug.LogWarning($"[EnemyHealth] El prefab de loot '{entry.prefab.name}' no tiene NetworkObject.");
+            Destroy(instance);
+            return;
+        }
+
+        netObj.Spawn(true);
+
+        // Cantidad aleatoria (ItemPickup.ServerSetQuantity ya existe y solo corre en servidor).
+        if (entry.maxQuantity > 1)
+        {
+            ItemPickup pickup = instance.GetComponent<ItemPickup>();
+            if (pickup != null)
+            {
+                int min = Mathf.Min(entry.minQuantity, entry.maxQuantity);
+                pickup.ServerSetQuantity(Random.Range(min, entry.maxQuantity + 1));
+            }
+        }
+
+        if (lootLifetime > 0f)
+            instance.AddComponent<LootLifetime>().Begin(netObj, lootLifetime);
+    }
+
+    // Busca el piso bajo 'pos' ignorando al propio enemigo, a jugadores, a otros enemigos y a otros pickups.
+    // Si no encuentra nada, usa la altura de los pies del enemigo (nunca queda en el aire).
+    private Vector3 FindLootGround(Vector3 pos)
+    {
+        Vector3 fallback = new Vector3(pos.x, transform.position.y, pos.z);
+        Vector3 origin = new Vector3(pos.x, transform.position.y + 1f, pos.z);
+
+        RaycastHit[] hits = Physics.RaycastAll(origin, Vector3.down, 6f, lootGroundMask, QueryTriggerInteraction.Ignore);
+        float best = float.PositiveInfinity;
+        Vector3 point = fallback;
+
+        foreach (RaycastHit hit in hits)
+        {
+            Collider c = hit.collider;
+            if (c.transform.IsChildOf(transform)) continue;
+            if (c.GetComponentInParent<EnemyHealth>() != null) continue;
+            if (c.GetComponentInParent<PlayerHealth>() != null) continue;
+            if (c.GetComponentInParent<ItemPickup>() != null) continue;
+
+            if (hit.distance < best)
+            {
+                best = hit.distance;
+                point = hit.point;
+            }
+        }
+
+        return point;
+    }
+
+    // Seleccion por peso entre las entradas validas del array.
+    private LootEntry PickLootEntry()
+    {
+        float total = 0f;
+        foreach (LootEntry entry in lootTable)
+        {
+            if (entry != null && entry.prefab != null && entry.weight > 0f)
+                total += entry.weight;
+        }
+
+        if (total <= 0f)
+            return null;
+
+        float roll = Random.value * total;
+        foreach (LootEntry entry in lootTable)
+        {
+            if (entry == null || entry.prefab == null || entry.weight <= 0f)
+                continue;
+
+            roll -= entry.weight;
+            if (roll <= 0f)
+                return entry;
+        }
+
+        return null;
     }
 
     private void OnDeadChanged(bool previous, bool current)

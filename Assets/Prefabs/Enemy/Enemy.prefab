@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3945232058
+  GlobalObjectIdHash: 3745137013
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -278,6 +278,22 @@ MonoBehaviour:
   - {fileID: 8300000, guid: a8ea40b806c40b14896b1f00aef07328, type: 3}
   deathVolume: 1
   healthOverride: 0
+  lootDropChance: 0.11
+  lootTable:
+  - prefab: {fileID: 3544098695751023613, guid: 1511d36bc631e24428565226e8c42d5d, type: 3}
+    weight: 2
+    minQuantity: 1
+    maxQuantity: 2
+  - prefab: {fileID: 1991718953057930486, guid: 97f8a51d05b22ec40a2e63c8de87f14e, type: 3}
+    weight: 1
+    minQuantity: 1
+    maxQuantity: 2
+  lootHeightOffset: 0
+  lootScatterRadius: 0.4
+  lootGroundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  lootLifetime: 25
 --- !u!114 &100011
 MonoBehaviour:
   m_ObjectHideFlags: 0
