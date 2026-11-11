@@ -91,10 +91,7 @@ public class AmmoCase : NetworkBehaviour
         if (weaponSwitcher == null)
             return;
 
-        AmmoManager ammoManager = weaponSwitcher.CurrentAmmoManager;
-        
-
-        if (ammoManager == null)
+        if (!weaponSwitcher.CanReceiveAmmo)
             return;
 
         weaponSwitcher.GrantAmmoToCurrentWeapon((int)amount);

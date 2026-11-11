@@ -38,6 +38,27 @@ public class WeaponSwitcher : NetworkBehaviour
 
     public int CurrentWeaponIndex => networkWeaponIndex.Value;
 
+    // El dueño publica si la reserva del arma actual está llena, para que el servidor
+    // pueda decidir sin tener el AmmoManager real del cliente.
+    private readonly NetworkVariable<bool> currentReserveFull = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    public bool CurrentWeaponUsesAmmo => GetShootAt(networkWeaponIndex.Value) != null;
+    public bool CanReceiveAmmo => CurrentWeaponUsesAmmo && !currentReserveFull.Value;
+
+    private void Update()
+    {
+        if (!IsSpawned || !IsOwner) return;
+
+        AmmoManager ammo = CurrentAmmoManager;
+        bool full = ammo != null && ammo.IsReserveFull;
+        if (currentReserveFull.Value != full)
+            currentReserveFull.Value = full;
+    }
+
     // El dueño ve el arma del cuerpo cuando está en tercera persona. El modelo nuevo vuelve a pedir los visuals.
     public void SetThirdPersonView(bool thirdPerson)
     {

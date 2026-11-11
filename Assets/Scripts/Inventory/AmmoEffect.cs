@@ -11,9 +11,9 @@ public class AmmoEffect : ItemEffect
         if (switcher == null) switcher = user.GetComponentInParent<WeaponSwitcher>();
         if (switcher == null) return false;
 
-        AmmoManager ammo = switcher.CurrentAmmoManager;
-        if (ammo == null) return false;          // arma melee o sin arma equipada
-        if (ammo.IsReserveFull) return false;    // no gastar el ítem si no sirve
+        // Melee, sin arma equipada o reserva llena: no gastar el Ã­tem.
+        // (El servidor no tiene el AmmoManager real del cliente, por eso se consulta esto.)
+        if (!switcher.CanReceiveAmmo) return false;
 
         switcher.GrantAmmoToCurrentWeapon(amount);
         return true;
