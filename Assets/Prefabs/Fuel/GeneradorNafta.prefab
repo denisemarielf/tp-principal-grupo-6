@@ -109,6 +109,8 @@ GameObject:
   - component: {fileID: 5414228144838318509}
   - component: {fileID: 4019015058603042762}
   - component: {fileID: 2347799350435132767}
+  - component: {fileID: 2621162285162680152}
+  - component: {fileID: 2273068247763157116}
   m_Layer: 0
   m_Name: GeneradorNafta
   m_TagString: Untagged
@@ -146,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3957784216
+  GlobalObjectIdHash: 643133678
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -228,6 +230,45 @@ MonoBehaviour:
   poweredText: Generador encendido
   highlight: {fileID: 0}
   barColor: {r: 1, g: 0.8, b: 0.1, a: 1}
+--- !u!114 &2621162285162680152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354752371000126341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa9233df751e0f443a7c4eefda756402, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::PickupGlow
+  glowLight: {fileID: 0}
+  pulseSpeed: 2
+  minIntensity: 1
+  maxIntensity: 2.5
+  outline: {fileID: 2273068247763157116}
+  outlineColor: {r: 1, g: 0.8982091, b: 0, a: 1}
+  outlineWidth: 4
+  highlightRadius: 6
+  playerTag: Player
+--- !u!114 &2273068247763157116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354752371000126341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::QuickOutline.Outline
+  outlineMode: 0
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineWidth: 2
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!1 &7427366620180252876
 GameObject:
   m_ObjectHideFlags: 0

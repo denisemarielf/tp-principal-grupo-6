@@ -32,11 +32,14 @@ public class ExtractionPhone : NetworkBehaviour
 
 
     [Header("Marcador de objetivo")]
+    [Tooltip("Distancia máxima (en metros) a la que se ve el marcador. 0 = sin límite")]
+    [SerializeField] private float markerVisibleDistance = 30f;
     [SerializeField] private Vector3 markerOffset = new Vector3(0f, 0.6f, 0f);
     [SerializeField] private string objectiveText = "OBJETIVO: Llamar al helicóptero";
     [SerializeField] private Color markerColor = new Color(1f, 0.8f, 0.1f);
     [SerializeField] private string lockedText = "Sin energía: repara el panel eléctrico";
     [SerializeField] private Color lockedColor = new Color(1f, 0.3f, 0.2f);
+
 
     [Header("Avisos")]
     [SerializeField] private string requestedText = "Helicóptero en camino";
@@ -217,6 +220,10 @@ public class ExtractionPhone : NetworkBehaviour
         if (sp.z <= 0f) return; // detrás de la cámara
 
         float dist = Vector3.Distance(cam.transform.position, world);
+
+        // Fuera del rango configurado: no se dibuja
+        if (markerVisibleDistance > 0f && dist > markerVisibleDistance) return;
+
         bool unlocked = IsUnlocked;
         string text = $"◆\n{(unlocked ? objectiveText : lockedText)}\n{dist:0} m";
         if (unlocked && PlayerCanInteract()) text += $"\n[{promptKeyLabel}] Interactuar";
