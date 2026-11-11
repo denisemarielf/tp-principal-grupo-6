@@ -222,18 +222,24 @@ public class FuelGenerator : NetworkBehaviour
     // ---------------------------------------------------------------- clientes
 
     [ClientRpc]
-    private void PourClientRpc(ulong pouringClientId)
+private void PourClientRpc(ulong pouringClientId)
+{
+    // el bidón que se ve verter es el del generador: el de la mano de quien lo usa se oculta
+    foreach (NetworkObject obj in NetworkManager.SpawnManager.SpawnedObjects.Values)
     {
-        // el bidón que se ve verter es el del generador: el de la mano de quien lo usa se oculta
-        NetworkObject pouringPlayer = NetworkManager.SpawnManager.GetPlayerNetworkObject(pouringClientId);
-        if (pouringPlayer != null && pouringPlayer.TryGetComponent(out HeldItemDisplay held))
-            held.HideFor(pourDuration);
-
-        if (pourRoutine != null)
-            StopCoroutine(pourRoutine);
-
-        pourRoutine = StartCoroutine(PourRoutine());
+        if (obj.IsPlayerObject && obj.OwnerClientId == pouringClientId)
+        {
+            if (obj.TryGetComponent(out HeldItemDisplay held))
+                held.HideFor(pourDuration);
+            break;
+        }
     }
+
+    if (pourRoutine != null)
+        StopCoroutine(pourRoutine);
+
+    pourRoutine = StartCoroutine(PourRoutine());
+}
 
     [ClientRpc]
     private void ShowMessageClientRpc(string text, ClientRpcParams rpcParams = default)
@@ -290,6 +296,7 @@ public class FuelGenerator : NetworkBehaviour
             ApplyPowered(false);
 
         RefreshHighlight();
+        Debug.Log($"[{name}] powered {previous}->{current} | IsServer={IsServer} IsClient={IsClient}");
     }
 
     private void ApplyPowered(bool instant)
@@ -309,6 +316,7 @@ public class FuelGenerator : NetworkBehaviour
         if (engineRoutine != null)
             StopCoroutine(engineRoutine);
         engineRoutine = StartCoroutine(EngineRoutine(instant));
+         PoweredApplied?.Invoke(this, instant); 
     }
     private IEnumerator EngineRoutine(bool instant)
     {
