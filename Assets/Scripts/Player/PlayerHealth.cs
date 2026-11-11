@@ -9,6 +9,7 @@ using System.Collections;
 public class PlayerHealth : NetworkBehaviour
 {
     public const float RespawnDelaySeconds = 60f;
+    private const float AllyRespawnOffset = 1.5f; // distancia lateral al reaparecer junto a un aliado
 
     // Se disparan en todos los equipos, cuando cambia el valor sincronizado.
     public event Action<float, float> HealthChanged; // (vida actual, vida maxima)
@@ -224,26 +225,67 @@ public class PlayerHealth : NetworkBehaviour
         currentHealth.Value = maxHealth;
         respawnAtServerTime.Value = 0f;
 
-        PlayerSpawnPoint spawnPoint = FindAnyObjectByType<PlayerSpawnPoint>();
-        Vector3 spawnPosition = spawnPoint != null ? spawnPoint.transform.position : transform.position;
-        Quaternion spawnRotation = spawnPoint != null ? spawnPoint.transform.rotation : transform.rotation;
-
+        // Reaparece junto a un jugador vivo al azar. Si no hay ninguno, usa el PlayerSpawnPoint.
+        Character character = GetComponent<Character>();
+        Vector3 spawnPosition;
+        Quaternion spawnRotation;
         int playerIndex = 0;
-        if (NetworkManager != null)
+
+        if (TryGetAliveAllyTransform(out Transform ally))
         {
-            foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
+            spawnRotation = ally.rotation;
+            // Pequeño desplazamiento lateral para no aparecer adentro del aliado.
+            spawnPosition = ally.position + ally.right * AllyRespawnOffset;
+        }
+        else
+        {
+            PlayerSpawnPoint spawnPoint = FindAnyObjectByType<PlayerSpawnPoint>();
+            spawnPosition = spawnPoint != null ? spawnPoint.transform.position : transform.position;
+            spawnRotation = spawnPoint != null ? spawnPoint.transform.rotation : transform.rotation;
+
+            if (NetworkManager != null)
             {
-                if (clientId == OwnerClientId)
-                    break;
-                playerIndex++;
+                foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
+                {
+                    if (clientId == OwnerClientId)
+                        break;
+                    playerIndex++;
+                }
             }
         }
 
-        Character character = GetComponent<Character>();
         if (character != null)
             character.PlaceAtSpawn(spawnPosition, spawnRotation, playerIndex);
         else
             transform.SetPositionAndRotation(spawnPosition, spawnRotation);
+    }
+
+    // Solo server. Elige al azar un jugador vivo (distinto de este) para reaparecer a su lado.
+    private bool TryGetAliveAllyTransform(out Transform ally)
+    {
+        ally = null;
+        if (NetworkManager == null || NetworkManager.SpawnManager == null)
+            return false;
+
+        var candidates = new System.Collections.Generic.List<Transform>();
+        foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
+        {
+            if (clientId == OwnerClientId) continue;
+
+            NetworkObject playerObject = NetworkManager.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (playerObject == null) continue;
+
+            PlayerHealth otherHealth = playerObject.GetComponent<PlayerHealth>();
+            if (otherHealth == null || otherHealth.IsDead) continue;
+
+            candidates.Add(playerObject.transform);
+        }
+
+        if (candidates.Count == 0)
+            return false;
+
+        ally = candidates[UnityEngine.Random.Range(0, candidates.Count)];
+        return true;
     }
 
     private static bool IsMultiplayerSession()

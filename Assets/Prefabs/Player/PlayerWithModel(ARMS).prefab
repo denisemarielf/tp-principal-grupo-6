@@ -10371,9 +10371,9 @@ MonoBehaviour:
     cross_Hair: {fileID: 7351612596842849095}
     compact_Size: 70
     expanded_Size: 80
-    max_Size: 110
+    sprint_Size: 110
+    max_Spread_Size: 220
     size_Change_Speed: 10
-  shootPulseDuration: 0.15
   hitMarker: {fileID: 403828517192752365}
   hitColor: {r: 1, g: 1, b: 1, a: 1}
   killColor: {r: 1, g: 0.15, b: 0.1, a: 1}
@@ -10436,6 +10436,7 @@ MonoBehaviour:
   objectiveDescription: {fileID: 5040069290903245471}
   distanceText: {fileID: 6627280624598997911}
   extractionSceneName: ExtraccionScene
+  collectionSceneName: EstacionRecoleccion
   applyMenuStyle: 1
 --- !u!82 &6894491348916887838
 AudioSource:
@@ -13215,7 +13216,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 831a8e24fff153b4d80c8cdf353320e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::PlayerNameTagVisibility
-  maxDistance: 60
+  maxDistance: 1000
   fadeStartDistance: 30
   compensateDistance: 1
   referenceDistance: 6
@@ -14353,7 +14354,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 831a8e24fff153b4d80c8cdf353320e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::PlayerNameTagVisibility
-  maxDistance: 60
+  maxDistance: 1000
   fadeStartDistance: 30
   compensateDistance: 1
   referenceDistance: 6
@@ -14631,7 +14632,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 831a8e24fff153b4d80c8cdf353320e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::PlayerNameTagVisibility
-  maxDistance: 60
+  maxDistance: 1000
   fadeStartDistance: 30
   compensateDistance: 1
   referenceDistance: 6
@@ -15112,7 +15113,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 831a8e24fff153b4d80c8cdf353320e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game::PlayerNameTagVisibility
-  maxDistance: 60
+  maxDistance: 1000
   fadeStartDistance: 30
   compensateDistance: 1
   referenceDistance: 6

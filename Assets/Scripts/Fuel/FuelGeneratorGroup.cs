@@ -65,5 +65,6 @@ public class FuelGeneratorGroup : MonoBehaviour
                 if (door != null) door.Open(instant);
 
         onAllPowered?.Invoke();
+        Debug.Log($"Group: {PoweredCount}/{Total} opened={opened} instant={instant}");
     }
 }
