@@ -16,11 +16,6 @@ public class FuelGenerator : NetworkBehaviour
     [SerializeField] private ItemDefinition emptyCan;
     [SerializeField] private ItemDefinition fullCan;
 
-    [Header("Generador")]
-    [Tooltip("Bidones llenos que hay que verter para encenderlo.")]
-    [SerializeField] private int cansRequired = 3;
-    [SerializeField] private float interactDistance = 3f;
-
     [Header("Al encenderse")]
     [Tooltip("Puertas que abre este generador por sí solo. Si hay varios generadores, usá un FuelGeneratorGroup y dejalo vacío.")]
     [SerializeField] private Door[] doors;
@@ -30,10 +25,27 @@ public class FuelGenerator : NetworkBehaviour
     [SerializeField] private GameObject[] enableWhenPowered;
     [Tooltip("Se apagan al encender el generador (luces de emergencia, cartel de apagado).")]
     [SerializeField] private GameObject[] disableWhenPowered;
-    [SerializeField] private AudioSource engineLoop;
+
+    [Header("Generador")]
+    [Tooltip("Bidones llenos que hay que verter para encenderlo.")]
+    [SerializeField] private int cansRequired = 3;
+    [SerializeField] private float interactDistance = 3f;
+
+    [Header("Sonido")]
+    [Tooltip("Sonido de arranque, suena una vez al encenderse.")]
     [SerializeField] private AudioClip poweredClip;
+    [Tooltip("Sonido del motor, en loop mientras el generador está encendido.")]
+    [SerializeField] private AudioClip engineClip;
+    [Tooltip("AudioSource del motor. Si lo dejás vacío, se crea solo.")]
+    [SerializeField] private AudioSource engineLoop;
+    [Tooltip("Qué parte del arranque debe pasar antes de que entre el motor (0 = a la vez, 1 = al terminar).")]
+    [Range(0f, 1f)][SerializeField] private float engineStartPoint = 0.6f;
+    [SerializeField] private float engineFadeIn = 1.5f;
+    [SerializeField] private float engineMaxDistance = 25f;
     [SerializeField, Range(0f, 1f)] private float volume = 1f;
     public UnityEvent onPowered;
+
+    private Coroutine engineRoutine;
 
     [Header("Animación de verter")]
     [Tooltip("Modelo del bidón apoyado sobre el generador. Arranca oculto y se muestra solo mientras vierte.")]
@@ -47,6 +59,7 @@ public class FuelGenerator : NetworkBehaviour
     [Range(0f, 1f)] [SerializeField] private float streamStart = 0.3f;
     [Range(0f, 1f)] [SerializeField] private float streamEnd = 0.8f;
     [SerializeField] private AudioClip pourClip;
+
 
     [Header("Marcador")]
     [SerializeField] private Vector3 markerOffset = new Vector3(0f, 1.8f, 0f);
@@ -87,6 +100,25 @@ public class FuelGenerator : NetworkBehaviour
     {
         if (pourCan != null)
             pourCan.SetActive(false);
+
+        SetupEngineSource();
+    }
+    private void SetupEngineSource()
+    {
+        if (engineLoop == null)
+            engineLoop = gameObject.AddComponent<AudioSource>();
+
+        if (engineClip != null)
+            engineLoop.clip = engineClip;
+
+        engineLoop.loop = true;
+        engineLoop.playOnAwake = false;   // que no suene antes de encenderse
+        engineLoop.spatialBlend = 1f;     // 3D: se oye más fuerte cerca del generador
+        engineLoop.rolloffMode = AudioRolloffMode.Linear;
+        engineLoop.minDistance = 2f;
+        engineLoop.maxDistance = engineMaxDistance;
+        engineLoop.volume = 0f;
+        engineLoop.Stop();
     }
 
     public override void OnNetworkSpawn()
@@ -106,6 +138,9 @@ public class FuelGenerator : NetworkBehaviour
         all.Remove(this);
         powered.OnValueChanged -= OnPoweredChanged;
         delivered.OnValueChanged -= OnDeliveredChanged;
+
+        if (engineRoutine != null) StopCoroutine(engineRoutine);
+        if (engineLoop != null) engineLoop.Stop();
     }
 
     public static FuelGenerator FindNearest(Vector3 from)
@@ -268,14 +303,35 @@ public class FuelGenerator : NetworkBehaviour
         foreach (GameObject target in disableWhenPowered)
             if (target != null) target.SetActive(false);
 
-        if (engineLoop != null)
-            engineLoop.Play();
-
         if (!instant && poweredClip != null)
             AudioSource.PlayClipAtPoint(poweredClip, transform.position, volume);
 
-        onPowered?.Invoke();
-        PoweredApplied?.Invoke(this, instant);
+        if (engineRoutine != null)
+            StopCoroutine(engineRoutine);
+        engineRoutine = StartCoroutine(EngineRoutine(instant));
+    }
+    private IEnumerator EngineRoutine(bool instant)
+    {
+        if (engineLoop == null || engineLoop.clip == null) yield break;
+
+        // Si el cliente se conecta con el generador ya encendido, el motor entra directo, sin arranque.
+        if (!instant && poweredClip != null)
+            yield return new WaitForSeconds(poweredClip.length * engineStartPoint);
+
+        engineLoop.volume = 0f;
+        engineLoop.Play();
+
+        float fade = instant ? 0f : Mathf.Max(0.01f, engineFadeIn);
+        float t = 0f;
+        while (t < fade)
+        {
+            t += Time.deltaTime;
+            engineLoop.volume = Mathf.Lerp(0f, volume, t / fade);
+            yield return null;
+        }
+
+        engineLoop.volume = volume;
+        engineRoutine = null;
     }
 
     private void RefreshHighlight()
