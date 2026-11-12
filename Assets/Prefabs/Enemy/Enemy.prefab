@@ -310,8 +310,10 @@ MonoBehaviour:
   attackDamage: 15
   attackRange: 2
   attackDuration: 1.2
-  biteChance: 0.15
-  biteRange: 1
+  maxVerticalReach: 1
+  frontDotThreshold: 0.3
+  biteChance: 0.153
+  biteRange: 2
   biteDamage: 15
   knockbackSpeed: 5
   knockbackDuration: 0.18

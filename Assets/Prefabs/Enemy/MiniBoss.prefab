@@ -271,12 +271,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::EnemyHealth
   ShowTopMostFoldoutHeaderGroup: 1
   variant: 1
-  maxHealth: 1500
+  maxHealth: 1750
   deathClip: {fileID: -203655887218126122, guid: 8a4a5187519fcfe4cbb1cba809f43d2c, type: 3}
   extraDeathClips: []
   deathSounds: []
   deathVolume: 1
   healthOverride: 1500
+  lootDropChance: 0.25
+  lootTable: []
+  lootHeightOffset: 0
+  lootScatterRadius: 0.4
+  lootGroundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  lootLifetime: 30
 --- !u!114 &8509709177148962458
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -386,6 +394,9 @@ MonoBehaviour:
   acidDuration: 5
   acidSpeedMultiplier: 0.5
   npcAcidDamage: 25
+  acidBlockMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   grabChance: 0.053
   grabCooldown: {x: 20, y: 35}
   grabReach: 4.5
@@ -408,6 +419,10 @@ MonoBehaviour:
   throwDropHeight: 2.2
   holdDistance: 1.4
   holdHeight: 1
+  attackBlockMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  attackRayHeight: 1.5
 --- !u!114 &2764652632390027804
 MonoBehaviour:
   m_ObjectHideFlags: 0
