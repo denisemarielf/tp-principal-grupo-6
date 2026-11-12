@@ -12,6 +12,8 @@ public class EnemyCombat : NetworkBehaviour
     [Header("Alcance vertical")]
     [Tooltip("Diferencia maxima de altura (pies del zombie vs pies del objetivo) para poder golpear.")]
     public float maxVerticalReach = 1.0f;
+    [Tooltip("Imprime en consola la altura medida. Activalo solo para depurar.")]
+    public bool debugVerticalReach = false;
 
     [Header("Cono frontal")]
     [Tooltip("El golpe solo conecta si el objetivo esta enfrente. 1 = exactamente de frente, 0.5 = cono de ~120 grados, 0 = semicirculo, -1 = desactivado.")]
@@ -282,12 +284,31 @@ public class EnemyCombat : NetworkBehaviour
     {
         if (target == null) return false;
 
-        Collider body = target.GetComponentInChildren<Collider>();
-        float targetFeetY = (body != null && !body.isTrigger)
-            ? body.bounds.min.y
-            : target.position.y;
+        // Pies del objetivo: prioriza el CharacterController (cuerpo real del jugador), si no el primer collider, si no el pivote.
+        float targetFeetY;
+        CharacterController cc = target.GetComponent<CharacterController>();
+        if (cc != null)
+        {
+            targetFeetY = cc.bounds.min.y;
+        }
+        else
+        {
+            Collider body = target.GetComponentInChildren<Collider>();
+            targetFeetY = (body != null && !body.isTrigger)
+                ? body.bounds.min.y
+                : target.position.y;
+        }
 
-        return Mathf.Abs(targetFeetY - transform.position.y) <= maxVerticalReach;
+        // Piso donde esta parado el zombie: el pivote menos el Base Offset del NavMeshAgent.
+        float selfGroundY = transform.position.y - (navMeshAgent != null ? navMeshAgent.baseOffset : 0f);
+
+        // Solo bloquea si el objetivo esta MAS ARRIBA. Si esta a la misma altura o mas abajo, llega.
+        float heightAbove = targetFeetY - selfGroundY;
+
+        if (debugVerticalReach)
+            Debug.Log($"[{name}] heightAbove={heightAbove:F2} (max {maxVerticalReach}) targetFeetY={targetFeetY:F2} selfGroundY={selfGroundY:F2}");
+
+        return heightAbove <= maxVerticalReach;
     }
 
     // El objetivo tiene que estar enfrente del zombie (dentro del cono definido por frontDotThreshold).
