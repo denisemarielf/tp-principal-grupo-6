@@ -5568,7 +5568,7 @@ MonoBehaviour:
   spawnPoint: {fileID: 1776222566941253984}
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 2000
-  damageAmount: 30
+  damageAmount: 45
   pelletCount: 1
   useDamageFalloff: 0
   falloffStart: 15
@@ -5580,6 +5580,7 @@ MonoBehaviour:
     m_Bits: 119
   hitscanImpactEffect: {fileID: 39281035044144115, guid: 320e02664be69b34d813593ce5a35b26, type: 3}
   headshotMargin: 0.3
+  headshotDamageMultiplier: 2.3
   bulletTracer:
     bullet_Tracer_prefab: {fileID: 1898068084250203151, guid: b3b8dd34eec1f60469efccd89a47f182, type: 3}
     bullet_Tracer_Holder: {fileID: 8044291220703158088}
@@ -5626,7 +5627,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShootLogic
   ShowTopMostFoldoutHeaderGroup: 1
-  shootRate: 0.1
+  shootRate: 0.08
   isAutomatic: 1
   hudIcon: {fileID: 21300000, guid: cd0ebcfd6dc7ee34f88d34dfbb6323c1, type: 3}
 --- !u!114 &-8742830965729505510

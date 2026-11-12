@@ -31,7 +31,7 @@ public static class DifficultyTuning
         switch (Clamp(difficulty))
         {
             case 0: return 0.75f;
-            case 2: return 2f;
+            case 2: return 1f;
             default: return 1f;
         }
     }
@@ -51,7 +51,7 @@ public static class DifficultyTuning
         switch (Clamp(difficulty))
         {
             case 0: return 0.75f;
-            case 2: return 2f;
+            case 2: return 1.5f;
             default: return 1f;
         }
     }
@@ -61,7 +61,7 @@ public static class DifficultyTuning
         switch (Clamp(difficulty))
         {
             case 0: return 0.7f;
-            case 2: return 2f;
+            case 2: return 1.2f;
             default: return 1f;
         }
     }
