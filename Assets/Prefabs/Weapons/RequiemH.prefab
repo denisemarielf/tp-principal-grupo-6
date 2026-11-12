@@ -25140,7 +25140,7 @@ MonoBehaviour:
   spawnPoint: {fileID: 8378908586158789059}
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 1500
-  damageAmount: 120
+  damageAmount: 135
   pelletCount: 1
   useDamageFalloff: 0
   falloffStart: 15
@@ -25152,6 +25152,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   hitscanImpactEffect: {fileID: 39281035044144115, guid: 320e02664be69b34d813593ce5a35b26, type: 3}
   headshotMargin: 0.3
+  headshotDamageMultiplier: 2
   bulletTracer:
     bullet_Tracer_prefab: {fileID: 1898068084250203151, guid: b3b8dd34eec1f60469efccd89a47f182, type: 3}
     bullet_Tracer_Holder: {fileID: 2913125788232530344}
