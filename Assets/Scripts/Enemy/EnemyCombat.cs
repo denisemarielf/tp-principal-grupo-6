@@ -10,8 +10,10 @@ public class EnemyCombat : NetworkBehaviour
     public float attackDuration = 1.2f; // solo de respaldo: la duracion real es la del clip de ataque elegido
 
     [Header("Mordida")]
-    [Range(0f, 1f)] public float biteChance = 0.25f;     // probabilidad de morder en cada ciclo (solo contra jugadores)
-    public float biteDamage = 15f;                        // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
+    [Range(0f, 1f)] public float biteChance = 0.25f;
+    [Tooltip("Distancia maxima a la que puede agarrar y morder. Si el jugador esta mas lejos pero dentro de attackRange, hace un golpe normal.")]
+    public float biteRange = 1.0f;
+    public float biteDamage = 15f;                     // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
 
     private bool difficultyApplied;
 
@@ -30,6 +32,7 @@ public class EnemyCombat : NetworkBehaviour
     private bool biteDamageDealt;
     private PMovement frozenTarget;
     private bool IsCommitted => Time.time < attackEndTime;
+
 
     // Aturdido por la reaccion al golpe: no se mueve mientras dura el clip.
     public bool IsStunned => Time.time < stunUntil;
@@ -179,7 +182,7 @@ public class EnemyCombat : NetworkBehaviour
         {
             // Si el jugador ya no esta al alcance en plena mordida, lo suelta y corta el ataque.
             if (biteCycle && frozenTarget != null
-                && (currentTarget == null || DistanceTo(currentTarget) > attackRange * 1.2f))
+    && (currentTarget == null || DistanceTo(currentTarget) > biteRange * 1.2f))
             {
                 ReleaseBiteTarget();
                 attackEndTime = Time.time;
@@ -205,7 +208,9 @@ public class EnemyCombat : NetworkBehaviour
             float duration = attackDuration;
             PMovement movement = player.GetComponent<PMovement>();
             bool bite = enemyAnimation != null && enemyAnimation.HasBite
-                && movement != null && Random.value < biteChance;
+                && movement != null
+                && DistanceTo(player) <= biteRange
+                && Random.value < biteChance;
 
             if (bite)
             {
@@ -311,7 +316,11 @@ public class EnemyCombat : NetworkBehaviour
 
         // La mordida pega una sola vez (el fallback de Update cubre el caso de que el clip no tenga evento).
         if (biteCycle && biteDamageDealt) return;
-        if (DistanceTo(currentTarget) > attackRange * 1.2f) return;
+
+        // La mordida usa su propio rango; el golpe normal sigue usando attackRange.
+        float maxRange = biteCycle ? biteRange : attackRange;
+        if (DistanceTo(currentTarget) > maxRange * 1.2f) return;
+
         if (!HasLineOfSight(currentTarget)) return;
 
         ApplyDamage(biteCycle ? biteDamage : attackDamage, biteCycle);

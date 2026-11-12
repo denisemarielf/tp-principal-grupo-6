@@ -48,7 +48,7 @@ public class WeaponLogic : NetworkBehaviour
     private WeaponWorldLink worldLink;
     private WeaponSpread weaponSpread; // opcional: sin él el arma es 100% precisa
     [SerializeField] private bool closeRangeDismember = false;
-
+    private CameraControllerFPS camController;
     public WeaponSpread Spread => weaponSpread;
 
     private void Start()
@@ -73,9 +73,9 @@ public class WeaponLogic : NetworkBehaviour
     }
 
     private Vector3 VisualMuzzlePosition =>
-    (!IsOwner && worldLink != null && worldLink.worldMuzzle != null)
-        ? worldLink.worldMuzzle.position
-        : spawnPoint.position;
+ ((!IsOwner || OwnerInThirdPerson) && worldLink != null && worldLink.worldMuzzle != null)
+     ? worldLink.worldMuzzle.position
+     : spawnPoint.position;
 
     private void PlayRemoteShootEffects()
     {
@@ -85,22 +85,39 @@ public class WeaponLogic : NetworkBehaviour
         if (worldLink != null)
             worldLink.PlayWorldMuzzle();
     }
+    private bool OwnerInThirdPerson
+    {
+        get
+        {
+            if (!IsOwner) return false;
+            if (camController == null)
+                camController = transform.root.GetComponentInChildren<CameraControllerFPS>(true);
+            return camController != null && camController.IsThirdPerson;
+        }
+    }
+
 
     public void PlayShootEffectsLocal()
+{
+    if (audioSource != null && shootSound != null)
+        audioSource.PlayOneShot(shootSound);
+
+    if (OwnerInThirdPerson)
     {
-        if (audioSource != null && shootSound != null)
-            audioSource.PlayOneShot(shootSound);
-
-        if (muzzleFlash != null)
-        {
-            muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            muzzleFlash.Play();
-        }
-
-        if (weaponSway != null)
-            weaponSway.AddRecoil();
-        crosshairController?.NotifyShotFired();
+        // En tercera persona se ve el modelo de mundo, no el viewmodel.
+        if (worldLink != null) worldLink.PlayWorldMuzzle();
     }
+    else if (muzzleFlash != null)
+    {
+        muzzleFlash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        muzzleFlash.Play();
+    }
+
+    if (weaponSway != null)
+        weaponSway.AddRecoil();
+    crosshairController?.NotifyShotFired();
+}
+
 
     public void ApplyCameraRecoil(bool isAiming = false)
     {
