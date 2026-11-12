@@ -1,12 +1,21 @@
 using UnityEngine;
 
 // Baja pickups (armas, botiquines, municion) hasta el suelo con un raycast.
-// Se ejecuta en cada cliente para objetos de escena: no hace falta NetworkTransform.
+// Preferible solo en el server: en clientes puede dejar el objeto bajo el piso.
 public static class PickupGroundSnap
 {
-    private const float RayStartHeight = 5f;
+    private const float RayStartHeight = 2f;
     private const float MaxRayDistance = 40f;
     private const float Clearance = 0.03f;
+
+    // Colliders que NO cuentan como piso: personajes, enemigos y otros pickups.
+    // Sin esto, un loot soltado por un zombi se apoyaba sobre el propio zombi y quedaba flotando.
+    private static bool IsNotGround(Collider c)
+    {
+        return c.GetComponentInParent<EnemyHealth>() != null
+            || c.GetComponentInParent<PlayerHealth>() != null
+            || c.GetComponentInParent<ItemPickup>() != null;
+    }
 
     public static Vector3 SnapPosition(Vector3 position, Transform self = null)
     {
@@ -27,21 +36,33 @@ public static class PickupGroundSnap
         {
             if (self != null && (hit.transform == self || hit.transform.IsChildOf(self)))
                 continue;
+            if (IsNotGround(hit.collider))
+                continue;
 
             float bottomToPivot = 0f;
             if (self != null)
             {
-                Collider[] cols = self.GetComponentsInChildren<Collider>();
-                if (cols.Length > 0)
+                // Solo colliders solidos: un trigger grande (radio de uso) inflaria el calculo y lo dejaria en el aire.
+                bool found = false;
+                Bounds bounds = new Bounds(position, Vector3.zero);
+                foreach (Collider col in self.GetComponentsInChildren<Collider>())
                 {
-                    Bounds bounds = cols[0].bounds;
-                    for (int i = 1; i < cols.Length; i++)
+                    if (col == null || col.isTrigger)
+                        continue;
+
+                    if (!found)
                     {
-                        if (cols[i] != null)
-                            bounds.Encapsulate(cols[i].bounds);
+                        bounds = col.bounds;
+                        found = true;
                     }
-                    bottomToPivot = position.y - bounds.min.y;
+                    else
+                    {
+                        bounds.Encapsulate(col.bounds);
+                    }
                 }
+
+                if (found)
+                    bottomToPivot = Mathf.Max(0f, position.y - bounds.min.y);
             }
 
             return new Vector3(position.x, hit.point.y + bottomToPivot + Clearance, position.z);

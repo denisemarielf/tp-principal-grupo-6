@@ -1,19 +1,32 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.AI;
 
-// Oleadas alrededor del refugio mientras la partida de Supervivencia sigue abierta.
+// Oleadas alrededor del refugio. Cada oleada es una ronda; la cantidad de rondas para ganar la define la dificultad (SurvivalModeController).
 [RequireComponent(typeof(NetworkObject))]
 public class SurvivalWaveDirector : NetworkBehaviour
 {
     [SerializeField] private GameObject enemyPrefab;
+    [SerializeField] private GameObject miniBossPrefab;
+    [Tooltip("En estas rondas (2, 4, 6...) aparece un mini jefe ademas de los zombies.")]
+    [SerializeField] private int bossEveryRounds = 2;
     [SerializeField] private float firstWaveDelay = 5f;
     [SerializeField] private float delayAfterClear = 2f;
-    [SerializeField] private int startCount = 4;
+    [Tooltip("Si no se pudo ubicar a ningun zombie de la oleada, reintenta en este tiempo.")]
+    [SerializeField] private float retryDelay = 1f;
+    [SerializeField] private int startCount = 8;
     [SerializeField] private int increment = 2;
     [SerializeField] private float minRadius = 40f;
     [SerializeField] private float maxRadius = 52f;
 
+    private readonly NetworkVariable<int> breakSecondsLeft = new NetworkVariable<int>(
+    0,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
+
+public int BreakSecondsLeft => breakSecondsLeft.Value;
     private readonly NetworkVariable<int> waveNumber = new NetworkVariable<int>(
         0,
         NetworkVariableReadPermission.Everyone,
@@ -21,6 +34,12 @@ public class SurvivalWaveDirector : NetworkBehaviour
     );
 
     private readonly NetworkVariable<int> zombiesRemaining = new NetworkVariable<int>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
+    private readonly NetworkVariable<int> roundsCleared = new NetworkVariable<int>(
         0,
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server
@@ -35,6 +54,7 @@ public class SurvivalWaveDirector : NetworkBehaviour
 
     public int WaveNumber => waveNumber.Value;
     public int ZombiesRemaining => zombiesRemaining.Value;
+    public int RoundsCleared => roundsCleared.Value;
 
     private void Update()
     {
@@ -47,8 +67,12 @@ public class SurvivalWaveDirector : NetworkBehaviour
         if (mode == null || mode.IsFinished || !mode.CiviliansReady)
             return;
 
+        // La primera ronda espera a que se cierre la pantalla de carga: si no, los zombies atacan antes de que el jugador vea el mapa.
         if (!armed)
         {
+            if (LoadingScreen.EstaVisible)
+                return;
+
             armed = true;
             waitingToSpawn = true;
             timer = firstWaveDelay;
@@ -57,6 +81,12 @@ public class SurvivalWaveDirector : NetworkBehaviour
         if (waveActive && zombiesRemaining.Value <= 0)
         {
             waveActive = false;
+            roundsCleared.Value++;
+
+            // Con la ultima ronda superada no se arma nada mas: la victoria la decide el controlador.
+            if (roundsCleared.Value >= mode.RoundsTarget)
+                return;
+
             waitingToSpawn = true;
             timer = delayAfterClear;
         }
@@ -64,13 +94,25 @@ public class SurvivalWaveDirector : NetworkBehaviour
         if (!waitingToSpawn)
             return;
 
-        timer -= Time.deltaTime;
+       timer -= Time.deltaTime;
+
+        int shown = Mathf.Max(0, Mathf.CeilToInt(timer));
+        if (breakSecondsLeft.Value != shown)
+            breakSecondsLeft.Value = shown;
+
         if (timer > 0f)
             return;
 
         waitingToSpawn = false;
-        SpawnWave();
-        waveActive = true;
+        if (SpawnWave())
+        {
+            waveActive = true;
+        }
+        else
+        {
+            waitingToSpawn = true;
+            timer = retryDelay;
+        }
     }
 
     private void RefreshRemaining()
@@ -93,26 +135,62 @@ public class SurvivalWaveDirector : NetworkBehaviour
             zombiesRemaining.Value = alive;
     }
 
-    private void SpawnWave()
+    // Devuelve false si no se pudo ubicar a ningun zombie: en ese caso la ronda no cuenta y se reintenta.
+    private bool SpawnWave()
     {
         currentWave.Clear();
-        int count = startCount + waveIndex * increment;
-        waveIndex++;
-        waveNumber.Value = waveIndex;
+        int count = DifficultyTuning.ScaleCount(startCount + waveIndex * increment);
         Vector3 center = transform.position;
 
+        if (!NavMesh.SamplePosition(center, out NavMeshHit refugeHit, 8f, EnemySceneSetup.WalkableMask))
+            return false;
+
+        var used = new List<Vector3>(count);
         for (int i = 0; i < count; i++)
         {
-            float angle = ((360f / count) * i + Random.Range(-8f, 8f)) * Mathf.Deg2Rad;
-            float radius = Random.Range(minRadius, maxRadius);
-            Vector3 desired = center + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+            if (!EnemySceneSetup.TryFindWaveSpawn(center, refugeHit.position, minRadius, maxRadius, used, out Vector3 point))
+                continue;
+
+            used.Add(point);
             EnemyVariant variant = (EnemyVariant)Random.Range(0, 3);
-            EnemyHealth spawned = EnemySceneSetup.SpawnNetworkEnemy(enemyPrefab, desired, variant);
+            EnemyHealth spawned = EnemySceneSetup.SpawnWaveEnemy(enemyPrefab, point, variant);
             if (spawned != null)
                 currentWave.Add(spawned);
         }
 
+        if (currentWave.Count == 0)
+        {
+            Debug.LogWarning("SurvivalWaveDirector: no se pudo ubicar ningun zombie. Reintento.");
+            return false;
+        }
+
+        int round = waveIndex + 1;
+        bool withBoss = SpawnBoss(round, center, refugeHit.position, used);
+
+        waveIndex++;
+        waveNumber.Value = waveIndex;
         zombiesRemaining.Value = currentWave.Count;
-        Debug.Log($"SurvivalWaveDirector: oleada {waveIndex} con {currentWave.Count} enemigos.");
+        Debug.Log($"SurvivalWaveDirector: ronda {waveIndex} con {currentWave.Count} enemigos{(withBoss ? " y un mini jefe" : "")}.");
+        return true;
+    }
+
+    // Rondas 2, 4, 6... El jefe entra en la oleada: la ronda no termina hasta que muera.
+    private bool SpawnBoss(int round, Vector3 center, Vector3 refuge, List<Vector3> used)
+    {
+        if (miniBossPrefab == null || bossEveryRounds <= 0 || round % bossEveryRounds != 0)
+            return false;
+
+        if (!EnemySceneSetup.TryFindWaveSpawn(center, refuge, minRadius, maxRadius, used, out Vector3 point))
+        {
+            Debug.LogWarning($"SurvivalWaveDirector: ronda {round} sin lugar para el mini jefe.");
+            return false;
+        }
+
+        EnemyHealth boss = EnemySceneSetup.SpawnWaveEnemy(miniBossPrefab, point, EnemyVariant.Normal);
+        if (boss == null)
+            return false;
+
+        currentWave.Add(boss);
+        return true;
     }
 }

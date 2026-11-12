@@ -5428,6 +5428,7 @@ GameObject:
   - component: {fileID: 413164123419654230}
   - component: {fileID: 9029041762311561369}
   - component: {fileID: -8742830965729505510}
+  - component: {fileID: -1523908688341761337}
   m_Layer: 0
   m_Name: rifleAKH
   m_TagString: Untagged
@@ -5567,12 +5568,19 @@ MonoBehaviour:
   spawnPoint: {fileID: 1776222566941253984}
   bullet: {fileID: 7452320660202882207, guid: 7458625eb380d9a488c98a46d4d9f373, type: 3}
   shootForce: 2000
-  damageAmount: 30
+  damageAmount: 45
+  pelletCount: 1
+  useDamageFalloff: 0
+  falloffStart: 15
+  falloffEnd: 40
+  minDamageMultiplier: 0.3
   hitscanRange: 100
   hitscanLayers:
     serializedVersion: 2
     m_Bits: 119
   hitscanImpactEffect: {fileID: 39281035044144115, guid: 320e02664be69b34d813593ce5a35b26, type: 3}
+  headshotMargin: 0.3
+  headshotDamageMultiplier: 2.3
   bulletTracer:
     bullet_Tracer_prefab: {fileID: 1898068084250203151, guid: b3b8dd34eec1f60469efccd89a47f182, type: 3}
     bullet_Tracer_Holder: {fileID: 8044291220703158088}
@@ -5585,6 +5593,7 @@ MonoBehaviour:
   weaponSway: {fileID: 3040455498501828608}
   cameraRecoil: {fileID: -8742830965729505510}
   crosshairController: {fileID: 0}
+  closeRangeDismember: 0
 --- !u!114 &413164123419654230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5604,6 +5613,7 @@ MonoBehaviour:
   reloadSound: {fileID: 8300000, guid: 544538693245ef04ea3630acdba418d9, type: 3}
   emptySound: {fileID: 8300000, guid: 1a1d08bada427b34c815e52edd0b33f1, type: 3}
   weaponSway: {fileID: 3040455498501828608}
+  maxReserveAmmo: 120
 --- !u!114 &9029041762311561369
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5617,7 +5627,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShootLogic
   ShowTopMostFoldoutHeaderGroup: 1
-  shootRate: 0.1
+  shootRate: 0.08
   isAutomatic: 1
   hudIcon: {fileID: 21300000, guid: cd0ebcfd6dc7ee34f88d34dfbb6323c1, type: 3}
 --- !u!114 &-8742830965729505510
@@ -5639,6 +5649,30 @@ MonoBehaviour:
   recoil_Snapiness: 18
   recoil_Return_Speed: 10
   max_Vetical_Recoil: 8
+--- !u!114 &-1523908688341761337
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3471489283968888536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b678a20a6da7d448659f8cb5066a07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::WeaponSpread
+  baseSpread: 0.4
+  maxSpread: 6
+  speedReference: 6
+  moveSpreadAdd: 1.5
+  airSpreadAdd: 3
+  aimMultiplier: 0.4
+  crouchMultiplier: 0.7
+  bloomPerShot: 0.6
+  bloomMax: 4
+  bloomRecoverDelay: 0.15
+  bloomRecoverRate: 6
+  stateSmoothTime: 0.08
 --- !u!1 &3746963685770700955
 GameObject:
   m_ObjectHideFlags: 0

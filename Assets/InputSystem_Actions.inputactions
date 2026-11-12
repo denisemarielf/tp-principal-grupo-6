@@ -145,6 +145,16 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
+                },
+                {
+                    "name": "ViewObjetive",
+                    "type": "Button",
+                    "id": "57f1e4ae-fe15-4653-8627-41081e9bf248",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
                 }
             ],
             "bindings": [
@@ -343,6 +353,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "InventoryPrev",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0310d8a0-9c96-4d57-9030-96a4a02544ad",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ViewObjetive",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

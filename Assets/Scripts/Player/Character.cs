@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using TMPro;
+using static UnityEngine.GraphicsBuffer;
 
 [RequireComponent(typeof(PMovement))]
 public class Character : NetworkBehaviour
@@ -29,7 +30,9 @@ public class Character : NetworkBehaviour
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
     private bool placedByServer;
     private PlayerInventory inventory;
-    
+
+    [SerializeField] private ObjectivePanelToggle objectivePanel;
+
 
     [Header("Nombre del jugador")] //nuevo
     [SerializeField] private TextMeshPro playerNameText;
@@ -66,8 +69,22 @@ public class Character : NetworkBehaviour
 
         if (IsOwner)
         {
-            string nombre = NombrePlayer.NombreJugador;
+            if (health != null)
+            {
+                health.Died += OnLocalPlayerDied;
+                health.Revived += OnLocalPlayerRevived;
+                if (health.IsDead)
+                {
+                    SetGameplayHudVisible(false);
+                    PlayerInput deadInput = GetComponent<PlayerInput>();
+                    if (deadInput != null)
+                        deadInput.enabled = false;
+                }
+            }
 
+            string nombre = NombrePlayer.NombreJugador;
+            ElectricPanel.LocalMinigameChanged += SetMinigameMode;
+            CodeKeypad.LocalMinigameChanged += SetMinigameMode;
             if (string.IsNullOrWhiteSpace(nombre))
                 nombre = "Jugador " + (OwnerClientId + 1);
 
@@ -87,7 +104,42 @@ public class Character : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        if (health != null)
+        {
+            health.Died -= OnLocalPlayerDied;
+            health.Revived -= OnLocalPlayerRevived;
+        }
+
+        ElectricPanel.LocalMinigameChanged -= SetMinigameMode;
+        CodeKeypad.LocalMinigameChanged -= SetMinigameMode;
         RestoreSceneCameras();
+    }
+
+    private void OnLocalPlayerDied()
+    {
+        if (!IsOwner) return;
+        SetGameplayHudVisible(false);
+    }
+
+    private void OnLocalPlayerRevived()
+    {
+        if (!IsOwner) return;
+        SetGameplayHudVisible(true);
+    }
+
+    private void SetGameplayHudVisible(bool visible)
+    {
+        if (localHud != null)
+            localHud.SetActive(visible);
+
+        if (extraLocalHud == null)
+            return;
+
+        foreach (GameObject go in extraLocalHud)
+        {
+            if (go != null)
+                go.SetActive(visible);
+        }
     }
 
     public override void OnDestroy()
@@ -133,7 +185,15 @@ public class Character : NetworkBehaviour
     }
     //aca termina
 
+    public void OnViewObjetive(InputAction.CallbackContext context)
+    {
+        if (!IsOwner || IsDead() || objectivePanel == null) return;
 
+        if (context.performed)
+            objectivePanel.SetHeld(true);
+        else if (context.canceled)
+            objectivePanel.SetHeld(false);
+    }
     public void OnMove(InputAction.CallbackContext context)
     {
         if (!IsOwner || IsDead()) return;
@@ -205,7 +265,10 @@ public class Character : NetworkBehaviour
     // vez, se usa el que esté más cerca.
     public void OnInteraction(InputAction.CallbackContext context)
     {
+       
         if (!IsOwner || IsDead() || !context.performed) return;
+
+        if (FuelInteraction.TryInteract(transform.position)) return;
 
         ItemPickup item = ItemPickup.FindNearest(transform.position);
         float itemDist = item != null
@@ -229,28 +292,76 @@ public class Character : NetworkBehaviour
             }
         }
 
+        ExtractionPhone phone = ExtractionPhone.FindNearestAvailable(transform.position);
+        float phoneDist = phone != null
+            ? Vector3.Distance(transform.position, phone.transform.position)
+            : float.MaxValue;
+
         RescuableNpc npc = RescuableNpc.FindNearestWaiting(transform.position);
         float npcDist = npc != null
             ? Vector3.Distance(transform.position, npc.transform.position)
             : float.MaxValue;
 
-        if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
+        ElectricPanel panel = ElectricPanel.FindNearestUnsolved(transform.position);
+float panelDist = panel != null
+    ? Vector3.Distance(transform.position, panel.transform.position)
+    : float.MaxValue;
+
+CodeKeypad keypad = CodeKeypad.FindNearestUnsolved(transform.position);
+float keypadDist = keypad != null
+    ? Vector3.Distance(transform.position, keypad.transform.position)
+    : float.MaxValue;
+
+if (keypad != null && keypadDist <= panelDist && keypadDist <= phoneDist
+    && keypadDist <= npcDist && keypadDist <= itemDist && keypadDist <= nearestWeaponDist)
+{
+    keypad.Interact();
+}
+else if (panel != null && panelDist <= phoneDist && panelDist <= npcDist
+    && panelDist <= itemDist && panelDist <= nearestWeaponDist)
+{
+    panel.Interact();
+}
+else if (phone != null && phoneDist <= npcDist && phoneDist <= itemDist && phoneDist <= nearestWeaponDist)
+{
+    phone.RequestExtraction();
+}
+else if (npc != null && npcDist <= itemDist && npcDist <= nearestWeaponDist)
+{
+    npc.RequestRescue();
+}
+else if (item != null && itemDist <= nearestWeaponDist)
+{
+    inventory?.RequestPickupItemServerRpc(item.NetworkObjectId);
+}
+else if (nearestWeapon != null)
+{
+    weaponSwitcher?.RequestPickupWeaponServerRpc(
+        (int)nearestWeapon.weaponType,
+        nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
+    );
+}
+
+    }
+    private void SetMinigameMode(bool on)
+    {
+        PlayerInput pi = GetComponent<PlayerInput>();
+        if (on)
         {
-            npc.RequestRescue();
+            movement.SetMoveInput(Vector2.zero);
+            movement.SetSprint(false);
+            if (pi != null) pi.enabled = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
-        else if (item != null && itemDist <= nearestWeaponDist)
+        else
         {
-            inventory?.RequestPickupItemServerRpc(item.NetworkObjectId);
-        }
-        else if (nearestWeapon != null)
-        {
-            weaponSwitcher?.RequestPickupWeaponServerRpc(
-                (int)nearestWeapon.weaponType,
-                nearestWeapon.GetComponent<NetworkObject>().NetworkObjectId
-            );
+            if (IsDead()) return;   // si murió, que siga apagado
+            if (pi != null) pi.enabled = true;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
     }
-
     private void SetLocalOnlyComponents(bool isLocal)
     {
         PlayerInput playerInput = GetComponent<PlayerInput>();

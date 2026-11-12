@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bfad83e2df08dc4f8615d565079542f, type: 3}
+  m_Name: Item_BidonVacio
+  m_EditorClassIdentifier: Game::ItemDefinition
+  id: 3
+  displayName: "Bid\xF3n vac\xEDo"
+  icon: {fileID: 21300000, guid: aebf5922335f6ec40832d37878343c19, type: 3}
+  maxStack: 1
+  maxCarried: 1
+  worldPrefab: {fileID: 5153211883590909809, guid: b27050fb412572940883921575b0c761, type: 3}
+  useEffect: {fileID: 0}
+  heldModel: {fileID: 1838392673054514855, guid: 21849dedcc9096f4582c4c398420e21f, type: 3}
+  consumeOnUse: 0
+  pickupSound: {fileID: 0}
+  useSound: {fileID: 0}

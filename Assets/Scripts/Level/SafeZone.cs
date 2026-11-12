@@ -27,6 +27,12 @@ public class SafeZone : NetworkBehaviour
     [SerializeField] private int minRescued = 0;
     [Tooltip("Puntos del equipo por cada civil rescatado.")]
     [SerializeField] private int pointsPerNpc = 100;
+    [Header("Zona secreta")]
+    [Tooltip("Si está marcado, esta zona no cierra el nivel: lleva a la escena del secreto. No cuenta civiles ni espera al helicóptero.")]
+    [SerializeField] private bool isSecret = false;
+    public static SafeZone LastCompleted { get; private set; }
+    public bool IsSecret => isSecret;
+    public string NextScene => isSecret ? PlayerCarryOver.EasterEggSceneName : null;
 
     private NetworkVariable<int> playersInside = new NetworkVariable<int>(
         0,
@@ -72,6 +78,45 @@ public class SafeZone : NetworkBehaviour
     public bool IsCompleted => completed.Value;
     public bool AllAlivePlayersInside => alivePlayers.Value > 0 && playersInside.Value >= alivePlayers.Value;
 
+    [Tooltip("Si está marcado, la zona no cuenta jugadores ni completa el nivel hasta que se llame a Unlock().")]
+    [SerializeField] private bool startLocked = true;
+    [Tooltip("Objetos que se activan al desbloquear (ej: el cilindro verde del helipuerto). Se aplica en todos los clientes.")]
+    [SerializeField] private GameObject[] unlockVisuals;
+    private NetworkVariable<bool> unlocked = new NetworkVariable<bool>(
+    false,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server
+);
+    public bool IsUnlocked => unlocked.Value;
+
+    // Suburbio se cierra al llegar a la zona. El helicoptero solo traba la zona
+    // en los mapas que tienen telefono de extraccion (hay que llamarlo).
+    private bool DebeEsperarHelicoptero()
+    {
+        if (gameObject.scene.name == PlayerCarryOver.SuburbSceneName)
+            return false;
+
+        if (!startLocked)
+            return false;
+
+        return FindObjectsByType<ExtractionPhone>(FindObjectsInactive.Include).Length > 0;
+    }
+
+    public void Unlock()
+    {
+        if (!IsServer) return;
+        unlocked.Value = true;
+    }
+
+    private void OnUnlockedChanged(bool previous, bool current) => ApplyUnlockVisuals(current);
+
+    private void ApplyUnlockVisuals(bool value)
+    {
+        if (unlockVisuals == null) return;
+        foreach (var go in unlockVisuals)
+            if (go != null) go.SetActive(value);
+    }
+
     // Solo el server. Lo usa el guardado de partida (US 3.6) para saber si el host esta en la zona.
     public bool IsPlayerInside(PlayerHealth player)
     {
@@ -85,8 +130,13 @@ public class SafeZone : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        Current = this;
+        if (!isSecret) Current = this;
         completed.OnValueChanged += OnCompletedChanged;
+        unlocked.OnValueChanged += OnUnlockedChanged;
+
+        if (IsServer)
+            unlocked.Value = isSecret || !DebeEsperarHelicoptero();
+        ApplyUnlockVisuals(unlocked.Value);
 
         if (!GetComponent<Collider>().isTrigger)
         {
@@ -97,6 +147,7 @@ public class SafeZone : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         completed.OnValueChanged -= OnCompletedChanged;
+        unlocked.OnValueChanged -= OnUnlockedChanged;
         if (Current == this) Current = null;
     }
 
@@ -120,7 +171,7 @@ public class SafeZone : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsServer || !IsSpawned || completed.Value) return;
+        if (!IsServer || !IsSpawned || completed.Value || !unlocked.Value) return;
 
         checkTimer -= Time.deltaTime;
         if (checkTimer > 0f) return;
@@ -149,11 +200,13 @@ public class SafeZone : NetworkBehaviour
                 aliveInside++;
         }
 
+
         if (alivePlayers.Value != alive) alivePlayers.Value = alive;
         if (playersInside.Value != aliveInside) playersInside.Value = aliveInside;
 
-        int rescued = CheckNpcs();
-        int required = Mathf.Min(minRescued, totalNpcs.Value);
+        int rescued = isSecret ? 0 : CheckNpcs();
+        int required = isSecret ? 0 : Mathf.Min(minRescued, totalNpcs.Value);
+
 
         if (RequirementsMet(alive, aliveInside, rescued, required))
         {
@@ -217,7 +270,8 @@ public class SafeZone : NetworkBehaviour
 
     private void OnCompletedChanged(bool previous, bool current)
     {
-        if (current)
-            LevelCompleted?.Invoke();
+        if (!current) return;
+        LastCompleted = this;
+        LevelCompleted?.Invoke();
     }
 }

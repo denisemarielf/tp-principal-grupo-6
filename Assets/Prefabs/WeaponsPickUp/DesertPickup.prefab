@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 388545382173340323}
   - component: {fileID: 9189601156877762694}
   - component: {fileID: 7055566445914096824}
+  - component: {fileID: 1866134731609996787}
   m_Layer: 8
   m_Name: DesertPickup
   m_TagString: Untagged
@@ -147,6 +148,11 @@ MonoBehaviour:
   pulseSpeed: 4
   minIntensity: 3
   maxIntensity: 5
+  outline: {fileID: 1866134731609996787}
+  outlineColor: {r: 0.30588236, g: 1, b: 0.019607844, a: 1}
+  outlineWidth: 4
+  highlightRadius: 3
+  playerTag: Player
 --- !u!54 &9189601156877762694
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -195,6 +201,24 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.3, y: 0.3, z: 0.3}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1866134731609996787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 105282843008529942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fea29bb7c508c244a1f805a5fd3fc4d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::QuickOutline.Outline
+  outlineMode: 0
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineWidth: 2
+  precomputeOutline: 0
+  bakeKeys: []
+  bakeValues: []
 --- !u!1 &1411215001780451524
 GameObject:
   m_ObjectHideFlags: 0
@@ -599,7 +623,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 0.26648098, g: 1, b: 0, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0.64
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208

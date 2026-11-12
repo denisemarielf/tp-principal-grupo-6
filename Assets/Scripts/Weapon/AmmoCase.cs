@@ -86,15 +86,12 @@ public class AmmoCase : NetworkBehaviour
         if (weaponSwitcher == null)
             weaponSwitcher = characterController.GetComponentInChildren<WeaponSwitcher>();
 
-        Debug.Log($"[AmmoCase] weaponSwitcher encontrado: {weaponSwitcher != null}");
+        
 
         if (weaponSwitcher == null)
             return;
 
-        AmmoManager ammoManager = weaponSwitcher.CurrentAmmoManager;
-        Debug.Log($"[AmmoCase] ammoManager encontrado: {ammoManager != null}");
-
-        if (ammoManager == null)
+        if (!weaponSwitcher.CanReceiveAmmo)
             return;
 
         weaponSwitcher.GrantAmmoToCurrentWeapon((int)amount);

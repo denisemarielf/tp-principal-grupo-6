@@ -21,6 +21,7 @@ public static class GameSessionManager
         NetworkManager networkManager = await WaitForShutdownAsync();
 
         gameStarted = false;
+        MatchSettings.Reset();
         networkManager.NetworkConfig.ConnectionApproval = true;
         networkManager.ConnectionApprovalCallback = ApproveConnection;
     }
@@ -32,15 +33,23 @@ public static class GameSessionManager
         NetworkManager networkManager = await WaitForShutdownAsync();
 
         gameStarted = false;
+        MatchSettings.Reset();
         networkManager.NetworkConfig.ConnectionApproval = true;
         networkManager.ConnectionApprovalCallback = null;
     }
 
     // Solo el host. Carga la escena para todos los conectados; devuelve false si no se pudo iniciar la carga.
-    public static bool StartGame(string sceneName)
+    // mode: el modo elegido en "Crear partida", que se aplica en todos los clientes junto con la escena.
+    // None = no cambia el modo (pasar al siguiente nivel de la misma partida).
+    public static bool StartGame(string sceneName, GameMode mode = GameMode.None)
     {
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager == null || !networkManager.IsServer) return false;
+
+        if (mode != GameMode.None)
+            MatchSettings.SetAndBroadcast(mode);
+
+        MatchSettings.SetAndBroadcastDifficulty(CurrentGame.Difficulty);
 
         gameStarted = true;
         networkManager.SceneManager.OnLoadEventCompleted += OnGameSceneLoaded;
@@ -61,7 +70,10 @@ public static class GameSessionManager
     public static void ReturnToMainMenu()
     {
         gameStarted = false;
+        MatchSettings.Reset();
         PlayerCarryOver.Clear();
+        SavedGameLoader.Clear();
+        CurrentGame.Clear();
 
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager != null)
@@ -118,6 +130,9 @@ public static class GameSessionManager
         Vector3 spawnPosition = spawnPoint != null ? spawnPoint.transform.position : playerPrefab.transform.position;
         Quaternion spawnRotation = spawnPoint != null ? spawnPoint.transform.rotation : playerPrefab.transform.rotation;
 
+        if (SavedGameLoader.TryGetSafePoint(out Vector3 safePoint))
+            spawnPosition = safePoint;
+
         int playerIndex = 0;
         foreach (ulong clientId in networkManager.ConnectedClientsIds)
         {
@@ -140,6 +155,8 @@ public static class GameSessionManager
 
         if (PlayerCarryOver.HasServerPending)
             PlayerCarryOver.MarkServerApplied();
+
+        SavedGameLoader.Clear();
     }
 
     // Si se acaba de salir de una sala, el NetworkManager no puede volver a arrancar hasta terminar de apagarse.

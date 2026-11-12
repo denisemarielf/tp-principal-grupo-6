@@ -141,8 +141,8 @@ public class RescuableNpc : NetworkBehaviour
                     hasSpeedParameter = true;
             }
 
-            if (!hasSpeedParameter)
-                Debug.LogWarning("RescuableNpc: el Animator no tiene un parametro float 'Speed', el NPC no va a animarse.", this);
+            
+                
         }
     }
 
@@ -187,7 +187,7 @@ public class RescuableNpc : NetworkBehaviour
             if (!warned && waited >= 10f)
             {
                 warned = true;
-                Debug.LogWarning($"RescuableNpc: '{name}' no tiene NavMesh a menos de 5 m de {transform.position}. No se va a poder mover: agranda 'Nav Mesh Size' en EnemySceneSetup para que lo incluya, o acercalo al mapa.", this);
+                
             }
 
             yield return new WaitForSeconds(0.5f);
@@ -312,7 +312,7 @@ public class RescuableNpc : NetworkBehaviour
 
     private void UpdateFollow()
     {
-        Debug.Log($"{name}: agent.enabled={agent.enabled}, onNavMesh={(agent.enabled && agent.isOnNavMesh)}, fleeing={fleeing}");
+        
         Transform leader = ResolveLeader();
         if (leader == null)
         {
@@ -427,7 +427,8 @@ public class RescuableNpc : NetworkBehaviour
 
     public void RequestRescue()
     {
-        Debug.Log($"RequestRescue: spawned={IsSpawned}, dead={isDead.Value}, state={state.Value}");
+        
+
         if (!IsSpawned || isDead.Value || shelter.Value || state.Value != NpcState.Waiting) return;
         RequestRescueRpc();
     }
@@ -444,7 +445,7 @@ public class RescuableNpc : NetworkBehaviour
         float distance = Vector3.Distance(client.PlayerObject.transform.position, transform.position);
         if (distance > rescueRadius + serverTolerance)
         {
-            Debug.Log($"RescuableNpc: el host rechazo el pedido del cliente {senderId} (distancia {distance:0.0}).");
+           
             return;
         }
 
@@ -452,7 +453,7 @@ public class RescuableNpc : NetworkBehaviour
         state.Value = NpcState.Following;
         returningHome = false;
         repathTimer = 0f;
-        Debug.Log($"RescuableNpc: el cliente {senderId} rescato a {name}.");
+        
     }
 
     // Lo llama la SafeZone (solo host) cuando el NPC escoltado entra a la zona.
@@ -463,8 +464,9 @@ public class RescuableNpc : NetworkBehaviour
         state.Value = NpcState.Safe;
         StopAgent();
         agent.enabled = false;
-        Debug.Log($"RescuableNpc: {name} llego a la zona segura.");
+        
         AchievementService.NotifyCivilianRescued(leaderId.Value);
+        MatchStatsService.NotifyRescue(leaderId.Value);
     }
 
     // ---------- Vida (solo host) ----------
@@ -482,7 +484,7 @@ public class RescuableNpc : NetworkBehaviour
     {
         isDead.Value = true;
         agent.enabled = false;
-        Debug.Log($"RescuableNpc: {name} murio.");
+        
 
         if (NetworkObject != null && NetworkObject.IsSpawned)
         {

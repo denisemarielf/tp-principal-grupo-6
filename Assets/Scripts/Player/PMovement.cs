@@ -2,6 +2,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using System.Collections;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(CharacterController))]
 public class PMovement : NetworkBehaviour
@@ -22,7 +23,7 @@ public class PMovement : NetworkBehaviour
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
-
+    private float launchLockUntil;
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector3 velocity;
@@ -31,7 +32,10 @@ public class PMovement : NetworkBehaviour
     public Vector2 MoveInput => moveInput;
     public bool IsGrounded => controller != null && controller.isGrounded;
     public bool IsSprinting => isSprinting;
- 
+
+    private float externalSlow = 1f;
+    private bool held;
+    public bool IsHeld => held;
 
     private NetworkVariable<float> speedMultiplier = new(
     1f,
@@ -51,6 +55,43 @@ public class PMovement : NetworkBehaviour
     private Coroutine hitSlowRoutine;
     private int hitSlowToken;
 
+    private readonly NetworkVariable<bool> frozen = new NetworkVariable<bool>(
+    false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public bool IsFrozen => frozen.Value;
+
+    public void SetFrozen(bool value)
+    {
+        if (IsServer) frozen.Value = value;
+    }
+    // Lista de jugadores activos. Evita FindObjectsByType en cada enemigo (lo usa Ai).
+    public static readonly List<PMovement> All = new List<PMovement>();
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() => All.Clear();
+
+    private PlayerHealth cachedHealth;
+    public PlayerHealth Health
+    {
+        get
+        {
+            if (cachedHealth == null)
+                cachedHealth = GetComponent<PlayerHealth>();
+            return cachedHealth;
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (!All.Contains(this))
+            All.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        All.Remove(this);
+    }
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -62,7 +103,11 @@ public class PMovement : NetworkBehaviour
         if (!IsOwner)
             return;
 
-        
+        if (held)
+        {
+            UpdateAnimator();
+            return;
+        }
         HandleMovement();
         ApplyGravity();
         UpdateAnimator();
@@ -86,10 +131,28 @@ public class PMovement : NetworkBehaviour
 
     public void TryJump()
     {
+        if (frozen.Value || held)
+            return;
         if (IsGrounded)
         {
             verticalVelocity =
             Mathf.Sqrt(jumpHeight * -2f * gravity);
+            TriggerJump();
+        }
+    }
+
+    private void TriggerJump()
+    {
+        if (animator == null)
+            return;
+
+        foreach (AnimatorControllerParameter parameter in animator.parameters)
+        {
+            if (parameter.name == "Jump" && parameter.type == AnimatorControllerParameterType.Trigger)
+            {
+                animator.SetTrigger(parameter.name);
+                return;
+            }
         }
     }
 
@@ -111,12 +174,20 @@ public class PMovement : NetworkBehaviour
         if (controller == null)
             return;
 
+        if (frozen.Value)
+        {
+            velocity = Vector3.zero;
+            controller.Move(new Vector3(0f, verticalVelocity * Time.deltaTime, 0f));
+            return;
+        }
+        Vector2 input = Time.time < launchLockUntil ? Vector2.zero : moveInput;
         Vector3 wishDir =
-        (transform.right * moveInput.x +
-        transform.forward * moveInput.y).normalized;
+            (transform.right * input.x +
+             transform.forward * input.y).normalized;
+
 
         float wishSpeed =
-        moveSpeed * CombineSpeed(speedMultiplier.Value, slowMultiplier.Value);
+        moveSpeed * CombineSpeed(speedMultiplier.Value, slowMultiplier.Value) * externalSlow;
 
 
         if (isSprinting)
@@ -190,10 +261,10 @@ public class PMovement : NetworkBehaviour
     {
         if (animator == null)
             return;
-
-        animator.SetFloat("velX", moveInput.x, 0.1f, Time.deltaTime);
-        animator.SetFloat("velZ", moveInput.y, 0.1f, Time.deltaTime);
-        bool isActuallySprinting = isSprinting && moveInput.magnitude > 0.1f;
+        Vector2 input = (frozen.Value || held) ? Vector2.zero : moveInput;
+        animator.SetFloat("velX", input.x, 0.1f, Time.deltaTime);
+        animator.SetFloat("velZ", input.y, 0.1f, Time.deltaTime);
+        bool isActuallySprinting = isSprinting && input.magnitude > 0.1f;
         animator.SetBool("isSprinting", isActuallySprinting);
     }
 
@@ -246,7 +317,19 @@ public class PMovement : NetworkBehaviour
     {
         return boost * slow;
     }
-
+    public void SetExternalSlow(float multiplier)
+    {
+        externalSlow = Mathf.Clamp(multiplier, 0.05f, 1f);
+    }
+    public void SetHeld(bool value)
+    {
+        held = value;
+        if (value)
+        {
+            velocity = Vector3.zero;
+            verticalVelocity = 0f;
+        }
+    }
     private IEnumerator HitSlowRoutine(float multiplier, float duration, int token)
     {
         slowMultiplier.Value = multiplier;
@@ -258,5 +341,11 @@ public class PMovement : NetworkBehaviour
 
         slowMultiplier.Value = 1f;
         hitSlowRoutine = null;
+    }
+    public void Launch(Vector3 launchVelocity, float controlLockSeconds = 0.6f)
+    {
+        velocity = new Vector3(launchVelocity.x, 0f, launchVelocity.z);
+        verticalVelocity = launchVelocity.y;
+        launchLockUntil = Time.time + controlLockSeconds;
     }
 }

@@ -3,7 +3,8 @@ using Unity.Netcode;
 using UnityEngine;
 
 // Persistencia en memoria entre Suburbio y Oficinas (US 4.10).
-// - El server guarda salud, inventario y tipos de arma (NetworkVariables).
+// - El server guarda inventario y tipos de arma (NetworkVariables).
+// - La vida no se arrastra: en el nivel siguiente todos aparecen vivos y al máximo.
 // - Cada owner guarda munición e índice de arma localmente (AmmoManager no es de red).
 // Los estáticos sobreviven al LoadScene Single porque no viven en la escena.
 public static class PlayerCarryOver
@@ -11,6 +12,9 @@ public static class PlayerCarryOver
     public const string SuburbSceneName = "SampleScene";
     public const string OfficesSceneName = "MapaOficina";
     public const string StationSceneName = "ExtraccionScene";
+    public const string CollectionSceneName = "EstacionRecoleccion";
+    public const string EasterEggSceneName = "EasterEggScene";
+
 
     private struct AmmoSlot
     {
@@ -21,10 +25,11 @@ public static class PlayerCarryOver
 
     private struct ServerSnapshot
     {
-        public float health;
         public InventorySlot[] inventory;
         public int weaponSlot0Type;
         public int weaponSlot1Type;
+        public bool hasHealth;
+        public float health;
     }
 
     private struct OwnerSnapshot
@@ -41,6 +46,15 @@ public static class PlayerCarryOver
     private static bool serverPending;
 
     public static bool HasServerPending => serverPending;
+
+    // Null si no hay nivel siguiente.
+    public static string NextSceneAfter(string sceneName)
+    {
+        if (sceneName == SuburbSceneName) return OfficesSceneName;
+        if (sceneName == OfficesSceneName) return StationSceneName;
+
+        return null;
+    }
 
     // Cada owner: munición + arma equipada. Llamar al completar el Suburbio.
     public static void CaptureLocalOwner(GameObject player)
@@ -80,7 +94,7 @@ public static class PlayerCarryOver
             && loadout.GetSlotType(1) == snap.weaponSlot1Type;
     }
 
-    // Solo server: salud, inventario y loadout de todos los jugadores conectados.
+    // Solo server: inventario y loadout de todos los jugadores conectados.
     public static void CaptureServerState()
     {
         NetworkManager networkManager = NetworkManager.Singleton;
@@ -94,7 +108,6 @@ public static class PlayerCarryOver
             if (playerObj == null) continue;
 
             GameObject player = playerObj.gameObject;
-            PlayerHealth health = player.GetComponent<PlayerHealth>();
             PlayerInventory inventory = player.GetComponent<PlayerInventory>();
             WeaponLoadout loadout = player.GetComponentInChildren<WeaponLoadout>();
 
@@ -108,7 +121,6 @@ public static class PlayerCarryOver
 
             serverByClientId[clientId] = new ServerSnapshot
             {
-                health = health != null ? health.CurrentHealth : 100f,
                 inventory = slots,
                 weaponSlot0Type = loadout != null ? loadout.GetSlotType(0) : -1,
                 weaponSlot1Type = loadout != null ? loadout.GetSlotType(1) : -1
@@ -118,15 +130,44 @@ public static class PlayerCarryOver
         serverPending = serverByClientId.Count > 0;
     }
 
+    // Solo server: deja listo el estado de un jugador de una partida guardada.
+    public static void StageServer(ulong clientId, InventorySlot[] inventory, int weaponSlot0Type, int weaponSlot1Type, float health)
+    {
+        serverByClientId[clientId] = new ServerSnapshot
+        {
+            inventory = inventory,
+            weaponSlot0Type = weaponSlot0Type,
+            weaponSlot1Type = weaponSlot1Type,
+            hasHealth = true,
+            health = health
+        };
+
+        serverPending = true;
+    }
+
+    // En el equipo del dueño del personaje: munición y arma equipada de una partida guardada.
+    public static void StageLocalOwner(int weaponIndex, int weaponSlot0Type, int weaponSlot1Type, int current0, int reserve0, int current1, int reserve1)
+    {
+        localOwnerSnapshot = new OwnerSnapshot
+        {
+            weaponIndex = weaponIndex,
+            weaponSlot0Type = weaponSlot0Type,
+            weaponSlot1Type = weaponSlot1Type,
+            ammo0 = new AmmoSlot { current = current0, reserve = reserve0, hasValue = current0 >= 0 },
+            ammo1 = new AmmoSlot { current = current1, reserve = reserve1, hasValue = current1 >= 0 }
+        };
+    }
+
     // Solo server, tras SpawnAsPlayerObject.
     public static void ApplyServerState(GameObject player, ulong clientId)
     {
         if (!serverPending || player == null) return;
         if (!serverByClientId.TryGetValue(clientId, out ServerSnapshot snap)) return;
 
+        // El spawn deja la vida al máximo. Si el jugador murió o llegó lastimado, no se copia eso.
         PlayerHealth health = player.GetComponent<PlayerHealth>();
         if (health != null)
-            health.ApplyCarryOver(snap.health);
+            health.ApplyCarryOver(snap.hasHealth ? snap.health : health.MaxHealth);
 
         PlayerInventory inventory = player.GetComponent<PlayerInventory>();
         if (inventory != null && snap.inventory != null)
