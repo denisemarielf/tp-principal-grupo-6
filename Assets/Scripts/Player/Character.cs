@@ -25,6 +25,10 @@ public class Character : NetworkBehaviour
     private PlayerHealth health;
     private WeaponSwitcher weaponSwitcher;
     [SerializeField] private float interactRange = 2f;
+    [Tooltip("Alcance del rayo de mira desde la cámara al priorizar un pickup.")]
+    [SerializeField] private float interactRayDistance = 6f;
+    [Tooltip("Holgura alrededor de la mira (metros). Evita fallar con colliders chicos en el piso.")]
+    [SerializeField] private float interactAimRadius = 0.6f;
     [SerializeField] private LayerMask pickupLayer;
 
     private readonly List<Behaviour> disabledSceneCameras = new List<Behaviour>();
@@ -275,14 +279,32 @@ public class Character : NetworkBehaviour
 
     // Tecla E (accion Player/Interact). Atiende botiquines (US 3.1, sin
     // inventario: se consumen en el momento), pickups de armas tiradas en
-    // el mapa y civiles que esperan ser rescatados. Si hay varios cerca a la
-    // vez, se usa el que esté más cerca.
+    // el mapa y civiles que esperan ser rescatados. Prioriza el pickup
+    // apuntado con la cámara; si no hay, usa el más cercano por proximidad.
     public void OnInteraction(InputAction.CallbackContext context)
     {
        
         if (!IsOwner || IsDead() || !context.performed) return;
 
         if (FuelInteraction.TryInteract(transform.position)) return;
+
+        if (TryGetAimedPickup(out ItemPickup aimedItem, out WeaponPickup aimedWeapon))
+        {
+            if (aimedItem != null)
+            {
+                inventory?.RequestPickupItemServerRpc(aimedItem.NetworkObjectId);
+                return;
+            }
+
+            if (aimedWeapon != null)
+            {
+                weaponSwitcher?.RequestPickupWeaponServerRpc(
+                    (int)aimedWeapon.weaponType,
+                    aimedWeapon.GetComponent<NetworkObject>().NetworkObjectId
+                );
+                return;
+            }
+        }
 
         ItemPickup item = ItemPickup.FindNearest(transform.position);
         float itemDist = item != null
@@ -357,6 +379,62 @@ else if (nearestWeapon != null)
 }
 
     }
+
+    // Prioriza el pickup bajo la mira (centro de pantalla). No depende del layer:
+    // los ítems suelen estar en Default y las armas en Pickup.
+    // Si nada queda cerca del rayo, el caller usa proximidad.
+    private bool TryGetAimedPickup(out ItemPickup item, out WeaponPickup weapon)
+    {
+        item = null;
+        weapon = null;
+
+        Camera cam = Camera.main;
+        if (cam == null) return false;
+
+        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        float maxAlong = Mathf.Max(interactRayDistance, interactRange);
+
+        ItemPickup aimedItem = ItemPickup.FindAimed(
+            ray, transform.position, maxAlong, interactAimRadius, out float itemAimDist);
+
+        WeaponPickup aimedWeapon = null;
+        float weaponAimDist = float.MaxValue;
+        Collider[] nearby = Physics.OverlapSphere(transform.position, interactRange, pickupLayer);
+        foreach (Collider col in nearby)
+        {
+            if (col == null) continue;
+            WeaponPickup candidate = col.GetComponentInParent<WeaponPickup>();
+            if (candidate == null) continue;
+
+            if (!ItemPickup.TryGetAimDistance(
+                    ray, candidate.transform.position, maxAlong, interactAimRadius, out float perp))
+                continue;
+
+            if (perp < weaponAimDist)
+            {
+                weaponAimDist = perp;
+                aimedWeapon = candidate;
+            }
+        }
+
+        if (aimedItem == null && aimedWeapon == null)
+            return false;
+
+        if (aimedItem != null && itemAimDist <= weaponAimDist)
+        {
+            item = aimedItem;
+            return true;
+        }
+
+        if (aimedWeapon != null)
+        {
+            weapon = aimedWeapon;
+            return true;
+        }
+
+        return false;
+    }
+
     private void SetMinigameMode(bool on)
     {
         PlayerInput pi = GetComponent<PlayerInput>();

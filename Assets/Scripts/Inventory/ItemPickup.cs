@@ -107,6 +107,47 @@ public class ItemPickup : NetworkPickup
         return nearest;
     }
 
+    // Pickup bajo la mira (cerca del rayo) y dentro de su radio al jugador, o null.
+    // Devuelve también la distancia perpendicular al rayo para comparar con otros candidatos.
+    public static ItemPickup FindAimed(Ray ray, Vector3 playerPos, float maxAlong, float aimRadius, out float aimDistance)
+    {
+        ItemPickup best = null;
+        aimDistance = float.MaxValue;
+
+        foreach (ItemPickup pickup in active)
+        {
+            if (pickup == null) continue;
+
+            float playerDist = Vector3.Distance(playerPos, pickup.transform.position);
+            if (playerDist > pickup.useRadius) continue;
+
+            if (!TryGetAimDistance(ray, pickup.transform.position, maxAlong, aimRadius, out float perp))
+                continue;
+
+            if (perp < aimDistance)
+            {
+                aimDistance = perp;
+                best = pickup;
+            }
+        }
+
+        return best;
+    }
+
+    public static bool TryGetAimDistance(Ray ray, Vector3 target, float maxAlong, float aimRadius, out float perpDistance)
+    {
+        perpDistance = float.MaxValue;
+        Vector3 to = target - ray.origin;
+        float along = Vector3.Dot(to, ray.direction);
+        if (along < 0f || along > maxAlong) return false;
+
+        float perp = Vector3.Cross(ray.direction, to).magnitude;
+        if (perp > aimRadius) return false;
+
+        perpDistance = perp;
+        return true;
+    }
+
     // Solo servidor.
    
 
