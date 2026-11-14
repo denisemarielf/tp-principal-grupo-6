@@ -6,8 +6,18 @@ public class WeaponInputHandler : MonoBehaviour
     [SerializeField] private WeaponSwitcher switcher;
     private float nextScrollTime;
 
-    // Teclas de selección: -1 = enfundar, 0 = slot 0, 1 = slot 1
-    public void OnHolster(InputAction.CallbackContext context) => Select(context, -1);
+    // Tecla 1: el arma melee. Si no hay, enfunda.
+    public void OnHolster(InputAction.CallbackContext context)
+    {
+        if (switcher == null || !switcher.IsOwner || !context.performed)
+            return;
+
+        if (switcher.GetWeaponAt(WeaponLoadout.MeleeSlot) != null)
+            switcher.SelectWeapon(WeaponLoadout.MeleeSlot);
+        else
+            switcher.SelectWeapon(-1);
+    }
+
     public void OnSelectSlot0(InputAction.CallbackContext context) => Select(context, 0);
     public void OnSelectSlot1(InputAction.CallbackContext context) => Select(context, 1);
 
@@ -33,7 +43,7 @@ public class WeaponInputHandler : MonoBehaviour
     private int NextWeaponSlot(int direction)
     {
         int current = switcher.CurrentWeaponIndex;
-        if (current < 0)
+        if (current < 0 || current == WeaponLoadout.MeleeSlot)
         {
             int preferred = direction > 0 ? 0 : 1;
             if (switcher.GetWeaponAt(preferred) != null)

@@ -15,12 +15,16 @@ public class WeaponSlotHUD : MonoBehaviour
 
     private WeaponSwitcher switcher;
     private WeaponLoadout loadout;
+    private Image icon1;
     private Image icon2;
     private Image icon3;
+    private TMP_Text key1;
     private TMP_Text key2;
     private TMP_Text key3;
+    private TMP_Text fallback1;
     private TMP_Text fallback2;
     private TMP_Text fallback3;
+    private RectTransform row1;
     private RectTransform row2;
     private RectTransform row3;
 
@@ -75,14 +79,16 @@ public class WeaponSlotHUD : MonoBehaviour
         rect.anchorMax = new Vector2(1f, 0f);
         rect.pivot = new Vector2(1f, 0f);
         rect.anchoredPosition = new Vector2(-24f, 130f);
-        rect.sizeDelta = new Vector2(250f, 160f);
+        rect.sizeDelta = new Vector2(250f, 246f);
 
         TMP_FontAsset font = TMP_Settings.defaultFontAsset;
         if (font == null)
             font = GeneradorMenuPrincipal.FuenteTextoActual;
 
-        row2 = CreateRow(root.transform, font, iconSize, 0f, out icon2, out key2, out fallback2);
-        row3 = CreateRow(root.transform, font, iconSize, -82f, out icon3, out key3, out fallback3);
+        row1 = CreateRow(root.transform, font, iconSize, 0f, out icon1, out key1, out fallback1);
+        row2 = CreateRow(root.transform, font, iconSize, -82f, out icon2, out key2, out fallback2);
+        row3 = CreateRow(root.transform, font, iconSize, -164f, out icon3, out key3, out fallback3);
+        key1.text = "1";
         key2.text = "2";
         key3.text = "3";
     }
@@ -151,15 +157,20 @@ public class WeaponSlotHUD : MonoBehaviour
             return;
 
         int current = switcher.CurrentWeaponIndex;
+        bool hasMelee = switcher.GetWeaponAt(WeaponLoadout.MeleeSlot) != null;
+        if (row1 != null)
+            row1.gameObject.SetActive(hasMelee);
+        if (hasMelee)
+            ApplyRow(WeaponLoadout.MeleeSlot, icon1, key1, fallback1, row1, current == WeaponLoadout.MeleeSlot);
+
         ApplyRow(0, icon2, key2, fallback2, row2, current == 0);
         ApplyRow(1, icon3, key3, fallback3, row3, current == 1);
     }
 
     private void ApplyRow(int index, Image icon, TMP_Text key, TMP_Text fallback, RectTransform row, bool active)
     {
-        // Las armas cuerpo a cuerpo siempre muestran el texto "Melee", aunque tengan ícono.
-        bool melee = IsMeleeAt(index);
-        Sprite sprite = melee ? null : IconAt(index);
+        // Todas las armas muestran su ícono. Si una no tiene, las cuerpo a cuerpo muestran "Melee".
+        Sprite sprite = IconAt(index);
         bool hasIcon = sprite != null;
         Color tint = active ? Red : BoneDim;
 
