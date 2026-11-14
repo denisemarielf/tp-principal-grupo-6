@@ -35,6 +35,11 @@ public class CameraControllerFPS : NetworkBehaviour
     private bool thirdPerson;
 
     public bool IsThirdPerson => thirdPerson;
+
+    // Posición de los ojos (donde está la cámara en primera persona), sin importar la vista actual.
+    public Vector3 EyeWorldPosition => transform.parent != null
+        ? transform.parent.TransformPoint(firstPersonLocalPosition)
+        : transform.position;
     private bool lastThirdPerson;
     private bool viewApplied;
     private Vector3 firstPersonLocalPosition;
