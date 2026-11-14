@@ -120,6 +120,9 @@ public class CameraControllerFPS : NetworkBehaviour
 
         if (GetComponent<SpectatorMode>() == null)
             gameObject.AddComponent<SpectatorMode>();
+
+        if (GetComponent<VideoFreeCamera>() == null)
+            gameObject.AddComponent<VideoFreeCamera>();
     }
 
     private bool OwnerIsDead()
@@ -216,6 +219,9 @@ public class CameraControllerFPS : NetworkBehaviour
 
     void Update()
     {
+        if (VideoFreeCamera.IsActive)
+            return;
+
         bool isLocal = !IsSpawned || IsOwner;
         Vector3 recoilOffset = Vector3.zero;
 
@@ -299,6 +305,9 @@ public class CameraControllerFPS : NetworkBehaviour
 
     private void LateUpdate()
     {
+        if (VideoFreeCamera.IsActive)
+            return;
+
         if (IsSpawned && !IsOwner)
             return;
 
