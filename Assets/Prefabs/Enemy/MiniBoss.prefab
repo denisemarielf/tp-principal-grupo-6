@@ -374,8 +374,8 @@ MonoBehaviour:
   jumpDamage: 60
   slamRadius: 5
   jumpLandOffset: 1.5
-  launchHorizontal: 20
-  launchVertical: 17
+  launchHorizontal: 5
+  launchVertical: 3.5
   tauntMinRange: 10
   tauntMaxRange: 30
   tauntChance: 0.25
@@ -413,8 +413,8 @@ MonoBehaviour:
   throwLatchNormalized: 0.3
   throwReleaseNormalized: 0.6
   throwDamage: 35
-  throwHorizontal: 16
-  throwVertical: 8
+  throwHorizontal: 8
+  throwVertical: 4
   throwDropBehind: 1.8
   throwDropHeight: 2.2
   holdDistance: 1.4

@@ -64,6 +64,11 @@ public class SafeZoneUI : MonoBehaviour
     {
         SafeZone.LevelCompleted += OnLevelCompleted;
         MatchStatsService.BoardReady += OnBoardReady;
+
+        // Si el host murió, el HUD estaba apagado y se perdió el evento.
+        // Al volver a prenderlo (modo espectador) hay que mostrar el panel igual.
+        if (SafeZone.Current != null && SafeZone.Current.IsCompleted)
+            OnLevelCompleted();
     }
 
     private void OnDisable()
@@ -343,7 +348,7 @@ public class SafeZoneUI : MonoBehaviour
                 new Vector2(0f, 0.5f),
                 new Vector2(0f, 0.5f),
                 new Vector2(56f, 0f),
-                new Vector2(560f, 380f));
+                new Vector2(560f, 560f));
         }
         else
         {
@@ -354,7 +359,7 @@ public class SafeZoneUI : MonoBehaviour
                 boardRect.anchorMax = new Vector2(0f, 0.5f);
                 boardRect.pivot = new Vector2(0f, 0.5f);
                 boardRect.anchoredPosition = new Vector2(56f, 0f);
-                boardRect.sizeDelta = new Vector2(560f, 380f);
+                boardRect.sizeDelta = new Vector2(560f, 560f);
             }
         }
 

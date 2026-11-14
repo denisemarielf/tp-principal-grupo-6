@@ -11,6 +11,10 @@ public class MatchBoardWidget : MonoBehaviour
     private static readonly Color TextMain = new Color(0.93f, 0.94f, 0.92f, 1f);
 
     private TextMeshProUGUI body;
+    private RectTransform rootRect;
+    private RectTransform contentRect;
+    private ScrollRect scroll;
+    private float maxHeight = 560f;
 
     public static MatchBoardWidget Create(
         Transform parent,
@@ -32,18 +36,37 @@ public class MatchBoardWidget : MonoBehaviour
 
         Image card = root.AddComponent<Image>();
         card.color = Glass;
-        card.raycastTarget = false;
-        // Recorta el texto si no entra: evita que el resumen se dibuje fuera de pantalla.
-        root.AddComponent<RectMask2D>();
+        card.raycastTarget = true;
         AddBorder(rect);
 
+        GameObject viewportGo = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+        viewportGo.transform.SetParent(root.transform, false);
+        RectTransform viewportRect = viewportGo.GetComponent<RectTransform>();
+        viewportRect.anchorMin = Vector2.zero;
+        viewportRect.anchorMax = Vector2.one;
+        viewportRect.offsetMin = new Vector2(8f, 8f);
+        viewportRect.offsetMax = new Vector2(-8f, -8f);
+        Image viewportImage = viewportGo.GetComponent<Image>();
+        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewportImage.raycastTarget = true;
+
+        GameObject contentGo = new GameObject("Content", typeof(RectTransform));
+        contentGo.transform.SetParent(viewportGo.transform, false);
+        RectTransform contentRect = contentGo.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMax = new Vector2(1f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchoredPosition = Vector2.zero;
+        contentRect.sizeDelta = new Vector2(0f, size.y);
+
         GameObject textGo = new GameObject("Texto", typeof(RectTransform));
-        textGo.transform.SetParent(root.transform, false);
+        textGo.transform.SetParent(contentGo.transform, false);
         RectTransform textRect = textGo.GetComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = new Vector2(22f, 16f);
-        textRect.offsetMax = new Vector2(-22f, -16f);
+        textRect.anchorMin = new Vector2(0f, 1f);
+        textRect.anchorMax = new Vector2(1f, 1f);
+        textRect.pivot = new Vector2(0.5f, 1f);
+        textRect.anchoredPosition = new Vector2(0f, -8f);
+        textRect.sizeDelta = new Vector2(-28f, size.y);
 
         TextMeshProUGUI label = textGo.AddComponent<TextMeshProUGUI>();
         label.fontSize = 22f;
@@ -51,7 +74,7 @@ public class MatchBoardWidget : MonoBehaviour
         label.color = TextMain;
         label.raycastTarget = false;
         label.textWrappingMode = TextWrappingModes.Normal;
-        label.overflowMode = TextOverflowModes.Truncate;
+        label.overflowMode = TextOverflowModes.Overflow;
         label.richText = true;
 
         TMP_FontAsset font = GeneradorMenuPrincipal.FuenteTextoActual;
@@ -60,16 +83,47 @@ public class MatchBoardWidget : MonoBehaviour
         if (font != null)
             label.font = font;
 
+        ScrollRect scroll = root.AddComponent<ScrollRect>();
+        scroll.viewport = viewportRect;
+        scroll.content = contentRect;
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 36f;
+
         MatchBoardWidget widget = root.AddComponent<MatchBoardWidget>();
         widget.body = label;
+        widget.rootRect = rect;
+        widget.contentRect = contentRect;
+        widget.scroll = scroll;
+        widget.maxHeight = Mathf.Max(size.y, 520f);
         widget.Apply(null);
         return widget;
     }
 
     public void Apply(MatchBoard board)
     {
-        if (body != null)
-            body.text = MatchBoardText.Format(board);
+        if (body == null)
+            return;
+
+        body.text = MatchBoardText.Format(board);
+
+        int players = board != null && board.Players != null ? board.Players.Count : 0;
+        float textHeight = 168f + Mathf.Max(players, 1) * 64f;
+        RectTransform textRect = body.rectTransform;
+        textRect.sizeDelta = new Vector2(textRect.sizeDelta.x, textHeight);
+
+        if (contentRect != null)
+            contentRect.sizeDelta = new Vector2(0f, textHeight + 24f);
+
+        if (rootRect != null)
+        {
+            float cardHeight = Mathf.Min(textHeight + 28f, maxHeight);
+            rootRect.sizeDelta = new Vector2(rootRect.sizeDelta.x, cardHeight);
+        }
+
+        if (scroll != null)
+            scroll.verticalNormalizedPosition = 1f;
     }
 
     private static void AddBorder(RectTransform frame)

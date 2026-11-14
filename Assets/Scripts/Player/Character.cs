@@ -93,6 +93,7 @@ public class Character : NetworkBehaviour
             DisableSceneCameras();
             StartCoroutine(MoveToSpawnPoint());
             StartCoroutine(ApplyCarryOverWhenReady());
+            SafeZone.LevelCompleted += OnLevelCompletedShowHud;
         }
         else if (!IsServer)
         {
@@ -100,6 +101,8 @@ public class Character : NetworkBehaviour
             // pedimos su nombre por si el servidor ya lo tenía.
             PedirNombreRpc();
         }
+
+        RescuableNpc.IgnorePlayer(this);
     }
 
     public override void OnNetworkDespawn()
@@ -112,7 +115,18 @@ public class Character : NetworkBehaviour
 
         ElectricPanel.LocalMinigameChanged -= SetMinigameMode;
         CodeKeypad.LocalMinigameChanged -= SetMinigameMode;
+        SafeZone.LevelCompleted -= OnLevelCompletedShowHud;
         RestoreSceneCameras();
+    }
+
+    // El panel de "continuar" vive dentro del HUD, que se apaga al morir.
+    // Si el nivel se completa con el host muerto, hay que volver a mostrarlo.
+    private void OnLevelCompletedShowHud()
+    {
+        if (!IsOwner)
+            return;
+
+        SetGameplayHudVisible(true);
     }
 
     private void OnLocalPlayerDied()

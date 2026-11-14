@@ -323,7 +323,7 @@ public class GameOverUI : MonoBehaviour
         AnchorTopLeft(subtitle.rectTransform, LeftMargin, TopMargin + 152f, 1200f, 90f);
 
         const float boardTop = 290f;
-        const float boardHeight = 400f;
+        const float boardHeight = 560f;
         boardWidget = MatchBoardWidget.Create(
             background.transform,
             new Vector2(0f, 1f),
