@@ -98,8 +98,23 @@ public class PauseMenuUI : MonoBehaviour
         Cursor.visible = true;
     }
 
+    // Lo llama GameOverUI: con la partida terminada la pausa no tiene que quedar abierta.
+    public static void ForceClose()
+    {
+        PauseMenuUI menu = FindAnyObjectByType<PauseMenuUI>();
+        if (menu != null && IsOpen)
+            menu.Close();
+    }
+
     private void Update()
     {
+        if (GameOverUI.IsShown)
+        {
+            if (IsOpen)
+                Close();
+            return;
+        }
+
         if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame)
             return;
 

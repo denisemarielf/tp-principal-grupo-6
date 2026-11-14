@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -5,6 +6,12 @@ using UnityEngine.UI;
 // Dibuja los slots del inventario del jugador local. Genérico: sirve para cualquier ítem.
 public class InventoryUI : MonoBehaviour
 {
+    // El marco del slot (placeholder) se pasa a gris para sacarle el verde.
+    private static readonly Color SlotTint = new Color(0.85f, 0.86f, 0.88f, 1f);
+    // El marco de selección es naranja; teñido con rojo queda en el color del HUD.
+    private static readonly Color SelectedTint = new Color(1f, 0.25f, 0.2f, 1f);
+    private static readonly Dictionary<Sprite, Sprite> grayCache = new Dictionary<Sprite, Sprite>();
+
     [System.Serializable]
     public class SlotView
     {
@@ -19,6 +26,8 @@ public class InventoryUI : MonoBehaviour
 
     private void OnEnable()
     {
+        ApplyQuietStyle();
+
         if (inventory == null)
             inventory = GetComponentInParent<PlayerInventory>();
         if (inventory == null) return;
@@ -34,6 +43,68 @@ public class InventoryUI : MonoBehaviour
         inventory.SelectedSlotChanged -= OnSelectedChanged;
         if (inventory != null)
             inventory.InventoryChanged -= Refresh;
+    }
+
+    // Marcos de los slots en gris (sin verde) y selección en rojo.
+    private void ApplyQuietStyle()
+    {
+        if (slotViews == null) return;
+
+        foreach (SlotView view in slotViews)
+        {
+            if (view.selectionFrame == null) continue;
+
+            Image frame = view.selectionFrame.GetComponent<Image>();
+            if (frame != null)
+                frame.color = SelectedTint;
+
+            Transform slotRoot = view.selectionFrame.transform.parent;
+            Image slot = slotRoot != null ? slotRoot.GetComponent<Image>() : null;
+            if (slot != null && slot.sprite != null)
+            {
+                slot.sprite = Grayscale(slot.sprite);
+                slot.color = SlotTint;
+            }
+        }
+    }
+
+    // Copia en gris del sprite (se cachea para no repetirla por cada slot).
+    private static Sprite Grayscale(Sprite source)
+    {
+        if (grayCache.TryGetValue(source, out Sprite cached))
+            return cached;
+
+        Texture2D texture = source.texture;
+        Rect rect = source.textureRect;
+        int width = Mathf.RoundToInt(rect.width);
+        int height = Mathf.RoundToInt(rect.height);
+
+        RenderTexture target = RenderTexture.GetTemporary(texture.width, texture.height, 0, RenderTextureFormat.ARGB32);
+        Graphics.Blit(texture, target);
+        RenderTexture previous = RenderTexture.active;
+        RenderTexture.active = target;
+
+        Texture2D copy = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        copy.ReadPixels(rect, 0, 0);
+        copy.Apply();
+
+        RenderTexture.active = previous;
+        RenderTexture.ReleaseTemporary(target);
+
+        Color[] pixels = copy.GetPixels();
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            float l = pixels[i].r * 0.3f + pixels[i].g * 0.59f + pixels[i].b * 0.11f;
+            pixels[i] = new Color(l, l, l, pixels[i].a);
+        }
+        copy.SetPixels(pixels);
+        copy.Apply();
+        copy.wrapMode = TextureWrapMode.Clamp;
+        copy.filterMode = texture.filterMode;
+
+        Sprite result = Sprite.Create(copy, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), source.pixelsPerUnit);
+        grayCache[source] = result;
+        return result;
     }
 
     private void OnSelectedChanged(int _) => UpdateSelection();

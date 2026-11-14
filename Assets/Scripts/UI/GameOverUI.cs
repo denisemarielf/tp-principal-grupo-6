@@ -248,6 +248,7 @@ public class GameOverUI : MonoBehaviour
 
         EnsureEventSystem();
         BuildPanel(title, subtitle, titleColor);
+        PauseMenuUI.ForceClose();
         FreezeLocalPlayer();
 
         Cursor.lockState = CursorLockMode.None;
@@ -333,8 +334,10 @@ public class GameOverUI : MonoBehaviour
             new Vector2(860f, boardHeight));
         boardWidget.Apply(MatchStatsService.Current);
 
+        // Debajo del tablero real, no del alto reservado: si no, el boton queda fuera de la pantalla.
+        float cardHeight = boardWidget.GetComponent<RectTransform>().sizeDelta.y;
         Button button = CreateButton(background.transform, "VOLVER AL MENU", titleColor, ReturnToMainMenu);
-        AnchorTopLeft(button.GetComponent<RectTransform>(), LeftMargin, TopMargin + boardTop + boardHeight + 28f, 520f, 72f);
+        AnchorTopLeft(button.GetComponent<RectTransform>(), LeftMargin, TopMargin + boardTop + cardHeight + 24f, 520f, 72f);
     }
 
     private void ReturnToMainMenu()
