@@ -305,6 +305,12 @@ MonoBehaviour:
   hornPitchRange: {x: 0.95, y: 1.05}
   fadeTime: 1.5
   movingMaxVolume: 1
+  damage: 1000
+  playerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  hitBoxCenter: {x: 0, y: 1.5, z: 0}
+  hitBoxSize: {x: 3, y: 3, z: 20}
   rotationOffset: {x: 0, y: 0, z: 0}
 --- !u!82 &1682975
 AudioSource:
@@ -58169,6 +58175,12 @@ MonoBehaviour:
   hornPitchRange: {x: 0.95, y: 1.05}
   fadeTime: 1.5
   movingMaxVolume: 1
+  damage: 1000
+  playerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  hitBoxCenter: {x: 0, y: 1.5, z: 0}
+  hitBoxSize: {x: 3, y: 3, z: 20}
   rotationOffset: {x: 0, y: 0, z: 0}
 --- !u!82 &1137760402
 AudioSource:
@@ -77143,7 +77155,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4699360296288084, guid: 21bd80f4ed903334f8265e141cc4f164, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.6666666
+      value: 2.47
       objectReference: {fileID: 0}
     - target: {fileID: 4699360296288084, guid: 21bd80f4ed903334f8265e141cc4f164, type: 3}
       propertyPath: m_LocalPosition.x
@@ -214540,6 +214552,7 @@ MonoBehaviour:
   openDuration: 3
   axis: {x: 0, y: 1, z: 0}
   hinge: {fileID: 0}
+  navObstacle: {fileID: 0}
   openClip: {fileID: 0}
   volume: 1
 --- !u!4 &1795807944536051560
@@ -305553,6 +305566,7 @@ MonoBehaviour:
   openDuration: 3
   axis: {x: 0, y: 1, z: 0}
   hinge: {fileID: 0}
+  navObstacle: {fileID: 0}
   openClip: {fileID: 0}
   volume: 1
 --- !u!4 &3395306114278015952
@@ -507144,6 +507158,7 @@ MonoBehaviour:
   openDuration: 1.2
   axis: {x: 0, y: 1, z: 0}
   hinge: {fileID: 0}
+  navObstacle: {fileID: 0}
   openClip: {fileID: 8300000, guid: 208c0b64ebe7c3440a72a82e31cbf2b6, type: 3}
   volume: 1
 --- !u!1 &7011804288033985296
@@ -572975,6 +572990,7 @@ GameObject:
   - component: {fileID: 8138708907356948516}
   - component: {fileID: 8138708907356948517}
   - component: {fileID: 8138708907356948518}
+  - component: {fileID: 8138708907356948525}
   m_Layer: 0
   m_Name: SM_Wall_Stone_15
   m_TagString: Untagged
@@ -573004,6 +573020,28 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
+--- !u!64 &8138708907356948525
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8138708907356948523}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300000, guid: abc00000000014128625245304316045, type: 3}
 --- !u!33 &8138840684962284908
 MeshFilter:
   m_ObjectHideFlags: 0

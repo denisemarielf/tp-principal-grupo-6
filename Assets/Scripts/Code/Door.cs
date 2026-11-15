@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Door : MonoBehaviour
 {
@@ -10,35 +11,49 @@ public class Door : MonoBehaviour
     [Tooltip("Opcional: objeto vacío ubicado en la bisagra. Si está vacío, gira sobre el pivote de la puerta.")]
     [SerializeField] private Transform hinge;
 
+    [Header("NavMesh")]
+    [Tooltip("Obstáculo (con Carve) que bloquea el NavMesh mientras la puerta está cerrada. Si está vacío, se busca en este objeto o en sus hijos.")]
+    [SerializeField] private NavMeshObstacle navObstacle;
+
+    [Header("Sonido")]
+    [SerializeField] private AudioClip openClip;
+    [SerializeField, Range(0f, 1f)] private float volume = 1f;
+
     private Vector3 startPos;
     private Quaternion startRot;
     private bool isOpen;
-    [Header("Sonido")]
-[SerializeField] private AudioClip openClip;
-[SerializeField, Range(0f, 1f)] private float volume = 1f;
 
     private void Awake()
     {
         startPos = transform.position;
         startRot = transform.rotation;
+
+        if (navObstacle == null)
+            navObstacle = GetComponentInChildren<NavMeshObstacle>();
     }
 
-  public void Open(bool instant)
-{
-    if (isOpen) return;
-    isOpen = true;
+    public void Open(bool instant)
+    {
+        if (isOpen) return;
+        isOpen = true;
 
-    if (instant)
-    {
-        Apply(openAngle);
+        // Al desactivar el obstáculo, el carve desaparece y el cuarto
+        // se reconecta al NavMesh sin necesidad de re-bakear.
+        if (navObstacle != null)
+            navObstacle.enabled = false;
+
+        if (instant)
+        {
+            Apply(openAngle);
+        }
+        else
+        {
+            if (openClip != null)
+                AudioSource.PlayClipAtPoint(openClip, transform.position, volume);
+            StartCoroutine(OpenRoutine());
+        }
     }
-    else
-    {
-        if (openClip != null)
-            AudioSource.PlayClipAtPoint(openClip, transform.position, volume);
-        StartCoroutine(OpenRoutine());
-    }
-}
+
     private IEnumerator OpenRoutine()
     {
         float t = 0f;
