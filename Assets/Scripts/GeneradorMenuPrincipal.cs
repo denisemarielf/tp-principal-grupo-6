@@ -126,7 +126,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // ESTADO DE RED
     // ============================================================
 
-    private string codigoSala;
+    // static: sobrevive a la recarga del menu cuando la sala vuelve al lobby despues de una partida.
+    private static string codigoSala;
 
     // Se incrementa al salir del lobby, para descartar una creación/conexión
     // que todavía estaba en curso cuando el jugador se fue.
@@ -138,14 +139,29 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     // Nombres en el lobby
     private const string MsgNombre = "LobbyNombre";   // cliente -> host
     private const string MsgLista = "LobbyLista";     // host -> todos
+    private const string MsgConfig = "LobbyConfig";   // host -> todos (mapa, modo, dificultad)
 
-    private readonly Dictionary<ulong, string> nombresLobby =
+    // static: al volver al lobby despues de una partida los nombres ya estan, nadie tiene que reenviarlos.
+    private static readonly Dictionary<ulong, string> nombresLobby =
         new Dictionary<ulong, string>();              // solo lo usa el host
 
-    private readonly List<string> nombresLobbyActuales =
+    private static readonly List<string> nombresLobbyActuales =
         new List<string>();                           // lo que se muestra en pantalla
 
     private bool mensajesRegistrados;
+
+    // Ultima configuracion iniciada: al volver al lobby el host la encuentra elegida.
+    private static int ultimoMapa;
+    private static GameMode ultimoModo = GameMode.Extraccion;
+    private static int ultimaDificultad = 1;
+
+    // Configuracion dentro del lobby (solo el host la cambia; los clientes la reciben por MsgConfig).
+    private GameObject tarjetaConfigLobby;
+    private TextMeshProUGUI txtLobbyMapa;
+    private TextMeshProUGUI txtLobbyModo;
+    private TextMeshProUGUI txtLobbyDificultad;
+    private bool configRecibida;
+    private bool esperandoCargaLobby;
     //
 
 
@@ -197,6 +213,14 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         "DIFICULTAD: DIFÍCIL"
     };
 
+    private static readonly string[] NombresPersonajes =
+    {
+        "PERSONAJE: MASCARA GAS",
+        "PERSONAJE: SWAT",
+        "PERSONAJE: SOLDADO",
+        "PERSONAJE: TRABAJADOR"
+    };
+
 
     // ============================================================
     // AUDIO
@@ -233,6 +257,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     void Awake()
     {
+        DescartarNetworkManagerDuplicado();
         InicializarAudio();
         ConstruirInterfazCompleta();
     }
@@ -241,6 +266,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
     void OnDestroy()
     {
         DesuscribirDeRed();
+        DejarDeEscucharCargaLobby();
     }
 
 
@@ -297,6 +323,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         // Se guardan para que el menú de pausa de la partida use las mismas fuentes.
         FuenteTituloActual = ObtenerFuenteTitulo();
         FuenteTextoActual = ObtenerFuenteTexto();
+
+        // Al volver de una partida se conserva el personaje que cada jugador ya habia elegido
+        // (sin esto el menu lo pisaria con el primero).
+        personajeSeleccionado = Mathf.Clamp(PlayerModelChoice.SelectedIndex, 0, NombresPersonajes.Length - 1);
 
         // ========================================================
         // 1. CANVAS
@@ -775,6 +805,33 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             EstiloBoton.Secundario
         );
 
+        // CONFIGURACIÓN DENTRO DEL LOBBY (solo host): cambiar de mapa con los jugadores ya conectados.
+        // Va a la derecha de la tarjeta del lobby; debajo no entra (la pantalla se acaba).
+        tarjetaConfigLobby = CrearTarjeta(
+            panelLobby.transform,
+            margenIzquierdo + anchoTarjeta + 80f + 40f,
+            InicioContenidoY,
+            anchoTarjeta
+        );
+
+        TextMeshProUGUI txtTituloConfig = CrearTexto(
+            tarjetaConfigLobby.transform,
+            "Texto_TituloConfig",
+            "CONFIGURAR PARTIDA",
+            22f,
+            colorTextoSuave,
+            TextAlignmentOptions.MidlineLeft,
+            false,
+            3f
+        );
+        FijarAltura(txtTituloConfig.gameObject, 34f);
+
+        txtLobbyMapa = CrearBotonCiclico(tarjetaConfigLobby.transform, TextosBotonMapa[0], CambiarMapaLobby);
+        txtLobbyModo = CrearBotonCiclico(tarjetaConfigLobby.transform, "MODO: " + MatchSettings.Label(modoSeleccionado), CambiarModoLobby);
+        txtLobbyDificultad = CrearBotonCiclico(tarjetaConfigLobby.transform, TextosBotonDificultad[1], CambiarDificultadLobby);
+
+        tarjetaConfigLobby.SetActive(false);
+
 
         // ========================================================
         // 10. OPCIONES
@@ -1031,6 +1088,12 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         panelPrincipal.SetActive(true);
 
         LimpiarSeleccionUI();
+
+        ActualizarTextosPersonaje();
+
+        // Volvimos de una partida con la sala todavia conectada: se abre directo el lobby.
+        if (HaySesionViva())
+            EntrarLobbyDeRegreso();
     }
 
 
@@ -1849,6 +1912,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
             btnIniciarPartida.gameObject.SetActive(true);
             btnIniciarPartida.interactable = true;
+            MostrarConfigLobby(true);
 
             ActualizarLobbyRed();
         }
@@ -1929,6 +1993,8 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         codigoSala = null;
 
         btnIniciarPartida.gameObject.SetActive(false);
+        MostrarConfigLobby(false);
+        configRecibida = false;
 
         txtDetallesLobby.text = estado;
 
@@ -1972,7 +2038,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         {
             txtDetallesLobby.text =
                 TextoCodigoSala("SALA") + "\n" +
-                "ESPERANDO A QUE EL LÍDER INICIE LA PARTIDA";
+                (configRecibida ? TextoDetallesPartida() : "ESPERANDO A QUE EL LÍDER INICIE LA PARTIDA");
         }
     }
 
@@ -2119,6 +2185,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         codigoSala = null;
 
         btnIniciarPartida.gameObject.SetActive(false);
+        MostrarConfigLobby(false);
 
         MostrarRanurasJugadores(0);
 
@@ -2129,7 +2196,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     // ---------- NOMBRES EN EL LOBBY ----------
 
-    private void RegistrarMensajesLobby()
+    // registrarGuardado = false al volver al lobby: el NetworkManager sigue vivo y los handlers de
+    // partidas guardadas quedaron registrados desde la primera vez.
+    private void RegistrarMensajesLobby(bool registrarGuardado = true)
     {
         if (mensajesRegistrados)
             return;
@@ -2139,13 +2208,23 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         if (nm == null || nm.CustomMessagingManager == null)
             return;
 
+        // Al volver de una partida pueden quedar los handlers de la instancia anterior del menu
+        // (ya destruida): se sacan antes de registrar los nuevos.
+        nm.CustomMessagingManager.UnregisterNamedMessageHandler(MsgNombre);
+        nm.CustomMessagingManager.UnregisterNamedMessageHandler(MsgLista);
+        nm.CustomMessagingManager.UnregisterNamedMessageHandler(MsgConfig);
+
         nm.CustomMessagingManager.RegisterNamedMessageHandler(
             MsgNombre, AlRecibirNombreLobby);
 
         nm.CustomMessagingManager.RegisterNamedMessageHandler(
             MsgLista, AlRecibirListaLobby);
 
-        SavedGameLoader.RegisterHandlers(nm);
+        nm.CustomMessagingManager.RegisterNamedMessageHandler(
+            MsgConfig, AlRecibirConfigLobby);
+
+        if (registrarGuardado)
+            SavedGameLoader.RegisterHandlers(nm);
 
         mensajesRegistrados = true;
     }
@@ -2236,6 +2315,9 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
                 nm.CustomMessagingManager.SendNamedMessageToAll(MsgLista, writer);
             }
+
+            // Quien recien entra (o vuelve al lobby) tambien necesita saber que mapa esta elegido.
+            EnviarConfigLobby();
         }
     }
 
@@ -2321,6 +2403,231 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
 
     // ============================================================
+    // CONFIGURACIÓN DENTRO DEL LOBBY
+    // ============================================================
+
+    // Host -> clientes: mapa, modo y dificultad elegidos.
+    private void EnviarConfigLobby()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm == null || !nm.IsServer || nm.CustomMessagingManager == null)
+            return;
+
+        if (nm.ConnectedClientsIds.Count <= 1)
+            return;
+
+        using (var writer = new FastBufferWriter(32, Allocator.Temp))
+        {
+            writer.WriteValueSafe(mapaSeleccionado);
+            writer.WriteValueSafe((int)modoSeleccionado);
+            writer.WriteValueSafe(dificultadSeleccionada);
+
+            nm.CustomMessagingManager.SendNamedMessageToAll(MsgConfig, writer);
+        }
+    }
+
+
+    // Cliente: recibe la configuracion del host.
+    private void AlRecibirConfigLobby(ulong remitente, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out int mapa);
+        reader.ReadValueSafe(out int modo);
+        reader.ReadValueSafe(out int dificultad);
+
+        mapaSeleccionado = Mathf.Clamp(mapa, 0, NombresMapas.Length - 1);
+        modoSeleccionado = (GameMode)modo;
+        dificultadSeleccionada = Mathf.Clamp(dificultad, 0, TextosBotonDificultad.Length - 1);
+        configRecibida = true;
+
+        ActualizarLobbyRed();
+    }
+
+
+    private void CambiarMapaLobby()
+    {
+        mapaSeleccionado = (mapaSeleccionado + 1) % NombresMapas.Length;
+
+        // Si el modo elegido no existe en el mapa nuevo, pasa al primero que ofrece.
+        if (!MatchSettings.IsAllowed(mapaSeleccionado, modoSeleccionado))
+            modoSeleccionado = MatchSettings.ModesForMap(mapaSeleccionado)[0];
+
+        RefrescarConfigLobby();
+    }
+
+
+    private void CambiarModoLobby()
+    {
+        modoSeleccionado = MatchSettings.NextMode(mapaSeleccionado, modoSeleccionado);
+
+        RefrescarConfigLobby();
+    }
+
+
+    private void CambiarDificultadLobby()
+    {
+        dificultadSeleccionada = (dificultadSeleccionada + 1) % TextosBotonDificultad.Length;
+
+        RefrescarConfigLobby();
+    }
+
+
+    // Actualiza botones y detalles del host y avisa a los clientes.
+    private void RefrescarConfigLobby()
+    {
+        ActualizarTextosConfigLobby();
+        ActualizarLobbyRed();
+        EnviarConfigLobby();
+    }
+
+
+    private void ActualizarTextosConfigLobby()
+    {
+        if (txtLobbyMapa == null)
+            return;
+
+        txtLobbyMapa.text = TextosBotonMapa[mapaSeleccionado];
+        txtLobbyModo.text = "MODO: " + MatchSettings.Label(modoSeleccionado);
+        txtLobbyDificultad.text = TextosBotonDificultad[dificultadSeleccionada];
+
+        // Con un solo modo posible (Suburbio y Oficinas: Extracción) no hay nada que elegir.
+        txtLobbyModo.GetComponentInParent<Button>(true).interactable =
+            MatchSettings.ModesForMap(mapaSeleccionado).Length > 1;
+    }
+
+
+    // Solo el host, y solo en partidas nuevas: con una partida guardada el mapa, el modo y
+    // la dificultad vienen fijos.
+    private void MostrarConfigLobby(bool visible)
+    {
+        if (tarjetaConfigLobby == null)
+            return;
+
+        bool mostrar = visible && partidaGuardada == null;
+
+        tarjetaConfigLobby.SetActive(mostrar);
+
+        if (mostrar)
+            ActualizarTextosConfigLobby();
+    }
+
+
+    private void ActualizarTextosPersonaje()
+    {
+        string texto = NombresPersonajes[personajeSeleccionado];
+
+        if (txtBtnPersonajeC != null) txtBtnPersonajeC.text = texto;
+        if (txtBtnPersonajeU != null) txtBtnPersonajeU.text = texto;
+    }
+
+
+    // ============================================================
+    // VOLVER AL LOBBY (la sala sigue conectada)
+    // ============================================================
+
+    // Despues de una partida el host puede mandar a todos de vuelta al lobby sin cerrar la sala
+    // (GameSessionManager.ReturnToLobby). En ese caso el menu aparece con el NetworkManager todavia
+    // conectado; al salir de una partida con ReturnToMainMenu la red ya esta apagada.
+    private static bool HaySesionViva()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+
+        return nm != null &&
+               nm.IsListening &&
+               !nm.ShutdownInProgress &&
+               (nm.IsServer || nm.IsConnectedClient);
+    }
+
+
+    // El NetworkManager persistente sigue vivo; el que trae la escena del menu sobra.
+    private void DescartarNetworkManagerDuplicado()
+    {
+        NetworkManager vivo = NetworkManager.Singleton;
+
+        if (vivo == null)
+            return;
+
+        foreach (NetworkManager nm in FindObjectsByType<NetworkManager>())
+        {
+            if (nm == vivo)
+                continue;
+
+            if (nm.gameObject == gameObject)
+                Destroy(nm);
+            else
+                Destroy(nm.gameObject);
+        }
+    }
+
+
+    private void EntrarLobbyDeRegreso()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+        bool esHost = nm.IsServer;
+
+        // Todas las maquinas: descarta el estado de la partida anterior.
+        GameSessionManager.PrepareLobbyReturn();
+
+        intentoConexion++;
+
+        OcultarTodosLosPaneles();
+        panelLobby.SetActive(true);
+        LimpiarSeleccionUI();
+
+        SuscribirARed();
+        RegistrarMensajesLobby(false);
+
+        btnIniciarPartida.gameObject.SetActive(esHost);
+        btnIniciarPartida.interactable = esHost;
+
+        if (esHost)
+        {
+            // El host encuentra elegida la ultima configuracion.
+            mapaSeleccionado = ultimoMapa;
+            modoSeleccionado = ultimoModo;
+            dificultadSeleccionada = ultimaDificultad;
+        }
+
+        MostrarConfigLobby(esHost);
+        ActualizarLobbyRed();
+
+        if (esHost)
+        {
+            // Los clientes todavia pueden estar cargando el menu y no tener los handlers registrados:
+            // cuando todos terminaron, el host reenvia la lista de jugadores y la configuracion.
+            nm.SceneManager.OnLoadEventCompleted += AlCargarMenuDeRegreso;
+            esperandoCargaLobby = true;
+        }
+    }
+
+
+    private void AlCargarMenuDeRegreso(
+        string escena,
+        LoadSceneMode modo,
+        List<ulong> completaron,
+        List<ulong> agotaronTiempo)
+    {
+        DejarDeEscucharCargaLobby();
+
+        EnviarListaLobby();
+    }
+
+
+    private void DejarDeEscucharCargaLobby()
+    {
+        if (!esperandoCargaLobby)
+            return;
+
+        esperandoCargaLobby = false;
+
+        NetworkManager nm = NetworkManager.Singleton;
+
+        if (nm != null && nm.SceneManager != null)
+            nm.SceneManager.OnLoadEventCompleted -= AlCargarMenuDeRegreso;
+    }
+
+
+    // ============================================================
     // INICIAR PARTIDA (SOLO HOST)
     // ============================================================
 
@@ -2350,6 +2657,10 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         }
 
         PrepararSesionDePartida();
+
+        ultimoMapa = mapaSeleccionado;
+        ultimoModo = modoSeleccionado;
+        ultimaDificultad = dificultadSeleccionada;
 
         // El modo viaja junto con la escena a todos los clientes.
         if (GameSessionManager.StartGame(escenaACargar, modoSeleccionado))

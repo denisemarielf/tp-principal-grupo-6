@@ -40,6 +40,8 @@ public class GameOverUI : MonoBehaviour
     private GameObject survivalHud;
     private TextMeshProUGUI hudText;
     private MatchBoardWidget boardWidget;
+    private Button restartButton;
+    private Button lobbyButton;
 
     private void OnEnable()
     {
@@ -140,6 +142,8 @@ public class GameOverUI : MonoBehaviour
         Destroy(panelCanvas);
         panelCanvas = null;
         boardWidget = null;
+        restartButton = null;
+        lobbyButton = null;
         if (survivalHud != null)
             survivalHud.SetActive(false);
         IsShown = false;
@@ -336,8 +340,59 @@ public class GameOverUI : MonoBehaviour
 
         // Debajo del tablero real, no del alto reservado: si no, el boton queda fuera de la pantalla.
         float cardHeight = boardWidget.GetComponent<RectTransform>().sizeDelta.y;
-        Button button = CreateButton(background.transform, "VOLVER AL MENU", titleColor, ReturnToMainMenu);
-        AnchorTopLeft(button.GetComponent<RectTransform>(), LeftMargin, TopMargin + boardTop + cardHeight + 24f, 520f, 72f);
+        // Tres botones en fila (juntos miden lo mismo que el tablero, 860): apilados se saldrian de la pantalla.
+        const float buttonWidth = 276f;
+        const float buttonGap = 16f;
+        float buttonsY = TopMargin + boardTop + cardHeight + 24f;
+
+        // Reiniciar y volver al lobby los decide el host (solo el servidor puede cargar escenas para todos).
+        NetworkManager network = NetworkManager.Singleton;
+        bool isHost = network != null && network.IsListening && network.IsServer;
+
+        if (isHost)
+        {
+            restartButton = CreateButton(background.transform, "REINICIAR", titleColor, RestartMatch);
+            AnchorTopLeft(restartButton.GetComponent<RectTransform>(), LeftMargin, buttonsY, buttonWidth, 72f);
+
+            lobbyButton = CreateButton(background.transform, "VOLVER AL LOBBY", titleColor, GoToLobby);
+            AnchorTopLeft(lobbyButton.GetComponent<RectTransform>(), LeftMargin + (buttonWidth + buttonGap), buttonsY, buttonWidth, 72f);
+        }
+        else
+        {
+            TextMeshProUGUI waiting = CreateText(background.transform, "Texto_Esperando_Host", "SOLO EL HOST REINICIA O ELIGE MAPA",
+                26f, TextSoft, TextAlignmentOptions.MidlineLeft, false, 2f);
+            AnchorTopLeft(waiting.rectTransform, LeftMargin + 28f, buttonsY, 2f * buttonWidth + buttonGap - 28f, 72f);
+        }
+
+        Button menuButton = CreateButton(background.transform, "VOLVER AL MENU", titleColor, ReturnToMainMenu);
+        AnchorTopLeft(menuButton.GetComponent<RectTransform>(), LeftMargin + 2f * (buttonWidth + buttonGap), buttonsY, buttonWidth, 72f);
+    }
+
+    private void RestartMatch()
+    {
+        // Evita el doble clic mientras Netcode empieza a cargar la escena.
+        SetHostButtonsInteractable(false);
+
+        if (!GameSessionManager.RestartMatch())
+            SetHostButtonsInteractable(true);
+    }
+
+    // Todos los jugadores vuelven al lobby de la sala (siguen conectados) y el host elige el proximo mapa.
+    private void GoToLobby()
+    {
+        SetHostButtonsInteractable(false);
+
+        if (!GameSessionManager.ReturnToLobby())
+            SetHostButtonsInteractable(true);
+    }
+
+    private void SetHostButtonsInteractable(bool value)
+    {
+        if (restartButton != null)
+            restartButton.interactable = value;
+
+        if (lobbyButton != null)
+            lobbyButton.interactable = value;
     }
 
     private void ReturnToMainMenu()
