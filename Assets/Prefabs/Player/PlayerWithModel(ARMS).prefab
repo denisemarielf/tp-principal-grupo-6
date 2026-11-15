@@ -1648,7 +1648,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2480460361
+  GlobalObjectIdHash: 375657675
   InScenePlacedSourceGlobalObjectIdHash: 2480460361
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -2406,6 +2406,7 @@ MonoBehaviour:
   healSounds:
   - {fileID: 8300000, guid: 191792caeeadbf848ae310c991c851fe, type: 3}
   healVolume: 0.8
+  hitReactionCooldown: 0.8
 --- !u!82 &3910103281167729676
 AudioSource:
   m_ObjectHideFlags: 0
@@ -4897,6 +4898,7 @@ MonoBehaviour:
   visuals: {fileID: 7060779764537263821}
   presentation: {fileID: 4010765667292694362}
   pickupHandler: {fileID: 1829795104860405576}
+  armsRenderers: []
 --- !u!82 &7745916340032628152
 AudioSource:
   m_ObjectHideFlags: 0
