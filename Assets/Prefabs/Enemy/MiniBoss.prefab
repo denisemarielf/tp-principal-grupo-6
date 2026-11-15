@@ -352,12 +352,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::MiniBossBrain
   ShowTopMostFoldoutHeaderGroup: 1
   walkSpeed: 7.5
-  runSpeed: 16
+  runSpeed: 18
   targetSearchInterval: 0.3
   repathInterval: 0.2
   runCooldown: {x: 6, y: 12}
   runDuration: {x: 3, y: 5}
-  minDistanceToRun: 8
+  minDistanceToRun: 12
   meleeRange: 4
   meleeHitRange: 5
   meleeHalfAngle: 180
@@ -374,8 +374,8 @@ MonoBehaviour:
   jumpDamage: 60
   slamRadius: 5
   jumpLandOffset: 1.5
-  launchHorizontal: 5
-  launchVertical: 3.5
+  launchHorizontal: 10
+  launchVertical: 10
   tauntMinRange: 10
   tauntMaxRange: 30
   tauntChance: 0.25
@@ -397,7 +397,7 @@ MonoBehaviour:
   acidBlockMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  grabChance: 0.053
+  grabChance: 0.248
   grabCooldown: {x: 20, y: 35}
   grabReach: 4.5
   grabHalfAngle: 60
@@ -406,7 +406,7 @@ MonoBehaviour:
   grabReleaseNormalized: 0.9
   grabTicks: 4
   grabTotalDamage: 90
-  throwChance: 0.094
+  throwChance: 0.052
   throwCooldown: {x: 10, y: 16}
   throwReach: 4.5
   throwHalfAngle: 60
