@@ -54,6 +54,8 @@ public class PauseMenuUI : MonoBehaviour
     private Button saveButton;
     private TextMeshProUGUI saveStatus;
     private bool saveInProgress;
+    private Button restartButton;
+    private Button lobbyButton;
     private bool optionsOpen;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -150,6 +152,8 @@ public class PauseMenuUI : MonoBehaviour
         bool isHost = network != null && network.IsListening && network.IsServer;
         saveButton.gameObject.SetActive(isHost);
         saveStatus.gameObject.SetActive(isHost);
+        restartButton.gameObject.SetActive(isHost);
+        lobbyButton.gameObject.SetActive(isHost);
         if (!isHost) return;
 
         SaveBlockReason reason = SaveGameService.GetBlockReason();
@@ -185,6 +189,34 @@ public class PauseMenuUI : MonoBehaviour
         panel.SetActive(false);
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+    }
+
+    // Reinicia el nivel actual para todos, manteniendo sala, modo y dificultad.
+    private void RestartMatch()
+    {
+        SetHostButtonsInteractable(false);
+
+        if (GameSessionManager.RestartMatch())
+            Close();
+        else
+            SetHostButtonsInteractable(true);
+    }
+
+    // Lleva a todos al lobby de la misma sala (la red sigue encendida).
+    private void GoToLobby()
+    {
+        SetHostButtonsInteractable(false);
+
+        if (GameSessionManager.ReturnToLobby())
+            Close();
+        else
+            SetHostButtonsInteractable(true);
+    }
+
+    private void SetHostButtonsInteractable(bool value)
+    {
+        if (restartButton != null) restartButton.interactable = value;
+        if (lobbyButton != null) lobbyButton.interactable = value;
     }
 
     private void ExitMatch()
@@ -266,6 +298,10 @@ public class PauseMenuUI : MonoBehaviour
         statusLayout.minHeight = 28f;
 
         CreateSpacer(pauseCard.transform, 6f);
+
+        // Solo el host puede cargar escenas para todos: se muestran solo para el.
+        restartButton = CreateButton(pauseCard.transform, "REINICIAR PARTIDA", ButtonStyle.Normal, RestartMatch);
+        lobbyButton = CreateButton(pauseCard.transform, "VOLVER AL LOBBY", ButtonStyle.Normal, GoToLobby);
 
         CreateButton(pauseCard.transform, "SALIR DE LA PARTIDA", ButtonStyle.Secondary, ExitMatch);
 
