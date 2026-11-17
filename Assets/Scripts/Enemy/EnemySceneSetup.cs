@@ -256,7 +256,7 @@ public class EnemySceneSetup : MonoBehaviour
             position += Vector3.up * FeetLift(enemyPrefab);
         }
 
-        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        GameObject enemy = EnemyPool.Create(enemyPrefab, position, Quaternion.identity);
         ConfigureSpawnedEnemy(enemy, variant);
 
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
@@ -329,7 +329,7 @@ public class EnemySceneSetup : MonoBehaviour
         else
             position += Vector3.up * FeetLift(enemyPrefab);
 
-        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        GameObject enemy = EnemyPool.Create(enemyPrefab, position, Quaternion.identity);
         ConfigureSpawnedEnemy(enemy, variant);
 
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
@@ -350,7 +350,7 @@ public class EnemySceneSetup : MonoBehaviour
 
         position += Vector3.up * FeetLift(enemyPrefab);
 
-        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        GameObject enemy = EnemyPool.Create(enemyPrefab, position, Quaternion.identity);
         ConfigureSpawnedEnemy(enemy, variant);
 
         // Solo puede caminar por piso: no se sube a techos de autos ni copas.
