@@ -3,6 +3,14 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using Unity.Netcode.Components;
+
+// Tipo de dano, para que el feedback de pantalla pueda distinguir el origen (rojo = generico, verde = acido).
+public enum DamageKind
+{
+    Generic = 0,
+    Acid = 1
+}
 
 // Salud del jugador (US 3.3). El host es el unico que modifica la vida; los clientes la leen
 // de las NetworkVariables y la barra de vida (PlayerHealthBar) escucha HealthChanged.
@@ -16,6 +24,11 @@ public class PlayerHealth : NetworkBehaviour
     public event Action Died;
     public event Action Revived;
     public event Action<float> DamageTaken; // solo se dispara en el dueño, con el daño recibido
+    public event Action<float, DamageKind> DamageTakenTyped; // igual que DamageTaken, pero con el tipo de daño
+
+    // Tipo del ultimo dano recibido. Solo es valido en el dueño; ya esta seteado cuando se dispara DamageTaken,
+    // asi que los suscriptores actuales pueden leerlo dentro de su handler sin cambiar la firma.
+    public DamageKind LastDamageKind { get; private set; } = DamageKind.Generic;
 
     [Header("Vida")]
     [SerializeField] private float maxHealth = 100f;
@@ -29,6 +42,12 @@ public class PlayerHealth : NetworkBehaviour
     [SerializeField] private Vector2 pitchRange = new Vector2(0.95f, 1.05f);
     [SerializeField] private AudioClip[] healSounds;
     [SerializeField, Range(0f, 1f)] private float healVolume = 0.8f;
+
+    [Header("Animacion")]
+    [SerializeField] private float hitReactionCooldown = 0.8f;
+
+    private static readonly int HitHash = Animator.StringToHash("Hit");
+    private float nextHitReactionTime;
 
     private float nextHurtTime;
 
@@ -125,7 +144,7 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     // Solo el server.
-    public void TakeDamage(float amount)
+    public void TakeDamage(float amount, DamageKind kind = DamageKind.Generic)
     {
         if (!IsServer || isDead.Value || amount <= 0f) return;
         // Tras extraer / terminar supervivencia no reciben mas dano.
@@ -134,8 +153,11 @@ public class PlayerHealth : NetworkBehaviour
 
         currentHealth.Value = ApplyDamage(currentHealth.Value, amount);
 
+        if (currentHealth.Value > 0f)
+            PlayHitReaction();
+
         // Avisa solo al dueño para el feedback (pantalla roja + golpe de camara).
-        NotifyDamageClientRpc(amount, new ClientRpcParams
+        NotifyDamageClientRpc(amount, kind, new ClientRpcParams
         {
             Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
         });
@@ -144,11 +166,53 @@ public class PlayerHealth : NetworkBehaviour
             Die();
     }
 
+    // Solo server. Dispara el trigger en todos los NetworkAnimator activos del jugador
+    // (hay un CharacterModel por skin y no siempre es el primero el que se usa).
+    private void PlayHitReaction()
+    {
+        if (Time.time < nextHitReactionTime) return;
+        nextHitReactionTime = Time.time + hitReactionCooldown;
+
+        bool needsOwner = false;
+        foreach (NetworkAnimator animator in GetComponentsInChildren<NetworkAnimator>(false))
+        {
+            if (!animator.IsSpawned) continue;
+
+            if (animator.IsServerAuthoritative())
+                animator.SetTrigger(HitHash);
+            else
+                needsOwner = true;
+        }
+
+        // Authority Mode Owner: el trigger lo tiene que setear el dueño.
+        if (needsOwner)
+        {
+            HitReactionClientRpc(new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+            });
+        }
+    }
+
     [ClientRpc]
-    private void NotifyDamageClientRpc(float amount, ClientRpcParams rpcParams = default)
+    private void HitReactionClientRpc(ClientRpcParams rpcParams = default)
     {
         if (!IsOwner) return;
+
+        foreach (NetworkAnimator animator in GetComponentsInChildren<NetworkAnimator>(false))
+        {
+            if (animator.IsSpawned && !animator.IsServerAuthoritative())
+                animator.SetTrigger(HitHash);
+        }
+    }
+
+    [ClientRpc]
+    private void NotifyDamageClientRpc(float amount, DamageKind kind, ClientRpcParams rpcParams = default)
+    {
+        if (!IsOwner) return;
+        LastDamageKind = kind;   // antes de los eventos, para que los handlers lo puedan leer
         DamageTaken?.Invoke(amount);
+        DamageTakenTyped?.Invoke(amount, kind);
     }
 
     // Solo el server. Un jugador muerto no se puede curar.

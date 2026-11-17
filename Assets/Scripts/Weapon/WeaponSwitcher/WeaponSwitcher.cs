@@ -17,6 +17,11 @@ public class WeaponSwitcher : NetworkBehaviour
     [SerializeField] private WeaponPickupHandler pickupHandler;
 
     private ShootLogic currentWeaponShoot;
+
+    [Header("Viewmodel")]
+    [Tooltip("Renderers de los brazos de primera persona (ArmsSoldier). Se ocultan mientras hay un arma melee equipada.")]
+    [SerializeField] private Renderer[] armsRenderers;
+    private bool armsHiddenByMelee;
     
 
     private readonly NetworkVariable<int> networkWeaponIndex = new NetworkVariable<int>(
@@ -185,10 +190,59 @@ public class WeaponSwitcher : NetworkBehaviour
 
         presentation.ShowWeapon(currentWeapon, index >= 0 ? weapons[index] : null);
         presentation.PlaySwitchSound();
+        UpdateArmsVisibility();
 
         if (IsOwner)
             networkWeaponIndex.Value = index;
     }
+
+    // Otros scripts (refresh de visuals, animaciones) pueden volver a prender los renderers
+    // despues de SelectWeapon; mientras haya melee equipado los mantenemos apagados.
+    private void LateUpdate()
+    {
+        if (!armsHiddenByMelee || armsRenderers == null) return;
+
+        foreach (Renderer r in armsRenderers)
+            if (r != null && r.enabled) r.enabled = false;
+    }
+
+    // Oculta los brazos del viewmodel con armas melee. Solo toca los renderers cuando
+    // cambia el estado, para no pisar lo que haga Presentation con las demas armas.
+    private void UpdateArmsVisibility()
+    {
+        if (!IsOwner) return;
+
+        // Si no se asigno a mano, buscamos los meshes de armsModel que no sean parte de un arma.
+        if (armsRenderers == null || armsRenderers.Length == 0)
+            armsRenderers = FindArmsRenderers();
+        if (armsRenderers == null || armsRenderers.Length == 0) return;
+
+        bool hide = currentWeapon is MeleeLogic;
+        if (hide == armsHiddenByMelee) return;
+
+        armsHiddenByMelee = hide;
+        foreach (Renderer r in armsRenderers)
+            if (r != null) r.enabled = !hide;
+    }
+
+    private Renderer[] FindArmsRenderers()
+    {
+        if (presentation == null || presentation.armsModel == null) return null;
+
+        var list = new System.Collections.Generic.List<Renderer>();
+        foreach (Renderer r in presentation.armsModel.GetComponentsInChildren<Renderer>(true))
+        {
+            if (!(r is SkinnedMeshRenderer) && !(r is MeshRenderer)) continue;
+            if (r.GetComponentInParent<EquippableWeapon>(true) != null) continue; // es parte de un arma
+            list.Add(r);
+        }
+
+        if (list.Count == 0)
+            Debug.LogWarning("[WeaponSwitcher] No se encontraron renderers de brazos. Asignalos en Arms Renderers.", this);
+
+        return list.ToArray();
+    }
+
     public EquippableWeapon GetWeaponAt(int index)
     {
         GameObject[] weapons = loadout.Weapons;

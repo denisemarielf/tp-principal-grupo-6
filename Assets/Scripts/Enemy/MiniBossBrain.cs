@@ -50,8 +50,8 @@ public class MiniBossBrain : NetworkBehaviour
     [SerializeField] private float jumpLandOffset = 1.5f;   // aterriza un poco antes del blanco
 
     [Header("Lanzamiento por golpe (estilo Tank)")]
-    [SerializeField] private float launchHorizontal = 10f;
-    [SerializeField] private float launchVertical = 7f;
+    [SerializeField] private float launchHorizontal = 5f;
+    [SerializeField] private float launchVertical = 3.5f;
 
     [Header("Burla (Taunt)")]
     [SerializeField] private float tauntMinRange = 10f;
@@ -107,8 +107,8 @@ public class MiniBossBrain : NetworkBehaviour
     [Range(0.1f, 0.95f)]
     [SerializeField] private float throwReleaseNormalized = 0.6f; // momento en que lo suelta y sale volando
     [SerializeField] private float throwDamage = 35f;
-    [SerializeField] private float throwHorizontal = 16f;   // hacia ATRAS del jefe
-    [SerializeField] private float throwVertical = 8f;
+    [SerializeField] private float throwHorizontal = 8f;   // hacia ATRAS del jefe
+    [SerializeField] private float throwVertical = 4f;
     [SerializeField] private float throwDropBehind = 1.8f;  // donde queda el jugador justo antes de salir volando
     [SerializeField] private float throwDropHeight = 2.2f;
 
