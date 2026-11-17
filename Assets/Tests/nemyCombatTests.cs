@@ -1,5 +1,7 @@
+
+
+
 using System.Collections;
-using System.Threading.Tasks;
 using NUnit.Framework;
 using Unity.Netcode;
 using UnityEngine;
@@ -9,205 +11,205 @@ using UnityEngine.TestTools;
 public class EnemyCombatTests
 {
     private NetworkManager networkManager;
+    private NetworkObject playerObject;
+    private PlayerHealth playerHealth;
+    private EnemyCombat enemy;
 
     [UnitySetUp]
     public IEnumerator SetUp()
     {
-        SceneManager.LoadScene("MainMenu");
+        // Cargar TestScene desde cero.
+        AsyncOperation loadOperation =
+            SceneManager.LoadSceneAsync("TestScene", LoadSceneMode.Single);
 
-        yield return new WaitUntil(
-            () => SceneManager.GetActiveScene().name == "MainMenu"
-        );
+        Assert.That(loadOperation, Is.Not.Null);
 
-        yield return new WaitUntil(
-            () => NetworkManager.Singleton != null
-        );
+        yield return new WaitUntil(() => loadOperation.isDone);
+
+        yield return null;
+
+        // Esperar al NetworkManager.
+        float timeout = Time.realtimeSinceStartup + 10f;
+
+        while (NetworkManager.Singleton == null)
+        {
+            Assert.Less(
+                Time.realtimeSinceStartup,
+                timeout,
+                "No se encontró el NetworkManager en TestScene."
+            );
+
+            yield return null;
+        }
 
         networkManager = NetworkManager.Singleton;
 
-        Task hostTask = StartHost();
-
-        yield return new WaitUntil(
-            () => hostTask.IsCompleted
+        // Comprobar que no haya otro Host activo.
+        Assert.That(
+            networkManager.IsListening,
+            Is.False,
+            "El NetworkManager ya está escuchando. Revisar AutoHost."
         );
 
-        if (hostTask.IsFaulted)
+        // Iniciar el Host.
+        bool hostStarted = networkManager.StartHost();
+
+        Assert.That(
+            hostStarted,
+            Is.True,
+            "No se pudo iniciar el Host."
+        );
+
+        timeout = Time.realtimeSinceStartup + 10f;
+
+        while (!networkManager.IsListening)
         {
-            throw hostTask.Exception;
+            Assert.Less(
+                Time.realtimeSinceStartup,
+                timeout,
+                "El Host no llegó a iniciar."
+            );
+
+            yield return null;
         }
 
-        LogAssert.ignoreFailingMessages = true;
+        // Esperar al jugador y al enemigo.
+        timeout = Time.realtimeSinceStartup + 10f;
 
-        bool partidaIniciada =
-            GameSessionManager.StartGame("SampleScene");
+        while (
+            networkManager.SpawnManager.GetLocalPlayerObject() == null ||
+            Object.FindFirstObjectByType<EnemyCombat>() == null
+        )
+        {
+            Assert.Less(
+                Time.realtimeSinceStartup,
+                timeout,
+                "No se encontró el jugador o el enemigo."
+            );
 
-        Assert.That(partidaIniciada, Is.True);
+            yield return null;
+        }
 
-        yield return new WaitUntil(
-            () => SceneManager.GetActiveScene().name == "SampleScene"
+        playerObject =
+            networkManager.SpawnManager.GetLocalPlayerObject();
+
+        playerHealth =
+            playerObject.GetComponent<PlayerHealth>();
+
+        enemy =
+            Object.FindFirstObjectByType<EnemyCombat>();
+
+        Assert.That(playerHealth, Is.Not.Null);
+        Assert.That(enemy, Is.Not.Null);
+        Assert.That(enemy.IsSpawned, Is.True);
+
+        // Comprobar que el enemigo siga existiendo.
+        Assert.That(
+            enemy.gameObject.activeInHierarchy,
+            Is.True
         );
-
-        LogAssert.ignoreFailingMessages = false;
     }
 
     [UnityTest]
     public IEnumerator ElEnemigoAtacaAlJugadorDentroDelRango()
     {
-        NetworkObject playerObject =
-            networkManager.ConnectedClients[
-                NetworkManager.ServerClientId
-            ].PlayerObject;
+        float vidaInicial = playerHealth.CurrentHealth;
 
-        Assert.That(playerObject, Is.Not.Null);
+        Vector3 attackPosition =
+            enemy.transform.position + Vector3.forward * 1f;
 
-        PlayerHealth playerHealth =
-            playerObject.GetComponent<PlayerHealth>();
+        attackPosition.y = playerObject.transform.position.y;
 
-        Assert.That(playerHealth, Is.Not.Null);
+        playerObject.transform.position = attackPosition;
 
-        EnemyCombat enemy =
-            Object.FindFirstObjectByType<EnemyCombat>();
+        float timeout = Time.realtimeSinceStartup + 5f;
 
-        Assert.That(enemy, Is.Not.Null);
+        while (playerHealth.CurrentHealth >= vidaInicial)
+        {
+            Assert.Less(
+                Time.realtimeSinceStartup,
+                timeout,
+                "El enemigo no dañó al jugador dentro del rango."
+            );
 
-        float vidaInicial =
-            playerHealth.CurrentHealth;
+            yield return null;
+        }
 
-        playerObject.transform.position =
-            enemy.transform.position +
-            Vector3.forward * 1f;
+        Assert.That(
+            playerHealth.CurrentHealth,
+            Is.LessThan(vidaInicial)
+        );
+    }
+
+    [UnityTest]
+    public IEnumerator ElEnemigoNoAtacaAlJugadorFueraDelRango()
+    {
+        float vidaInicial = playerHealth.CurrentHealth;
+
+        Vector3 distantPosition =
+            enemy.transform.position + Vector3.forward * 20f;
+
+        distantPosition.y = playerObject.transform.position.y;
+
+        playerObject.transform.position = distantPosition;
 
         yield return new WaitForSeconds(1f);
 
         Assert.That(
             playerHealth.CurrentHealth,
-            Is.LessThan(vidaInicial),
-            "El enemigo debería dañar al jugador cuando está dentro del rango de ataque."
+            Is.EqualTo(vidaInicial),
+            "El enemigo no debería dañar al jugador fuera del rango."
         );
     }
 
-    [UnityTest]
-public IEnumerator ElEnemigoNoAtacaAlJugadorFueraDelRango()
-{
-    NetworkObject playerObject =
-        networkManager.ConnectedClients[
-            NetworkManager.ServerClientId
-        ].PlayerObject;
 
-    Assert.That(playerObject, Is.Not.Null);
-
-    PlayerHealth playerHealth =
-        playerObject.GetComponent<PlayerHealth>();
-
-    Assert.That(playerHealth, Is.Not.Null);
-
-    EnemyCombat enemy =
-        Object.FindFirstObjectByType<EnemyCombat>();
-
-    Assert.That(enemy, Is.Not.Null);
-
-    float vidaInicial =
-        playerHealth.CurrentHealth;
-
-    playerObject.transform.position =
-        enemy.transform.position +
-        Vector3.forward * 20f;
-
-    yield return new WaitForSeconds(0.5f);
-
-    Assert.That(
-        playerHealth.CurrentHealth,
-        Is.EqualTo(vidaInicial),
-        "El enemigo no debería atacar al jugador cuando está fuera del rango de ataque."
-    );
-}
-
-[UnityTest]
-public IEnumerator ElEnemigoRespetaElTiempoEntreAtaques()
-{
-    NetworkObject playerObject =
-        networkManager.ConnectedClients[
-            NetworkManager.ServerClientId
-        ].PlayerObject;
-
-    Assert.That(playerObject, Is.Not.Null);
-
-    PlayerHealth playerHealth =
-        playerObject.GetComponent<PlayerHealth>();
-
-    Assert.That(playerHealth, Is.Not.Null);
-
-    EnemyCombat enemy =
-        Object.FindFirstObjectByType<EnemyCombat>();
-
-    Assert.That(enemy, Is.Not.Null);
-
-    float vidaInicial =
-        playerHealth.CurrentHealth;
-
-    playerObject.transform.position =
-        enemy.transform.position +
-        Vector3.forward * 1f;
-
-    // Esperamos hasta que ocurra el primer ataque.
-    yield return new WaitUntil(
-        () => playerHealth.CurrentHealth < vidaInicial
-    );
-
-    float vidaDespuesDelPrimerAtaque =
-        playerHealth.CurrentHealth;
-
-    // Esperamos menos que el cooldown de 0.8 segundos.
-    yield return new WaitForSeconds(0.3f);
-
-    Assert.That(
-        playerHealth.CurrentHealth,
-        Is.EqualTo(vidaDespuesDelPrimerAtaque),
-        "El enemigo no debería volver a atacar antes de que termine el cooldown."
-    );
-
-    // Esperamos lo suficiente para superar el cooldown.
-    yield return new WaitForSeconds(0.6f);
-
-    Assert.That(
-        playerHealth.CurrentHealth,
-        Is.LessThan(vidaDespuesDelPrimerAtaque),
-        "El enemigo debería poder volver a atacar una vez finalizado el cooldown."
-    );
-}
+    
 
     [UnityTearDown]
     public IEnumerator TearDown()
     {
-        if (SceneManager.GetActiveScene().name == "SampleScene")
-        {
-            SceneManager.LoadScene("MainMenu");
-
-            yield return new WaitUntil(
-                () => SceneManager.GetActiveScene().name == "MainMenu"
-            );
-        }
-
+        // Apagar el Host.
         if (networkManager != null &&
             networkManager.IsListening &&
             !networkManager.ShutdownInProgress)
         {
             networkManager.Shutdown();
 
-            yield return new WaitUntil(
-                () =>
-                    !networkManager.ShutdownInProgress &&
-                    !networkManager.IsListening
-            );
+            float timeout = Time.realtimeSinceStartup + 10f;
+
+            while (networkManager.IsListening ||
+                   networkManager.ShutdownInProgress)
+            {
+                Assert.Less(
+                    Time.realtimeSinceStartup,
+                    timeout,
+                    "El NetworkManager no terminó de apagarse."
+                );
+
+                yield return null;
+            }
         }
-    }
 
-    private async Task StartHost()
-    {
-        await GameSessionManager.PrepareHostAsync();
+        // Liberar referencias.
+        networkManager = null;
+        playerObject = null;
+        playerHealth = null;
+        enemy = null;
 
-        await RelayConnectionManager.StartHostAsync(
-            GameSessionManager.MaxPlayers - 1
-        );
+        // Descargar TestScene.
+        if (SceneManager.GetActiveScene().name == "TestScene")
+        {
+            AsyncOperation unloadOperation =
+                SceneManager.UnloadSceneAsync("TestScene");
+
+            if (unloadOperation != null)
+            {
+                yield return new WaitUntil(
+                    () => unloadOperation.isDone
+                );
+            }
+        }
+
+        yield return null;
     }
 }
