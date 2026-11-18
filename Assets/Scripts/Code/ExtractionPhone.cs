@@ -85,6 +85,15 @@ public class ExtractionPhone : NetworkBehaviour
         return best;
     }
     public ExtractionState State => state.Value;
+
+    public bool HasPanel => requiredPanel != null;
+
+    // Segundos que faltan para que llegue el helicóptero (0 si todavía no se pidió).
+    public float SecondsLeft => state.Value == ExtractionState.Requested
+        ? Mathf.Max(0f, (float)(requestTime.Value + survivalTime - NetworkManager.ServerTime.Time))
+        : 0f;
+
+   
     public bool IsUnlocked => requiredPanel == null || requiredPanel.IsSolved;
 
 

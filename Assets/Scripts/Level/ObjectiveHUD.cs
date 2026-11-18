@@ -2,6 +2,7 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 // HUD del objetivo del modo activo (US 5.10 CA2).
 // Usa tres textos independientes: titulo, descripcion y distancia.
@@ -19,6 +20,8 @@ public class ObjectiveHUD : MonoBehaviour
     [SerializeField] private string extractionSceneName = "ExtraccionScene";
     [SerializeField] private string collectionSceneName = "EstacionRecoleccion";
 
+    [SerializeField] private string survivalSceneName = "SupervivenciaScene";
+
     [Header("Estilo (mismo look que el menú)")]
     [Tooltip("Aplica la tipografía y los colores del menú principal a este HUD.")]
     [SerializeField] private bool applyMenuStyle = true;
@@ -35,6 +38,11 @@ public class ObjectiveHUD : MonoBehaviour
     private bool cansFound;
     private FuelGeneratorGroup generatorGroup;
     private float nextGroupSearch;
+
+    private SafeZone cachedZone;
+    private Collider cachedZoneCol;
+    private ExtractionPhone phone;
+    private float nextPhoneSearch;
 
     private void Awake()
     {
@@ -59,9 +67,11 @@ public class ObjectiveHUD : MonoBehaviour
         if (scene == PlayerCarryOver.SuburbSceneName)
             UpdateSuburb();
         else if (scene == PlayerCarryOver.OfficesSceneName)
-            Show("Atravesá la horda de enemigos y llega al punto seguro", null);
+            UpdateZoneObjective("Atravesá la horda de enemigos y llegá al punto seguro");
         else if (scene == extractionSceneName)
-            Show("Llegá al tren y haz lo necesario para huir", null);
+            UpdateZoneObjective("Llegá al tren y hacé lo necesario para huir");
+        else if (scene == survivalSceneName)
+            UpdateZoneObjective("Sobreviví las rondas, salva a los civiles y llegá a la zona segura");
         else if (scene == collectionSceneName)
             UpdateStation();
         else
@@ -97,7 +107,10 @@ public class ObjectiveHUD : MonoBehaviour
         string step1 = Step("1. Encontrá los bidones vacíos que están en las carpas", cansFound, true);
         string step2 = Step($"2. Cargá los generadores con la nafta de los autos ({powered}/{generatorGroup.Total})", step2Done, cansFound);
 
-        Show($"{goal}\n{step1}\n{step2}", null);
+        FindPhone();
+        string escape = EscapeSteps(3, step2Done, out string distance);
+
+        Show($"{goal}\n{step1}\n{step2}\n{escape}", distance);
     }
 
     // Hecho = verde, el que toca ahora = blanco, el que todavía no = gris.
@@ -110,42 +123,143 @@ public class ObjectiveHUD : MonoBehaviour
     private void UpdateSuburb()
     {
         SafeZone zone = SafeZone.Current;
-        if (zone == null)
+        if (zone == null || zone.IsCompleted)
         {
-            Hide();
+            Hide(); // el panel de SafeZoneUI ya muestra el resumen
             return;
         }
 
-        if (zone.IsCompleted)
-        {
-            // El panel de SafeZoneUI ya muestra el resumen; no duplicar el objetivo.
-            Hide();
-            return;
-        }
-
-        NetworkObject player = NetworkManager.Singleton != null
-            ? NetworkManager.Singleton.LocalClient?.PlayerObject
-            : null;
-
-        if (player == null)
+        if (!TryGetZoneDistance(out float distance, out bool inside))
         {
             Show("Llegá a la zona segura", null);
             return;
         }
 
-        Collider col = zone.GetComponent<Collider>();
-        Vector3 pos = player.transform.position;
-        Vector3 closest = col.ClosestPoint(pos);
-
-        // Distancia horizontal (ignoramos la altura)
-        float dx = pos.x - closest.x;
-        float dz = pos.z - closest.z;
-        float distance = Mathf.Sqrt(dx * dx + dz * dz);
-
-        if (distance < 0.1f)
+        if (inside)
             Show("Esperá a tu equipo en la zona segura", null);
         else
             Show("Llegá a la zona segura", $"DISTANCIA: {distance:0} m");
+    }
+
+    // Distancia horizontal del jugador LOCAL a la zona segura actual.
+    // Devuelve false si no hay zona, si sigue bloqueada o si todavía no existe el jugador.
+    private bool TryGetZoneDistance(out float distance, out bool inside)
+    {
+        distance = 0f;
+        inside = false;
+
+        SafeZone zone = SafeZone.Current;
+        if (zone == null ) return false;
+
+        if (zone != cachedZone)
+        {
+            cachedZone = zone;
+            cachedZoneCol = zone.GetComponent<Collider>();
+        }
+        if (cachedZoneCol == null) return false;
+
+        NetworkObject player = NetworkManager.Singleton != null
+            ? NetworkManager.Singleton.LocalClient?.PlayerObject
+            : null;
+        if (player == null) return false;
+
+        Vector3 pos = player.transform.position;
+        Vector3 closest = cachedZoneCol.ClosestPoint(pos);
+        float dx = pos.x - closest.x;
+        float dz = pos.z - closest.z;
+        distance = Mathf.Sqrt(dx * dx + dz * dz);
+        inside = distance < 0.1f;
+        return true;
+    }
+
+    private float DistanceToLocalPlayer(Vector3 target)
+    {
+        NetworkObject player = NetworkManager.Singleton != null
+            ? NetworkManager.Singleton.LocalClient?.PlayerObject
+            : null;
+        if (player == null) return -1f;
+
+        Vector3 p = player.transform.position;
+        float dx = p.x - target.x;
+        float dz = p.z - target.z;
+        return Mathf.Sqrt(dx * dx + dz * dz);
+    }
+
+    // Objetivo genérico: si el mapa tiene teléfono de extracción, guía por fases
+    // (panel -> llamar -> resistir -> zona segura). Si no, va directo a la zona segura.
+    private void FindPhone()
+    {
+        if (phone == null && Time.unscaledTime >= nextPhoneSearch)
+        {
+            phone = FindFirstObjectByType<ExtractionPhone>();
+            nextPhoneSearch = Time.unscaledTime + 1f;
+        }
+    }
+
+    private void UpdateZoneObjective(string goal)
+    {
+        SafeZone zone = SafeZone.Current;
+        if (zone != null && zone.IsCompleted)
+        {
+            Hide();
+            return;
+        }
+
+        FindPhone();
+        string steps = EscapeSteps(1, true, out string distance);
+        Show($"{goal}\n{steps}", distance);
+    }
+
+    // Pasos de escape: [panel] -> [llamar helicóptero] -> zona segura.
+    // 'firstNumber' es el número del primer paso; 'active' = false los deja todos en gris.
+    // La distancia apunta al paso actual: teléfono (panel / llamar) o zona segura.
+    private string EscapeSteps(int firstNumber, bool active, out string distance)
+    {
+        distance = null;
+        int n = firstNumber;
+
+        bool hasPhone = phone != null && phone.IsSpawned;
+        bool hasPanel = hasPhone && phone.HasPanel;
+        bool panelDone = !hasPanel || (hasPhone && phone.IsUnlocked);
+        bool called = hasPhone && phone.State != ExtractionPhone.ExtractionState.Idle;
+        bool hasZone = TryGetZoneDistance(out float zoneDist, out bool inside);
+
+        bool panelCurrent = active && hasPanel && !panelDone;
+        bool callCurrent = active && hasPhone && panelDone && !called;
+        bool zoneCurrent = active && (!hasPhone || called);
+
+        var lines = new List<string>();
+
+        if (hasPanel)
+            lines.Add(Step($"{n++}. Arreglá el panel eléctrico", panelDone, panelCurrent));
+
+        if (hasPhone)
+            lines.Add(Step($"{n++}. Llamá al helicóptero para huir", called, callCurrent));
+
+        string zoneText;
+        if (inside)
+            zoneText = $"{n}. Esperá a tu equipo en la zona segura";
+        else if (hasPhone && phone.State == ExtractionPhone.ExtractionState.Requested)
+        {
+            int secs = Mathf.CeilToInt(phone.SecondsLeft);
+            zoneText = $"{n}. Andá a la zona segura y escapá (helicóptero en {secs / 60}:{secs % 60:00})";
+        }
+        else
+            zoneText = $"{n}. Andá a la zona segura y escapá";
+
+        lines.Add(Step(zoneText, false, zoneCurrent));
+
+        if (panelCurrent || callCurrent)
+        {
+            float d = DistanceToLocalPlayer(phone.transform.position);
+            if (d >= 0f) distance = $"DISTANCIA: {d:0} m";
+        }
+        else if (zoneCurrent && hasZone && !inside)
+        {
+            distance = $"DISTANCIA: {zoneDist:0} m";
+        }
+
+        return string.Join("\n", lines);
     }
 
     // Muestra titulo + descripcion. La distancia es opcional (null = oculta).
@@ -203,7 +317,7 @@ public class ObjectiveHUD : MonoBehaviour
             label.font = font;
 
         label.color = color;
-        label.characterSpacing = letterSpacing;
+        label.characterSpacing = 0f;
         label.outlineWidth = 0f;
 
         Material material = label.fontMaterial;
