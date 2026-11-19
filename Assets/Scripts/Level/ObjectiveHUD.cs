@@ -3,6 +3,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 // HUD del objetivo del modo activo (US 5.10 CA2).
 // Usa tres textos independientes: titulo, descripcion y distancia.
@@ -37,10 +38,12 @@ public class ObjectiveHUD : MonoBehaviour
     private static readonly Color StyleGreen = new Color(0.2f, 0.85f, 0.3f, 1f);
     private static readonly Color StyleAmber = new Color(0.95f, 0.78f, 0.28f, 1f);
     private static readonly Color StyleText = new Color(0.93f, 0.94f, 0.92f, 1f);
-
     private static readonly Color StyleMuted = new Color(0.55f, 0.57f, 0.56f, 1f);
 
-   // private float descriptionHeight;
+    private string lastDescription;
+    private bool lastHadDistance;
+
+    // private float descriptionHeight;
     private bool cansFound;
     private FuelGeneratorGroup generatorGroup;
     private float nextGroupSearch;
@@ -52,7 +55,22 @@ public class ObjectiveHUD : MonoBehaviour
 
     private void Awake()
     {
-    
+        // Si falta asignar las filas en el Inspector, las busca solas.
+        if (distanceRow == null && distanceText != null)
+        {
+            HorizontalLayoutGroup g = distanceText.GetComponentInParent<HorizontalLayoutGroup>();
+            if (g != null) distanceRow = g.gameObject;
+        }
+        if (titleRow == null && objectiveTitle != null)
+        {
+            HorizontalLayoutGroup g = objectiveTitle.GetComponentInParent<HorizontalLayoutGroup>();
+            if (g != null) titleRow = g.gameObject;
+        }
+
+        // Sin texto justificado.
+        if (objectiveDescription != null)
+            objectiveDescription.alignment = TextAlignmentOptions.TopLeft;
+
         if (applyMenuStyle)
         {
             StyleLabel(objectiveTitle, StyleRedHover, 4f);
@@ -266,8 +284,6 @@ public class ObjectiveHUD : MonoBehaviour
         return string.Join("\n", lines);
     }
 
-    // Muestra titulo + descripcion. La distancia es opcional (null = oculta).
-    // 'success' pinta la descripcion en verde (ej. nivel completado).
     private void Show(string description, string distance, bool success = false)
     {
         SetPanelVisible(true);
@@ -287,6 +303,16 @@ public class ObjectiveHUD : MonoBehaviour
         SetActive(distanceObj, hasDistance);
         if (hasDistance && distanceText != null)
             distanceText.text = distance;
+
+        // Recalcula el alto del panel solo cuando algo cambió de forma que afecta el layout.
+        if (description != lastDescription || hasDistance != lastHadDistance)
+        {
+            lastDescription = description;
+            lastHadDistance = hasDistance;
+
+            if (objectiveDescription != null && objectiveDescription.transform.parent is RectTransform panel)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
+        }
     }
 
 
