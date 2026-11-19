@@ -15,7 +15,13 @@ public class ObjectiveHUD : MonoBehaviour
     [SerializeField] private TMP_Text objectiveTitle;
     [SerializeField] private TMP_Text objectiveDescription;
     [SerializeField] private TMP_Text distanceText;
-
+    //n
+    [Header("Filas (para ocultar texto + icono juntos)")]
+    [SerializeField] private GameObject titleRow;
+    [SerializeField] private GameObject distanceRow;
+    [Tooltip("Opcional: CanvasGroup del panel para ocultar también el fondo.")]
+    [SerializeField] private CanvasGroup panelGroup;
+    //n
     [Header("Escenas")]
     [SerializeField] private string extractionSceneName = "ExtraccionScene";
     [SerializeField] private string collectionSceneName = "EstacionRecoleccion";
@@ -34,7 +40,7 @@ public class ObjectiveHUD : MonoBehaviour
 
     private static readonly Color StyleMuted = new Color(0.55f, 0.57f, 0.56f, 1f);
 
-    private float descriptionHeight;
+   // private float descriptionHeight;
     private bool cansFound;
     private FuelGeneratorGroup generatorGroup;
     private float nextGroupSearch;
@@ -46,9 +52,7 @@ public class ObjectiveHUD : MonoBehaviour
 
     private void Awake()
     {
-        if (objectiveDescription != null)
-            descriptionHeight = objectiveDescription.rectTransform.sizeDelta.y;
-
+    
         if (applyMenuStyle)
         {
             StyleLabel(objectiveTitle, StyleRedHover, 4f);
@@ -266,7 +270,8 @@ public class ObjectiveHUD : MonoBehaviour
     // 'success' pinta la descripcion en verde (ej. nivel completado).
     private void Show(string description, string distance, bool success = false)
     {
-        SetActive(objectiveTitle, true);
+        SetPanelVisible(true);
+        SetActive(titleRow != null ? titleRow : (objectiveTitle != null ? objectiveTitle.gameObject : null), true);
 
         if (objectiveDescription != null)
         {
@@ -275,36 +280,35 @@ public class ObjectiveHUD : MonoBehaviour
 
             if (applyMenuStyle)
                 objectiveDescription.color = success ? StyleGreen : StyleText;
-
-            // El texto largo crece hacia abajo sin pisar nada ni salirse del fondo.
-            RectTransform rect = objectiveDescription.rectTransform;
-            float needed = Mathf.Max(descriptionHeight, objectiveDescription.GetPreferredValues(description, rect.rect.width, 0f).y);
-            if (!Mathf.Approximately(rect.sizeDelta.y, needed))
-                rect.sizeDelta = new Vector2(rect.sizeDelta.x, needed);
         }
 
-        if (distanceText != null)
-        {
-            bool hasDistance = !string.IsNullOrEmpty(distance);
-            distanceText.gameObject.SetActive(hasDistance);
-            if (hasDistance)
-                distanceText.text = distance;
-        }
+        bool hasDistance = !string.IsNullOrEmpty(distance);
+        GameObject distanceObj = distanceRow != null ? distanceRow : (distanceText != null ? distanceText.gameObject : null);
+        SetActive(distanceObj, hasDistance);
+        if (hasDistance && distanceText != null)
+            distanceText.text = distance;
     }
+
 
     private void Hide()
     {
-        SetActive(objectiveTitle, false);
-        SetActive(objectiveDescription, false);
-        SetActive(distanceText, false);
+        SetPanelVisible(false);
+        SetActive(titleRow != null ? titleRow : (objectiveTitle != null ? objectiveTitle.gameObject : null), false);
+        SetActive(objectiveDescription != null ? objectiveDescription.gameObject : null, false);
+        SetActive(distanceRow != null ? distanceRow : (distanceText != null ? distanceText.gameObject : null), false);
     }
 
-    private static void SetActive(TMP_Text text, bool active)
+    private void SetPanelVisible(bool visible)
     {
-        if (text != null)
-            text.gameObject.SetActive(active);
+        if (panelGroup != null)
+            panelGroup.alpha = visible ? 1f : 0f;
     }
 
+    private static void SetActive(GameObject go, bool active)
+    {
+        if (go != null && go.activeSelf != active)
+            go.SetActive(active);
+    }
     // Solo cambia fuente, color, espaciado y sombra. El tamaño lo define el prefab.
     private static void StyleLabel(TMP_Text label, Color color, float letterSpacing)
     {
