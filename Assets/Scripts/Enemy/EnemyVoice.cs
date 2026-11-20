@@ -88,6 +88,11 @@ public class EnemyVoice : MonoBehaviour
         All.Add(this);
         // Cada zombie arranca en un momento distinto para que no gruñan todos a la vez al aparecer.
         nextAmbientAttempt = Time.time + Random.Range(0f, ambientInterval.y);
+
+        // Pooling: estado del uso anterior.
+        nextHurtTime = 0f;
+        for (int i = 0; i < lastClipIndex.Length; i++)
+            lastClipIndex[i] = -1;
     }
 
     private void OnDisable()

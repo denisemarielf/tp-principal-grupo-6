@@ -25,7 +25,8 @@ public class EnemyCombat : NetworkBehaviour
     public float biteRange = 1.0f;
     public float biteDamage = 15f;                     // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
 
-    private bool difficultyApplied;
+    private float baseAttackDamage;
+    private float baseBiteDamage;
 
     [Header("Empuje al recibir disparos")]
     public float knockbackSpeed = 5f;        // 0 = sin empuje. Distancia aprox = velocidad x duracion / 2
@@ -78,22 +79,29 @@ public class EnemyCombat : NetworkBehaviour
         ai = GetComponent<Ai>();
         enemyHealth = GetComponent<EnemyHealth>();
         enemyAnimation = GetComponent<EnemyAnimation>();
+        baseAttackDamage = attackDamage;
+        baseBiteDamage = biteDamage;
     }
 
     // US 7.5: la dificultad del host escala el dano de golpe y mordida (una sola vez).
     public void ApplyDifficultyScale()
     {
-        if (difficultyApplied)
-            return;
-
-        attackDamage *= DifficultyTuning.DamageMul;
-        biteDamage *= DifficultyTuning.DamageMul;
-        difficultyApplied = true;
+        // Idempotente: parte de los valores base, asi un zombie reusado del pool no acumula el multiplicador.
+        attackDamage = baseAttackDamage * DifficultyTuning.DamageMul;
+        biteDamage = baseBiteDamage * DifficultyTuning.DamageMul;
     }
 
     public override void OnNetworkDespawn()
     {
         ReleaseBiteTarget();
+
+        // Pooling: timers y objetivo del uso anterior.
+        attackEndTime = 0f;
+        stunUntil = 0f;
+        knockbackUntil = 0f;
+        nextKnockbackTime = 0f;
+        currentTarget = null;
+        timedDamageDone = false;
     }
 
     // Suelta al jugador que estaba inmovilizado por la mordida (termino el clip, murio el zombie o se despawneo).
