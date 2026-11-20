@@ -93685,7 +93685,7 @@ MonoBehaviour:
   helicopter: {fileID: 305315377}
   safeZone: {fileID: 2005553133}
   requiredPanel: {fileID: 863655970}
-  survivalTime: 30
+  survivalTime: 60
   interactDistance: 3
   markerVisibleDistance: 10
   markerOffset: {x: 0, y: 0.6, z: 0}
@@ -103770,6 +103770,7 @@ MonoBehaviour:
   - {fileID: 1189182442}
   - {fileID: 513192405}
   doors:
+  - {fileID: 1792945376591419296}
   - {fileID: 1792945376591419296}
   onAllPowered:
     m_PersistentCalls:

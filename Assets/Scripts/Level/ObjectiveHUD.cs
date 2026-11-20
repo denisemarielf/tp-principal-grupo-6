@@ -24,10 +24,15 @@ public class ObjectiveHUD : MonoBehaviour
     [SerializeField] private CanvasGroup panelGroup;
     //n
     [Header("Escenas")]
-    [SerializeField] private string extractionSceneName = "ExtraccionScene";
-    [SerializeField] private string collectionSceneName = "EstacionRecoleccion";
+    // Objetivo general de cada mapa: se cambia acá, por código.
+    private const string OfficesGoal = "Atravesá la horda de enemigos y llegá al punto seguro";
+    private const string ExtractionGoal = "Llegá al tren y hacé lo necesario para huir";
+    private const string CollectionGoal = "Superá los obstáculos del mapa y buscá la zona segura para huir";
+    private const string SurvivalGoal = "Aguantá las oleadas, escoltá a los civiles y escapá por la zona segura";
 
-    [SerializeField] private string survivalSceneName = "SupervivenciaScene";
+    private const string ExtractionSceneName = "ExtraccionScene";
+    private const string CollectionSceneName = "EstacionRecoleccion";
+    private const string SurvivalSceneName = "SupervivenciaScene";
 
     [Header("Estilo (mismo look que el menú)")]
     [Tooltip("Aplica la tipografía y los colores del menú principal a este HUD.")]
@@ -89,12 +94,12 @@ public class ObjectiveHUD : MonoBehaviour
         if (scene == PlayerCarryOver.SuburbSceneName)
             UpdateSuburb();
         else if (scene == PlayerCarryOver.OfficesSceneName)
-            UpdateZoneObjective("Atravesá la horda de enemigos y llegá al punto seguro");
-        else if (scene == extractionSceneName)
-            UpdateZoneObjective("Llegá al tren y hacé lo necesario para huir");
-        else if (scene == survivalSceneName)
-            UpdateZoneObjective("Sobreviví las rondas, salva a los civiles y llegá a la zona segura");
-        else if (scene == collectionSceneName)
+            UpdateZoneObjective(OfficesGoal);
+        else if (scene == ExtractionSceneName)
+            UpdateZoneObjective(ExtractionGoal);
+        else if (scene == SurvivalSceneName)
+            UpdateZoneObjective(SurvivalGoal);
+        else if (scene == CollectionSceneName)
             UpdateStation();
         else
             Hide();
@@ -103,7 +108,7 @@ public class ObjectiveHUD : MonoBehaviour
     // Estación: objetivo general + los pasos de la nafta, en orden. Lo hecho se pinta en verde.
     private void UpdateStation()
     {
-        const string goal = "Llegá al tren y haz lo necesario para huir";
+        
 
         if (generatorGroup == null && Time.unscaledTime >= nextGroupSearch)
         {
@@ -113,7 +118,7 @@ public class ObjectiveHUD : MonoBehaviour
 
         if (generatorGroup == null || generatorGroup.Total == 0)
         {
-            Show(goal, null);
+            Show(CollectionGoal, null);
             return;
         }
 
@@ -132,7 +137,15 @@ public class ObjectiveHUD : MonoBehaviour
         FindPhone();
         string escape = EscapeSteps(3, step2Done, out string distance);
 
-        Show($"{goal}\n{step1}\n{step2}\n{escape}", distance);
+        // Mientras falten generadores, la distancia apunta al generador sin cargar más cercano.
+        if (!allPowered && TryGetLocalPlayerPosition(out Vector3 playerPos)
+            && generatorGroup.TryGetNearestUnpowered(playerPos, out Vector3 genPos))
+        {
+            float dGen = DistanceToLocalPlayer(genPos);
+            if (dGen >= 0f) distance = $"DISTANCIA: {dGen:0} m";
+        }
+
+        Show($"{CollectionGoal}\n{step1}\n{step2}\n{escape}", distance);
     }
 
     // Hecho = verde, el que toca ahora = blanco, el que todavía no = gris.
@@ -207,6 +220,19 @@ public class ObjectiveHUD : MonoBehaviour
         return Mathf.Sqrt(dx * dx + dz * dz);
     }
 
+    //n
+    private bool TryGetLocalPlayerPosition(out Vector3 position)
+    {
+        position = default;
+        NetworkObject player = NetworkManager.Singleton != null
+            ? NetworkManager.Singleton.LocalClient?.PlayerObject
+            : null;
+        if (player == null) return false;
+
+        position = player.transform.position;
+        return true;
+    }
+
     // Objetivo genérico: si el mapa tiene teléfono de extracción, guía por fases
     // (panel -> llamar -> resistir -> zona segura). Si no, va directo a la zona segura.
     private void FindPhone()
@@ -250,6 +276,9 @@ public class ObjectiveHUD : MonoBehaviour
         bool callCurrent = active && hasPhone && panelDone && !called;
         bool zoneCurrent = active && (!hasPhone || called);
 
+        // Solo cuenta como "en la zona" si ya es la fase de la zona segura.
+        bool inZone = zoneCurrent && inside;
+
         var lines = new List<string>();
 
         if (hasPanel)
@@ -259,7 +288,7 @@ public class ObjectiveHUD : MonoBehaviour
             lines.Add(Step($"{n++}. Llamá al helicóptero para huir", called, callCurrent));
 
         string zoneText;
-        if (inside)
+        if (inZone)
             zoneText = $"{n}. Esperá a tu equipo en la zona segura";
         else if (hasPhone && phone.State == ExtractionPhone.ExtractionState.Requested)
         {
@@ -269,14 +298,19 @@ public class ObjectiveHUD : MonoBehaviour
         else
             zoneText = $"{n}. Andá a la zona segura y escapá";
 
-        lines.Add(Step(zoneText, false, zoneCurrent));
+        lines.Add(Step(zoneText, inZone, zoneCurrent));
 
         if (panelCurrent || callCurrent)
         {
-            float d = DistanceToLocalPlayer(phone.transform.position);
+            // Panel: distancia al panel. Llamar: distancia al teléfono.
+            Transform target = (panelCurrent && phone.PanelTransform != null)
+                ? phone.PanelTransform
+                : phone.transform;
+
+            float d = DistanceToLocalPlayer(target.position);
             if (d >= 0f) distance = $"DISTANCIA: {d:0} m";
         }
-        else if (zoneCurrent && hasZone && !inside)
+        else if (zoneCurrent && hasZone && !inZone)
         {
             distance = $"DISTANCIA: {zoneDist:0} m";
         }
