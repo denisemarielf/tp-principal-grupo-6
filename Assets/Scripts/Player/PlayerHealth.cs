@@ -79,6 +79,16 @@ public class PlayerHealth : NetworkBehaviour
     private Coroutine healthBoostRoutine;
     private Coroutine respawnRoutine;
 
+    // Lo que se apaga al morir; solo eso se restaura al revivir.
+    private readonly System.Collections.Generic.List<Renderer> hiddenRenderers =
+        new System.Collections.Generic.List<Renderer>();
+    private readonly System.Collections.Generic.List<Canvas> hiddenCanvases =
+        new System.Collections.Generic.List<Canvas>();
+    private readonly System.Collections.Generic.List<Collider> disabledColliders =
+        new System.Collections.Generic.List<Collider>();
+    private readonly System.Collections.Generic.List<CharacterController> hiddenControllers =
+        new System.Collections.Generic.List<CharacterController>();
+
     public float MaxHealth => maxHealth;
     public float CurrentHealth => currentHealth.Value;
     public bool IsDead => isDead.Value;
@@ -102,6 +112,10 @@ public class PlayerHealth : NetworkBehaviour
         currentHealth.OnValueChanged += OnHealthValueChanged;
         isDead.OnValueChanged += OnDeadValueChanged;
         networkMaxHealth.OnValueChanged += OnMaxHealthChanged;
+
+        // Para quien entra tarde y el jugador ya esta muerto.
+        if (isDead.Value)
+            SetBodyVisible(false);
 
         if (IsServer)
         {
@@ -380,10 +394,92 @@ public class PlayerHealth : NetworkBehaviour
             PlayHealSound();
     }
 
+    // Muerto: sin modelo, sin barra de vida en el mundo y sin colisiones. Vivo: todo vuelve como estaba.
+    private void SetBodyVisible(bool visible)
+    {
+        if (!visible)
+        {
+            if (hiddenRenderers.Count > 0 || hiddenCanvases.Count > 0
+                || disabledColliders.Count > 0 || hiddenControllers.Count > 0)
+                return; // ya esta oculto
+
+            foreach (Renderer r in GetComponentsInChildren<Renderer>(false))
+            {
+                if (r == null || !r.enabled)
+                    continue;
+
+                r.enabled = false;
+                hiddenRenderers.Add(r);
+            }
+
+            // Barras de vida y demas UI flotante sobre el personaje.
+            foreach (Canvas c in GetComponentsInChildren<Canvas>(false))
+            {
+                if (c == null || !c.enabled || c.renderMode != RenderMode.WorldSpace)
+                    continue;
+
+                c.enabled = false;
+                hiddenCanvases.Add(c);
+            }
+
+            foreach (Collider col in GetComponentsInChildren<Collider>(false))
+            {
+                if (col == null || !col.enabled)
+                    continue;
+
+                // El CharacterController no se desactiva (PMovement lo sigue moviendo por la gravedad):
+                // solo se le saca la deteccion de colisiones para que nadie choque con el.
+                CharacterController controller = col as CharacterController;
+                if (controller != null)
+                {
+                    if (controller.detectCollisions)
+                    {
+                        controller.detectCollisions = false;
+                        hiddenControllers.Add(controller);
+                    }
+                    continue;
+                }
+
+                col.enabled = false;
+                disabledColliders.Add(col);
+            }
+            return;
+        }
+
+        foreach (Renderer r in hiddenRenderers)
+        {
+            if (r != null)
+                r.enabled = true;
+        }
+        hiddenRenderers.Clear();
+
+        foreach (Canvas c in hiddenCanvases)
+        {
+            if (c != null)
+                c.enabled = true;
+        }
+        hiddenCanvases.Clear();
+
+        foreach (Collider col in disabledColliders)
+        {
+            if (col != null)
+                col.enabled = true;
+        }
+        disabledColliders.Clear();
+
+        foreach (CharacterController controller in hiddenControllers)
+        {
+            if (controller != null)
+                controller.detectCollisions = true;
+        }
+        hiddenControllers.Clear();
+    }
+
     private void OnDeadValueChanged(bool previous, bool current)
     {
         if (current)
         {
+            SetBodyVisible(false);
             PlayDeathSound();
 
             // El dueño deja de controlar al personaje; la gravedad de PMovement sigue aplicandose.
@@ -404,6 +500,8 @@ public class PlayerHealth : NetworkBehaviour
         }
 
         // Revive
+        SetBodyVisible(true);
+
         if (IsOwner)
         {
             PlayerInput playerInput = GetComponent<PlayerInput>();
