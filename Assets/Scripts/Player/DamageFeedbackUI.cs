@@ -2,11 +2,12 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Flash rojo (viñeta) cuando el jugador local recibe daño.
+// Flash (viñeta) cuando el jugador local recibe daño. Rojo por defecto, verde si el daño es de acido.
 // Ponelo en el prefab del Player, en el mismo objeto que PlayerHealth.
 public class DamageFeedbackUI : NetworkBehaviour
 {
-    [SerializeField] private Color color = new Color(0.8f, 0f, 0f, 1f);
+    [SerializeField] private Color color = new Color(0.8f, 0f, 0f, 1f);          // daño generico
+    [SerializeField] private Color acidColor = new Color(0.3f, 0.85f, 0.05f, 1f); // daño de acido
     [SerializeField] private float maxAlpha = 0.85f;
     [SerializeField] private float fadeSpeed = 1.8f;   // mayor = se va mas rapido
     [SerializeField] private int sortingOrder = 20;    // bajalo si tapa tu GameOverUI
@@ -14,6 +15,7 @@ public class DamageFeedbackUI : NetworkBehaviour
     private PlayerHealth health;
     private Image overlay;
     private float alpha;
+    private Color currentTint;
 
     public override void OnNetworkSpawn()
     {
@@ -21,21 +23,24 @@ public class DamageFeedbackUI : NetworkBehaviour
 
         health = GetComponent<PlayerHealth>();
         if (health != null)
-            health.DamageTaken += OnDamage;
+            health.DamageTakenTyped += OnDamage;
 
+        currentTint = color;
         BuildOverlay();
     }
 
     public override void OnNetworkDespawn()
     {
         if (health != null)
-            health.DamageTaken -= OnDamage;
+            health.DamageTakenTyped -= OnDamage;
         if (overlay != null)
             Destroy(overlay.canvas.gameObject);
     }
 
-    private void OnDamage(float damage)
+    private void OnDamage(float damage, DamageKind kind)
     {
+        currentTint = kind == DamageKind.Acid ? acidColor : color;
+
         float hit = Mathf.Lerp(0.45f, maxAlpha, Mathf.Clamp01(damage / 40f));
         alpha = Mathf.Max(alpha, hit);
     }
@@ -45,7 +50,7 @@ public class DamageFeedbackUI : NetworkBehaviour
         if (overlay == null) return;
 
         alpha = Mathf.MoveTowards(alpha, 0f, fadeSpeed * Time.deltaTime);
-        Color c = Color.white;
+        Color c = currentTint;
         c.a = alpha;
         overlay.color = c;
     }
@@ -70,7 +75,7 @@ public class DamageFeedbackUI : NetworkBehaviour
         rt.offsetMin = rt.offsetMax = Vector2.zero;
     }
 
-    // Rojo en los bordes, casi transparente en el centro.
+    // Borde opaco, casi transparente en el centro. Es blanca: el color se aplica en Image.color.
     private Sprite CreateVignetteSprite()
     {
         const int size = 128;
@@ -86,7 +91,7 @@ public class DamageFeedbackUI : NetworkBehaviour
                 Vector2 p = new Vector2(x / (size - 1f), y / (size - 1f)) * 2f - Vector2.one;
                 float d = Mathf.Clamp01(p.magnitude / 1.2f);
                 float a = Mathf.Lerp(0.15f, 1f, Mathf.SmoothStep(0f, 1f, d));
-                tex.SetPixel(x, y, new Color(color.r, color.g, color.b, a));
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
             }
         }
         tex.Apply();

@@ -37,6 +37,9 @@ public class WeaponPresentation : MonoBehaviour
         ownerUiActive = true;
         StartCoroutine(BuscarAmmoUI());
         SceneManager.sceneLoaded += OnSceneLoaded;
+
+        if (GetComponent<WeaponSlotHUD>() == null)
+            gameObject.AddComponent<WeaponSlotHUD>();
     }
 
     public void StopOwnerUI()

@@ -66,6 +66,57 @@ public static class GameSessionManager
         return true;
     }
 
+    // Solo el host. Vuelve a cargar el nivel actual para todos los conectados, sin pasar por el menu:
+    // la sala y la conexion siguen igual, y se mantienen el modo y la dificultad de la partida.
+    // Los personajes se destruyen con la escena (SpawnAsPlayerObject con destroyWithScene = true) y
+    // OnGameSceneLoaded los vuelve a crear, igual que al pasar de nivel.
+    public static bool RestartMatch()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null || !networkManager.IsServer || !networkManager.IsListening) return false;
+
+        return StartGame(SceneManager.GetActiveScene().name);
+    }
+
+    // Solo el host. Lleva a todos los jugadores de vuelta al lobby de la MISMA sala: no se apaga la red,
+    // se carga la escena del menu por Netcode. Ahi el host puede elegir otro mapa, modo o dificultad
+    // y volver a iniciar con la gente que ya esta conectada.
+    public static bool ReturnToLobby()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null || !networkManager.IsServer || !networkManager.IsListening) return false;
+
+        // Los objetos de red creados durante la partida (enemigos, pickups...) no tienen que viajar al lobby:
+        // si se crearon sin destroyWithScene, Netcode los conserva al cambiar de escena.
+        foreach (NetworkObject spawned in new List<NetworkObject>(networkManager.SpawnManager.SpawnedObjectsList))
+        {
+            if (spawned == null || !spawned.IsSpawned || spawned.IsPlayerObject) continue;
+            if (spawned.IsSceneObject == true) continue; // los de escena se van con la escena
+
+            spawned.Despawn(true);
+        }
+
+        SceneEventProgressStatus status = networkManager.SceneManager.LoadScene(MainMenuSceneName, LoadSceneMode.Single);
+        if (status != SceneEventProgressStatus.Started)
+        {
+            Debug.LogError($"GameSessionManager: no se pudo volver al lobby ({status}). ¿'{MainMenuSceneName}' esta en Build Settings?");
+            return false;
+        }
+
+        return true;
+    }
+
+    // Lo llama el menu en TODAS las maquinas al aparecer con la sala todavia conectada: descarta el estado
+    // de la partida anterior y vuelve a aceptar jugadores nuevos mientras la sala esta en el lobby.
+    public static void PrepareLobbyReturn()
+    {
+        gameStarted = false;
+        MatchSettings.Reset();
+        PlayerCarryOver.Clear();
+        SavedGameLoader.Clear();
+        CurrentGame.Clear();
+    }
+
     // Apaga la red, descarta el NetworkManager persistente (MainMenu trae el suyo) y carga el menu.
     public static void ReturnToMainMenu()
     {

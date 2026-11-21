@@ -22,6 +22,7 @@ public class MeleeLogic : EquippableWeapon
     public ProceduralMeleeAnimation proceduralAnimation; // opcional: armas sin animaciones
     private bool attackLocked;
     private bool attackStarted;
+    private CameraControllerFPS camController;
     private float attackLockTime;
     public override Sprite HudIcon => hudIcon;
     public override void SetEquipped(bool equipped)
@@ -102,7 +103,12 @@ public class MeleeLogic : EquippableWeapon
         PlaySwingLocal();
 
         Transform o = attackOrigin != null ? attackOrigin : transform;
-        AttackServerRpc(o.position, o.forward);
+        if (camController == null && attackOrigin != null)
+            camController = attackOrigin.GetComponentInParent<CameraControllerFPS>();
+
+        // En tercera persona la camara esta ~3m detras del cuerpo: el golpe sale desde los ojos.
+        Vector3 origin = camController != null ? camController.EyeWorldPosition : o.position;
+        AttackServerRpc(origin, o.forward);
         return true;
     }
 

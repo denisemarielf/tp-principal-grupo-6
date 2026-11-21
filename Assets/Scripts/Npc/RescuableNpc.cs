@@ -163,6 +163,53 @@ public class RescuableNpc : NetworkBehaviour
             currentHealth.Value = maxHealth;
             StartCoroutine(EnableAgentWhenNavMeshReady());
         }
+
+        IgnoreAllPlayers();
+    }
+
+    // El capsule del civil no debe frenar al jugador. Los zombies y el NavMesh no cambian.
+    public static void IgnorePlayer(Character player)
+    {
+        if (player == null)
+            return;
+
+        for (int i = 0; i < All.Count; i++)
+        {
+            RescuableNpc npc = All[i];
+            if (npc != null)
+                npc.IgnorePlayerColliders(player);
+        }
+    }
+
+    private void IgnoreAllPlayers()
+    {
+        Character[] players = FindObjectsByType<Character>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < players.Length; i++)
+            IgnorePlayerColliders(players[i]);
+    }
+
+    private void IgnorePlayerColliders(Character player)
+    {
+        if (player == null)
+            return;
+
+        Collider[] npcColliders = GetComponents<Collider>();
+        Collider[] playerColliders = player.GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < npcColliders.Length; i++)
+        {
+            Collider npcCollider = npcColliders[i];
+            if (npcCollider == null || npcCollider.isTrigger)
+                continue;
+
+            for (int j = 0; j < playerColliders.Length; j++)
+            {
+                Collider playerCollider = playerColliders[j];
+                if (playerCollider == null || playerCollider.isTrigger)
+                    continue;
+
+                Physics.IgnoreCollision(npcCollider, playerCollider, true);
+            }
+        }
     }
 
     public override void OnNetworkDespawn()

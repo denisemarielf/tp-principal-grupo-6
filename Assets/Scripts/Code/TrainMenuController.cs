@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -28,6 +29,15 @@ public class TrainMenuController : NetworkBehaviour
     [SerializeField] private Vector2 hornPitchRange = new Vector2(0.95f, 1.05f);
     [SerializeField] private float fadeTime = 1.5f;
     [SerializeField] private float movingMaxVolume = 1f;
+
+    [Header("Daño")]
+    [SerializeField] private float damage = 1000f;
+    [SerializeField] private LayerMask playerMask;                            // capa del jugador
+    [SerializeField] private Vector3 hitBoxCenter = new Vector3(0, 1.5f, 0);  // local al tren
+    [SerializeField] private Vector3 hitBoxSize = new Vector3(3f, 3f, 20f);   // ajustalo al modelo
+
+    private readonly Collider[] hitBuffer = new Collider[16];
+    private readonly HashSet<ulong> hitThisRun = new();
 
     [Header("Rotación")]
     [SerializeField] private Vector3 rotationOffset = Vector3.zero;
@@ -164,6 +174,8 @@ public class TrainMenuController : NetworkBehaviour
         movingSource.transform.position = pos;
         hornSource.transform.position = pos;
 
+        if (IsServer && IsSpawned) CheckPlayerHits();
+
         // Fade in al salir, fade out al llegar
         float distFromStart = t * length;
         float distToEnd = (1f - t) * length;
@@ -180,6 +192,7 @@ public class TrainMenuController : NetworkBehaviour
 
     private void BeginLocalRun(Transform from, Transform to, Vector3 vec, float t)
     {
+        hitThisRun.Clear();
         trainActive = true;
         train.position = from.position;
         train.rotation = Quaternion.LookRotation(vec.normalized) * Quaternion.Euler(rotationOffset);
@@ -212,5 +225,29 @@ public class TrainMenuController : NetworkBehaviour
         if (hornClips == null || index < 0 || index >= hornClips.Length) return;
         hornSource.pitch = Random.Range(hornPitchRange.x, hornPitchRange.y);
         hornSource.PlayOneShot(hornClips[index]);
+    }
+    private void CheckPlayerHits()
+    {
+        Vector3 center = train.TransformPoint(hitBoxCenter);
+        int count = Physics.OverlapBoxNonAlloc(
+            center, hitBoxSize * 0.5f, hitBuffer, train.rotation,
+            playerMask, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < count; i++)
+        {
+            PlayerHealth health = hitBuffer[i].GetComponentInParent<PlayerHealth>();
+            if (health == null) continue;
+            if (!hitThisRun.Add(health.NetworkObjectId)) continue; // ya golpeado en este recorrido
+
+            health.TakeDamage(damage);
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (train == null) return;
+        Gizmos.color = Color.red;
+        Gizmos.matrix = Matrix4x4.TRS(train.TransformPoint(hitBoxCenter), train.rotation, Vector3.one);
+        Gizmos.DrawWireCube(Vector3.zero, hitBoxSize);
     }
 }

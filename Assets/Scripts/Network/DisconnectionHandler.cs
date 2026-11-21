@@ -37,6 +37,9 @@ public class DisconnectionHandler : MonoBehaviour
     private bool leavingToMenu; // candado contra dobles retornos
 
     private bool HasNoticeUI => noticePanel != null || noticeText != null;
+    private bool styledNoticeBuilt;
+    private GameObject styledNoticeRoot;
+    private Camera fallbackCamera;
 
     private void Start()
     {
@@ -67,17 +70,25 @@ public class DisconnectionHandler : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (networkManager == null) return;
+        if (networkManager != null)
+        {
+            networkManager.OnServerStarted -= OnSessionStarted;
+            networkManager.OnClientStarted -= OnSessionStarted;
+            networkManager.OnConnectionEvent -= OnConnectionEvent;
+            networkManager.OnTransportFailure -= OnTransportFailure;
+        }
 
-        networkManager.OnServerStarted -= OnSessionStarted;
-        networkManager.OnClientStarted -= OnSessionStarted;
-        networkManager.OnConnectionEvent -= OnConnectionEvent;
-        networkManager.OnTransportFailure -= OnTransportFailure;
+        if (styledNoticeRoot != null)
+            Destroy(styledNoticeRoot);
+        if (fallbackCamera != null)
+            Destroy(fallbackCamera.gameObject);
     }
 
     // Prepara el panel por codigo para no depender del Inspector.
     private void SetupUI()
     {
+        EnsureStyledNotice();
+
         if (noticePanel == null) return;
 
         // Canvas propio con orden alto: el aviso siempre queda por encima del HUD y otros paneles.
@@ -100,6 +111,156 @@ public class DisconnectionHandler : MonoBehaviour
             acceptButton.onClick.RemoveListener(DismissNotice);
             acceptButton.onClick.AddListener(DismissNotice);
         }
+    }
+
+    // El panel de escena es una franja clara. Este overlay usa la misma paleta que el menú.
+    private void EnsureStyledNotice()
+    {
+        if (styledNoticeBuilt)
+            return;
+
+        styledNoticeBuilt = true;
+
+        if (noticePanel != null)
+            noticePanel.SetActive(false);
+
+        styledNoticeRoot = new GameObject("AvisoDesconexion", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(CanvasGroup));
+        styledNoticeRoot.transform.SetParent(null, false);
+
+        Canvas canvas = styledNoticeRoot.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = noticeSortingOrder;
+
+        CanvasScaler scaler = styledNoticeRoot.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        CanvasGroup group = styledNoticeRoot.GetComponent<CanvasGroup>();
+
+        RectTransform rootRect = styledNoticeRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+
+        Image dim = CreateNoticeImage(styledNoticeRoot.transform, "Fondo", new Color(0.02f, 0.02f, 0.025f, 0.78f));
+        Stretch(dim.rectTransform);
+
+        Image card = CreateNoticeImage(styledNoticeRoot.transform, "Tarjeta", new Color(0.03f, 0.035f, 0.04f, 0.94f));
+        RectTransform cardRect = card.rectTransform;
+        cardRect.anchorMin = cardRect.anchorMax = new Vector2(0.5f, 0.5f);
+        cardRect.pivot = new Vector2(0.5f, 0.5f);
+        cardRect.sizeDelta = new Vector2(760f, 420f);
+
+        Image accent = CreateNoticeImage(card.transform, "Acento", new Color(0.80f, 0.12f, 0.12f, 1f));
+        RectTransform accentRect = accent.rectTransform;
+        accentRect.anchorMin = new Vector2(0f, 1f);
+        accentRect.anchorMax = new Vector2(0f, 1f);
+        accentRect.pivot = new Vector2(0f, 1f);
+        accentRect.anchoredPosition = new Vector2(0f, 0f);
+        accentRect.sizeDelta = new Vector2(8f, 420f);
+        accent.raycastTarget = false;
+
+        TMP_FontAsset titleFont = GeneradorMenuPrincipal.FuenteTituloActual;
+        if (titleFont == null)
+            titleFont = GeneradorMenuPrincipal.FuenteTextoActual;
+        if (titleFont == null)
+            titleFont = TMP_Settings.defaultFontAsset;
+
+        TMP_FontAsset bodyFont = GeneradorMenuPrincipal.FuenteTextoActual;
+        if (bodyFont == null)
+            bodyFont = TMP_Settings.defaultFontAsset;
+
+        TMP_Text title = CreateNoticeText(card.transform, "Titulo", 48f, new Color(0.95f, 0.25f, 0.15f, 1f), titleFont, FontStyles.Bold);
+        PlaceInCard(title.rectTransform, 36f, -36f, 64f);
+
+        TMP_Text body = CreateNoticeText(card.transform, "Mensaje", 26f, new Color(0.93f, 0.94f, 0.92f, 1f), bodyFont, FontStyles.Normal);
+        PlaceInCard(body.rectTransform, 36f, -120f, 120f);
+
+        TMP_Text countdown = CreateNoticeText(card.transform, "Cuenta", 22f, new Color(0.95f, 0.78f, 0.28f, 1f), bodyFont, FontStyles.Normal);
+        PlaceInCard(countdown.rectTransform, 36f, -250f, 40f);
+        countdown.gameObject.SetActive(false);
+
+        Button button = CreateNoticeButton(card.transform, "VOLVER AL MENÚ", bodyFont);
+        RectTransform buttonRect = button.GetComponent<RectTransform>();
+        buttonRect.anchorMin = new Vector2(0f, 0f);
+        buttonRect.anchorMax = new Vector2(1f, 0f);
+        buttonRect.pivot = new Vector2(0.5f, 0f);
+        buttonRect.offsetMin = new Vector2(36f, 36f);
+        buttonRect.offsetMax = new Vector2(-36f, 100f);
+        button.onClick.AddListener(DismissNotice);
+
+        noticePanel = styledNoticeRoot;
+        noticeGroup = group;
+        titleText = title;
+        noticeText = body;
+        countdownText = countdown;
+        acceptButton = button;
+    }
+
+    private static Image CreateNoticeImage(Transform parent, string name, Color color)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        Image image = go.GetComponent<Image>();
+        image.color = color;
+        return image;
+    }
+
+    private static TMP_Text CreateNoticeText(Transform parent, string name, float size, Color color, TMP_FontAsset font, FontStyles style)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
+        label.fontSize = size;
+        label.color = color;
+        label.fontStyle = style;
+        label.alignment = TextAlignmentOptions.TopLeft;
+        label.textWrappingMode = TextWrappingModes.Normal;
+        label.raycastTarget = false;
+        if (font != null)
+            label.font = font;
+        return label;
+    }
+
+    private static void PlaceInCard(RectTransform rect, float left, float top, float height)
+    {
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.offsetMin = new Vector2(left, top - height);
+        rect.offsetMax = new Vector2(-left, top);
+    }
+
+    private static Button CreateNoticeButton(Transform parent, string label, TMP_FontAsset font)
+    {
+        GameObject go = new GameObject("Boton", typeof(RectTransform), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+        Image image = go.GetComponent<Image>();
+        image.color = new Color(0.80f, 0.12f, 0.12f, 0.90f);
+
+        Button button = go.GetComponent<Button>();
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 0.85f, 0.8f, 1f);
+        colors.pressedColor = new Color(0.75f, 0.75f, 0.75f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        button.colors = colors;
+
+        TMP_Text text = CreateNoticeText(go.transform, "Texto", 26f, Color.white, font, FontStyles.Bold);
+        text.alignment = TextAlignmentOptions.Center;
+        Stretch(text.rectTransform);
+        text.text = label;
+        return button;
+    }
+
+    private static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
     }
 
     // ---------- API publica (botones) ----------
@@ -155,10 +316,7 @@ public class DisconnectionHandler : MonoBehaviour
                 }
                 else
                 {
-                    string reason = string.IsNullOrEmpty(manager.DisconnectReason)
-                        ? "El host cerró la partida o se perdió la conexión."
-                        : manager.DisconnectReason;
-                    EndSession("Host desconectado", reason);
+                    EndSession("Host desconectado", "El host cerró la partida o se perdió la conexión.");
                 }
                 break;
 
@@ -242,10 +400,13 @@ public class DisconnectionHandler : MonoBehaviour
 
         ShowNotice(title, message, 0f);
         returnToMenuOnDismiss = true;
+        EnsureRenderingCamera();
 
         float remaining = autoReturnSeconds;
         while (returnToMenuOnDismiss)
         {
+            EnsureRenderingCamera();
+
             if (autoReturnSeconds > 0f)
             {
                 remaining -= Time.unscaledDeltaTime;
@@ -320,6 +481,30 @@ public class DisconnectionHandler : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+    }
+
+    // Unity muestra "No cameras rendering" si, al irse el host, se destruye la cámara del jugador.
+    private void EnsureRenderingCamera()
+    {
+        Camera[] cameras = Camera.allCameras;
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera cam = cameras[i];
+            if (cam != null && cam.enabled && cam != fallbackCamera)
+                return;
+        }
+
+        if (fallbackCamera == null)
+        {
+            GameObject cameraObject = new GameObject("DisconnectCamera");
+            fallbackCamera = cameraObject.AddComponent<Camera>();
+            fallbackCamera.clearFlags = CameraClearFlags.SolidColor;
+            fallbackCamera.backgroundColor = new Color(0.02f, 0.02f, 0.025f, 1f);
+            fallbackCamera.cullingMask = 0;
+            fallbackCamera.depth = -100;
+        }
+
+        fallbackCamera.enabled = true;
     }
 
     // ---------- Aviso en pantalla ----------

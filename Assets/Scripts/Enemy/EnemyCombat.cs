@@ -9,9 +9,21 @@ public class EnemyCombat : NetworkBehaviour
     public float attackRange = 1.5f;
     public float attackDuration = 1.2f; // solo de respaldo: la duracion real es la del clip de ataque elegido
 
+    [Header("Alcance vertical")]
+    [Tooltip("Diferencia maxima de altura (pies del zombie vs pies del objetivo) para poder golpear.")]
+    public float maxVerticalReach = 1.0f;
+    [Tooltip("Imprime en consola la altura medida. Activalo solo para depurar.")]
+    public bool debugVerticalReach = false;
+
+    [Header("Cono frontal")]
+    [Tooltip("El golpe solo conecta si el objetivo esta enfrente. 1 = exactamente de frente, 0.5 = cono de ~120 grados, 0 = semicirculo, -1 = desactivado.")]
+    [Range(-1f, 1f)] public float frontDotThreshold = 0.5f;
+
     [Header("Mordida")]
-    [Range(0f, 1f)] public float biteChance = 0.25f;     // probabilidad de morder en cada ciclo (solo contra jugadores)
-    public float biteDamage = 15f;                        // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
+    [Range(0f, 1f)] public float biteChance = 0.25f;
+    [Tooltip("Distancia maxima a la que puede agarrar y morder. Si el jugador esta mas lejos pero dentro de attackRange, hace un golpe normal.")]
+    public float biteRange = 1.0f;
+    public float biteDamage = 15f;                     // dano de la mordida (una sola vez por mordida). 0 = solo inmoviliza
 
     private bool difficultyApplied;
 
@@ -30,6 +42,7 @@ public class EnemyCombat : NetworkBehaviour
     private bool biteDamageDealt;
     private PMovement frozenTarget;
     private bool IsCommitted => Time.time < attackEndTime;
+
 
     // Aturdido por la reaccion al golpe: no se mueve mientras dura el clip.
     public bool IsStunned => Time.time < stunUntil;
@@ -177,9 +190,11 @@ public class EnemyCombat : NetworkBehaviour
 
         if (IsCommitted)
         {
-            // Si el jugador ya no esta al alcance en plena mordida, lo suelta y corta el ataque.
+            // Si el jugador ya no esta al alcance (o se subio fuera del alcance vertical) en plena mordida, lo suelta y corta el ataque.
             if (biteCycle && frozenTarget != null
-                && (currentTarget == null || DistanceTo(currentTarget) > attackRange * 1.2f))
+                && (currentTarget == null
+                    || DistanceTo(currentTarget) > biteRange * 1.2f
+                    || !WithinVerticalReach(currentTarget)))
             {
                 ReleaseBiteTarget();
                 attackEndTime = Time.time;
@@ -205,7 +220,9 @@ public class EnemyCombat : NetworkBehaviour
             float duration = attackDuration;
             PMovement movement = player.GetComponent<PMovement>();
             bool bite = enemyAnimation != null && enemyAnimation.HasBite
-                && movement != null && Random.value < biteChance;
+                && movement != null
+                && DistanceTo(player) <= biteRange
+                && Random.value < biteChance;
 
             if (bite)
             {
@@ -262,12 +279,62 @@ public class EnemyCombat : NetworkBehaviour
         return Vector3.Distance(self, closest);
     }
 
-    // Rango + linea de vision. Lo usan Ai y EnemyCombat para decidir lo mismo.
+    // Diferencia de altura entre los pies del zombie y los del objetivo. Si el jugador esta mucho mas arriba (o abajo), no llega.
+    private bool WithinVerticalReach(Transform target)
+    {
+        if (target == null) return false;
+
+        // Pies del objetivo: prioriza el CharacterController (cuerpo real del jugador), si no el primer collider, si no el pivote.
+        float targetFeetY;
+        CharacterController cc = target.GetComponent<CharacterController>();
+        if (cc != null)
+        {
+            targetFeetY = cc.bounds.min.y;
+        }
+        else
+        {
+            Collider body = target.GetComponentInChildren<Collider>();
+            targetFeetY = (body != null && !body.isTrigger)
+                ? body.bounds.min.y
+                : target.position.y;
+        }
+
+        // Piso donde esta parado el zombie: el pivote menos el Base Offset del NavMeshAgent.
+        float selfGroundY = transform.position.y - (navMeshAgent != null ? navMeshAgent.baseOffset : 0f);
+
+        // Solo bloquea si el objetivo esta MAS ARRIBA. Si esta a la misma altura o mas abajo, llega.
+        float heightAbove = targetFeetY - selfGroundY;
+
+        if (debugVerticalReach)
+            Debug.Log($"[{name}] heightAbove={heightAbove:F2} (max {maxVerticalReach}) targetFeetY={targetFeetY:F2} selfGroundY={selfGroundY:F2}");
+
+        return heightAbove <= maxVerticalReach;
+    }
+
+    // El objetivo tiene que estar enfrente del zombie (dentro del cono definido por frontDotThreshold).
+    private bool IsInFront(Transform target)
+    {
+        if (target == null) return false;
+
+        Vector3 toTarget = target.position - transform.position;
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude < 0.0001f) return true;   // practicamente encima: no hay direccion util
+
+        Vector3 forward = transform.forward;
+        forward.y = 0f;
+        if (forward.sqrMagnitude < 0.0001f) return true;
+
+        return Vector3.Dot(forward.normalized, toTarget.normalized) >= frontDotThreshold;
+    }
+
+    // Rango + altura + linea de vision. Lo usan Ai y EnemyCombat para decidir lo mismo.
+    // No incluye el cono frontal a proposito: el zombie se gira hacia el objetivo (FaceTarget) justo al empezar el ataque.
     public bool CanAttack(Transform target)
     {
         // El && corta antes: el raycast solo se hace cuando ya esta cerca (barato en hordas).
         return target != null
             && DistanceTo(target) <= attackRange
+            && WithinVerticalReach(target)
             && HasLineOfSight(target);
     }
 
@@ -311,7 +378,15 @@ public class EnemyCombat : NetworkBehaviour
 
         // La mordida pega una sola vez (el fallback de Update cubre el caso de que el clip no tenga evento).
         if (biteCycle && biteDamageDealt) return;
-        if (DistanceTo(currentTarget) > attackRange * 1.2f) return;
+
+        // La mordida usa su propio rango; el golpe normal sigue usando attackRange.
+        float maxRange = biteCycle ? biteRange : attackRange;
+        if (DistanceTo(currentTarget) > maxRange * 1.2f) return;
+
+        // El jugador pudo subirse o moverse a un costado/espalda durante el clip.
+        if (!WithinVerticalReach(currentTarget)) return;
+        if (!IsInFront(currentTarget)) return;
+
         if (!HasLineOfSight(currentTarget)) return;
 
         ApplyDamage(biteCycle ? biteDamage : attackDamage, biteCycle);
