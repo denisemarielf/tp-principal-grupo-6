@@ -147,6 +147,7 @@ public class EnemyCombat : NetworkBehaviour
     private void Update()
     {
         if (!IsServer) return;
+        if (LoadingScreen.EstaVisible) return;
         if (SafeZone.Current != null && SafeZone.Current.IsCompleted) return;
         if (SurvivalModeController.Current != null && SurvivalModeController.Current.IsFinished) return;
 

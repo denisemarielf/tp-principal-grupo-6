@@ -24,7 +24,7 @@ public class WeaponInputHandler : MonoBehaviour
     // Rueda: alterna las armas de las teclas 2 y 3 (slots 0 y 1). No enfunda.
     private void Update()
     {
-        if (switcher == null || !switcher.IsOwner || PauseMenuUI.IsOpen)
+        if (switcher == null || !switcher.IsOwner || PauseMenuUI.InputBloqueado)
             return;
         if (Cursor.lockState != CursorLockMode.Locked || Mouse.current == null)
             return;
@@ -59,7 +59,7 @@ public class WeaponInputHandler : MonoBehaviour
 
     public void OnShoot(InputAction.CallbackContext context)
     {
-        if (!switcher.IsOwner || !context.performed || PauseMenuUI.IsOpen) return;
+        if (!switcher.IsOwner || !context.performed || PauseMenuUI.InputBloqueado) return;
 
         switcher.CurrentWeapon?.OnShoot(context);
     }

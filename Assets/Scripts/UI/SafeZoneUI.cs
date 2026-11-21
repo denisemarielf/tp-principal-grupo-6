@@ -550,7 +550,8 @@ public class SafeZoneUI : MonoBehaviour
             PlayerCarryOver.CaptureLocalOwner(localPlayer.gameObject);
 
         PlayerCarryOver.CaptureServerState();
-        GameSessionManager.StartGame(sceneName);
+        // Al llegar a la Estacion se muestra su intro de vinetas en la pantalla de carga.
+        GameSessionManager.StartGame(sceneName, GameMode.None, sceneName == PlayerCarryOver.StationSceneName);
     }
 
     // Para el boton "Volver al menu" del panel.

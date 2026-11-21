@@ -18,6 +18,7 @@ using UnityEngine.UI;
 public class PauseMenuUI : MonoBehaviour
 {
     public static bool IsOpen { get; private set; }
+    public static bool InputBloqueado => IsOpen || LoadingScreen.EstaVisible;
 
     // ---------- diseño (mismos valores que el menú principal) ----------
     private const float LeftMargin = 120f;

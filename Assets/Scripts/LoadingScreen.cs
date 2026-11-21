@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using TMPro;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -56,7 +58,7 @@ public class LoadingScreen : MonoBehaviour
 
     [Header("Tiempos")]
     [Tooltip("La pantalla se queda al menos este tiempo, aunque la escena cargue más rápido.")]
-    public float tiempoMinimo = 2f;
+    public float tiempoMinimo = 5f;
     [Tooltip("Seguro anti-cuelgue: si pasa este tiempo, se cierra igual.")]
     public float tiempoMaximo = 90f;
     [Tooltip("Velocidad máxima de llenado de la barra (1 = llenarse en 1 segundo).")]
@@ -64,12 +66,48 @@ public class LoadingScreen : MonoBehaviour
     public float fundidoEntrada = 0.25f;
     public float fundidoSalida = 0.5f;
 
+    [Header("Intro de vinetas (primer nivel, partida nueva)")]
+    [Tooltip("Carpeta dentro de Resources con vineta_1 ... vineta_N (PNG con transparencia, mismo lienzo).")]
+    public string carpetaVinetas = "IntroVinetas";
+    public int cantidadVinetas = 5;
+    [Tooltip("Intro de la Estacion de tren (grilla de 6 vinetas).")]
+    public string carpetaVinetasEstacion = "IntroEstacion";
+    public int cantidadVinetasEstacion = 6;
+    [Tooltip("Tiempo minimo de la pantalla de carga mientras dura la intro.")]
+    public float tiempoMinimoIntro = 6.5f;
+    public float inicioPrimeraVineta = 0.3f;
+    public float separacionVinetas = 0.8f;
+    public float duracionEntradaVineta = 0.65f;
+
     // Estilo (mismo que el menú)
     static readonly Color Rojo = new Color(0.80f, 0.12f, 0.12f, 1f);
     static readonly Color Vidrio = new Color(0.03f, 0.035f, 0.04f, 0.58f);
     static readonly Color Borde = new Color(1f, 1f, 1f, 0.10f);
     static readonly Color Gris = new Color(0.55f, 0.58f, 0.56f, 1f);
     static readonly Color ColorTexto = new Color(0.93f, 0.94f, 0.92f, 1f);
+
+    const string MensajeComenzar = "LoadingScreen.Comenzar";
+    static readonly Color BotonHover = new Color(0.95f, 0.22f, 0.22f, 1f);
+
+    // Desde donde entra cada vineta (fraccion del ancho y del alto de la pantalla).
+    static readonly Vector2[] EntradasVinetas =
+    {
+        new Vector2(-0.14f, 0f),
+        new Vector2(0f, 0.22f),
+        new Vector2(0.14f, 0f),
+        new Vector2(-0.12f, -0.2f),
+        new Vector2(0.14f, -0.2f)
+    };
+
+    static readonly Vector2[] EntradasEstacion =
+    {
+        new Vector2(-0.14f, 0f),
+        new Vector2(0f, 0.22f),
+        new Vector2(0.14f, 0f),
+        new Vector2(-0.14f, -0.12f),
+        new Vector2(0f, -0.22f),
+        new Vector2(0.14f, -0.12f)
+    };
 
     // UI
     GameObject raiz;
@@ -80,8 +118,25 @@ public class LoadingScreen : MonoBehaviour
     TextMeshProUGUI txtEstado;
     GameObject panelConsejo;
     RectTransform rellenoRect;
+    GameObject grupoCabecera;
+    RectTransform contenedorVinetas;
+    AspectRatioFitter ajusteVinetas;
+    RawImage[] imagenesVinetas;
+
+    GameObject botonComenzar;
+    RectTransform rtBoton;
+    Image imgBoton;
 
     // Estado
+    bool audioPausado;
+    bool cursorLiberado;
+    bool esperandoHost;
+    bool comenzarRecibido;
+    string escenaActual;
+    NetworkManager mensajeriaRegistrada;
+    bool introActiva;
+    bool esperandoIntro;
+    float introInicio;
     bool visible;
     bool saliendo;
     bool esPrueba;
@@ -95,6 +150,11 @@ public class LoadingScreen : MonoBehaviour
     AsyncOperation operacion;
     NetworkSceneManager suscrito;
 
+    static Texture2D[] texturasVinetas;
+    static string carpetaTexturas;
+    string carpetaActual;
+    int cantidadActual;
+    Vector2[] entradasActuales;
     static Sprite ultimoFondo;
     static Sprite degradadoArriba;
     static Sprite degradadoAbajo;
@@ -122,6 +182,8 @@ public class LoadingScreen : MonoBehaviour
 
     void OnDestroy()
     {
+        PausarAudio(false);
+
         if (suscrito != null)
             suscrito.OnSceneEvent -= AlEventoDeEscena;
 
@@ -136,8 +198,15 @@ public class LoadingScreen : MonoBehaviour
         if (!visible)
             return;
 
-        float dt = Time.unscaledDeltaTime;
+        // Un cuadro largo (carga de la escena) no tiene que saltearse la intro.
+        float dt = Mathf.Min(Time.unscaledDeltaTime, 0.1f);
         tiempo += dt;
+
+        if (esperandoIntro)
+            IntentarIntro();
+
+        if (introActiva)
+            AnimarVinetas(tiempo - introInicio);
 
         // Progreso real (0..1)
         float real;
@@ -163,14 +232,36 @@ public class LoadingScreen : MonoBehaviour
         // Cierre
         if (!saliendo)
         {
-            bool listo = todosTerminaron && llena && tiempo >= tiempoMinimo;
+            float minimo = introActiva ? Mathf.Max(tiempoMinimo, introInicio + tiempoMinimoIntro) : tiempoMinimo;
+            bool cargada = todosTerminaron && llena && tiempo >= minimo;
 
             NetworkManager nm = NetworkManager.Singleton;
             bool redCaida = !esPrueba && (nm == null || !nm.IsListening);
+            bool requiereHost = !esPrueba &&
+                !string.Equals(escenaActual, GameSessionManager.MainMenuSceneName, System.StringComparison.OrdinalIgnoreCase);
 
-            if (listo || redCaida || tiempo >= tiempoMaximo)
+            // Con todos cargados, el host decide cuando arranca el nivel.
+            esperandoHost = cargada && requiereHost && !redCaida;
+
+            if (esperandoHost && nm != null && nm.IsServer && ClickEnBoton())
+            {
+                EnviarComenzar(nm);
+                comenzarRecibido = true;
+                RestaurarCursor();
+            }
+
+            bool listo = cargada && (!requiereHost || comenzarRecibido);
+
+            if (listo || redCaida || (tiempo >= tiempoMaximo && !esperandoHost))
+            {
                 saliendo = true;
+                RestaurarCursor();
+                PausarAudio(false);
+            }
         }
+
+        if (esperandoHost && !saliendo)
+            MostrarIndicacionComenzar();
 
         float duracion = Mathf.Max(0.01f, saliendo ? fundidoSalida : fundidoEntrada);
         grupo.alpha = Mathf.MoveTowards(grupo.alpha, saliendo ? 0f : 1f, dt / duracion);
@@ -190,6 +281,12 @@ public class LoadingScreen : MonoBehaviour
         NetworkManager nm = NetworkManager.Singleton;
         NetworkSceneManager actual = nm != null ? nm.SceneManager : null;
 
+        if (nm != null && nm.IsListening && nm.CustomMessagingManager != null && nm != mensajeriaRegistrada)
+        {
+            nm.CustomMessagingManager.RegisterNamedMessageHandler(MensajeComenzar, AlComenzar);
+            mensajeriaRegistrada = nm;
+        }
+
         if (actual == suscrito)
             return;
 
@@ -200,6 +297,84 @@ public class LoadingScreen : MonoBehaviour
 
         if (suscrito != null)
             suscrito.OnSceneEvent += AlEventoDeEscena;
+    }
+
+    // Cliente: el host indico que arranca el nivel.
+    void AlComenzar(ulong remitente, FastBufferReader lector)
+    {
+        comenzarRecibido = true;
+    }
+
+    void EnviarComenzar(NetworkManager nm)
+    {
+        if (nm.CustomMessagingManager == null)
+            return;
+
+        foreach (ulong clientId in nm.ConnectedClientsIds)
+        {
+            if (clientId == NetworkManager.ServerClientId)
+                continue;
+
+            using (FastBufferWriter writer = new FastBufferWriter(1, Allocator.Temp))
+                nm.CustomMessagingManager.SendNamedMessage(MensajeComenzar, clientId, writer);
+        }
+    }
+
+    void MostrarIndicacionComenzar()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+        bool host = nm != null && nm.IsServer;
+        string texto = host ? "TODOS LOS JUGADORES CARGARON" : "ESPERANDO AL ANFITRION PARA COMENZAR";
+
+        if (txtEstado.text != texto)
+            txtEstado.text = texto;
+
+        if (!host)
+        {
+            float pulso = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 4f);
+            txtEstado.color = new Color(ColorTexto.r, ColorTexto.g, ColorTexto.b, pulso);
+            return;
+        }
+
+        // El juego ya bloqueo el cursor detras de la pantalla: se libera para poder usar el boton.
+        cursorLiberado = true;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        botonComenzar.SetActive(true);
+        imgBoton.color = MouseSobreBoton() ? BotonHover : Rojo;
+    }
+
+    bool MouseSobreBoton()
+    {
+        return Mouse.current != null &&
+            RectTransformUtility.RectangleContainsScreenPoint(rtBoton, Mouse.current.position.ReadValue(), null);
+    }
+
+    bool ClickEnBoton()
+    {
+        return botonComenzar.activeSelf && Mouse.current != null &&
+            Mouse.current.leftButton.wasPressedThisFrame && MouseSobreBoton();
+    }
+
+    void PausarAudio(bool pausar)
+    {
+        if (pausar == audioPausado)
+            return;
+
+        audioPausado = pausar;
+        AudioListener.pause = pausar;
+    }
+
+    // Vuelve al estado normal de juego: cursor bloqueado y oculto.
+    void RestaurarCursor()
+    {
+        if (!cursorLiberado)
+            return;
+
+        cursorLiberado = false;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void AlEventoDeEscena(SceneEvent e)
@@ -231,6 +406,20 @@ public class LoadingScreen : MonoBehaviour
     void Mostrar(string escena, bool prueba)
     {
         esPrueba = prueba;
+        escenaActual = escena;
+        esperandoHost = false;
+        comenzarRecibido = false;
+        cursorLiberado = false;
+        botonComenzar.SetActive(false);
+        txtEstado.color = ColorTexto;
+
+        // Nada del nivel tiene que sonar hasta que el host inicie la partida.
+        PausarAudio(!prueba &&
+            !string.Equals(escena, GameSessionManager.MainMenuSceneName, System.StringComparison.OrdinalIgnoreCase));
+        introActiva = false;
+        esperandoIntro = !prueba;
+        contenedorVinetas.gameObject.SetActive(false);
+        grupoCabecera.SetActive(true);
         operacion = null;
         todosTerminaron = false;
         saliendo = false;
@@ -249,14 +438,170 @@ public class LoadingScreen : MonoBehaviour
 
         raiz.SetActive(true);
         visible = true;
+
+        if (esperandoIntro)
+        {
+            if (string.Equals(escena, PlayerCarryOver.SuburbSceneName, System.StringComparison.OrdinalIgnoreCase) ||
+                PlayerCarryOver.HasStationIntro(escena))
+            {
+                ElegirIntro(escena);
+                IntentarIntro();
+            }
+            else
+            {
+                MatchSettings.ConsumeIntro();
+                esperandoIntro = false;
+            }
+        }
     }
 
     void Ocultar()
     {
+        RestaurarCursor();
+        PausarAudio(false);
         visible = false;
         saliendo = false;
+        introActiva = false;
+        esperandoIntro = false;
         operacion = null;
         raiz.SetActive(false);
+    }
+
+    [ContextMenu("Probar intro de vinetas (en Play)")]
+    void ProbarIntro()
+    {
+        if (!Application.isPlaying)
+            return;
+
+        Mostrar(PlayerCarryOver.SuburbSceneName, true);
+        todosTerminaron = true;
+        ElegirIntro(PlayerCarryOver.SuburbSceneName);
+        IniciarIntro();
+    }
+
+    [ContextMenu("Probar intro de la estacion (en Play)")]
+    void ProbarIntroEstacion()
+    {
+        if (!Application.isPlaying)
+            return;
+
+        Mostrar(PlayerCarryOver.StationSceneName, true);
+        todosTerminaron = true;
+        ElegirIntro(PlayerCarryOver.StationSceneName);
+        IniciarIntro();
+    }
+
+    void ElegirIntro(string escena)
+    {
+        if (PlayerCarryOver.HasStationIntro(escena))
+        {
+            carpetaActual = carpetaVinetasEstacion;
+            cantidadActual = cantidadVinetasEstacion;
+            entradasActuales = EntradasEstacion;
+        }
+        else
+        {
+            carpetaActual = carpetaVinetas;
+            cantidadActual = cantidadVinetas;
+            entradasActuales = EntradasVinetas;
+        }
+    }
+
+    // ============================================================
+    // INTRO DE VINETAS
+    // ============================================================
+
+    // El aviso del host puede llegar un instante despues del evento de escena en los clientes.
+    void IntentarIntro()
+    {
+        if (MatchSettings.ConsumeIntro())
+        {
+            esperandoIntro = false;
+            IniciarIntro();
+        }
+        else if (tiempo > 1.5f)
+        {
+            esperandoIntro = false;
+        }
+    }
+
+    void IniciarIntro()
+    {
+        if (!PrepararVinetas())
+            return;
+
+        introActiva = true;
+        introInicio = tiempo;
+
+        imgFondo.gameObject.SetActive(false);
+        grupoCabecera.SetActive(false);
+        contenedorVinetas.gameObject.SetActive(true);
+        AnimarVinetas(0f);
+    }
+
+    bool PrepararVinetas()
+    {
+        int n = Mathf.Max(1, cantidadActual);
+
+        if (texturasVinetas == null || texturasVinetas.Length != n || carpetaTexturas != carpetaActual)
+        {
+            var cargadas = new Texture2D[n];
+            for (int i = 0; i < n; i++)
+            {
+                cargadas[i] = Resources.Load<Texture2D>(carpetaActual + "/vineta_" + (i + 1));
+                if (cargadas[i] == null)
+                {
+                    Debug.LogWarning("LoadingScreen: falta Resources/" + carpetaActual + "/vineta_" + (i + 1));
+                    return false;
+                }
+            }
+            texturasVinetas = cargadas;
+            carpetaTexturas = carpetaActual;
+        }
+
+        if (imagenesVinetas == null || imagenesVinetas.Length != n)
+        {
+            if (imagenesVinetas != null)
+            {
+                foreach (RawImage vieja in imagenesVinetas)
+                    if (vieja != null) Destroy(vieja.gameObject);
+            }
+
+            imagenesVinetas = new RawImage[n];
+            for (int i = 0; i < n; i++)
+            {
+                RectTransform rt = Crear("Vineta_" + (i + 1), contenedorVinetas);
+                Estirar(rt);
+                RawImage img = rt.gameObject.AddComponent<RawImage>();
+                img.raycastTarget = false;
+                imagenesVinetas[i] = img;
+            }
+        }
+
+        for (int i = 0; i < n; i++)
+            imagenesVinetas[i].texture = texturasVinetas[i];
+
+        ajusteVinetas.aspectRatio = texturasVinetas[0].width / (float)texturasVinetas[0].height;
+        return true;
+    }
+
+    // Cada vineta entra desde su lado, se acomoda y queda en su lugar.
+    void AnimarVinetas(float t)
+    {
+        Vector2 area = ((RectTransform)raiz.transform).rect.size;
+
+        for (int i = 0; i < imagenesVinetas.Length; i++)
+        {
+            float inicio = inicioPrimeraVineta + i * separacionVinetas;
+            float k = Mathf.Clamp01((t - inicio) / Mathf.Max(0.01f, duracionEntradaVineta));
+            float suave = 1f - (1f - k) * (1f - k) * (1f - k);
+            Vector2 entrada = entradasActuales[i % entradasActuales.Length];
+
+            RawImage img = imagenesVinetas[i];
+            img.rectTransform.anchoredPosition = new Vector2(entrada.x * area.x, entrada.y * area.y) * (1f - suave);
+            img.rectTransform.localScale = Vector3.one * (1f + 0.06f * (1f - suave));
+            img.color = new Color(1f, 1f, 1f, Mathf.Clamp01(k * 2.5f));
+        }
     }
 
     [ContextMenu("Probar pantalla de carga (en Play)")]
@@ -391,8 +736,21 @@ public class LoadingScreen : MonoBehaviour
         fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
         fit.aspectRatio = 16f / 9f;
 
+        // Vinetas de la intro: arriba del fondo, debajo de los degradados
+        contenedorVinetas = Crear("Vinetas", raiz.transform);
+        Anclar(contenedorVinetas, V(0.5f, 0.5f), V(0.5f, 0.5f), V(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        ajusteVinetas = contenedorVinetas.gameObject.AddComponent<AspectRatioFitter>();
+        ajusteVinetas.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+        ajusteVinetas.aspectRatio = 1600f / 894f;
+        contenedorVinetas.gameObject.SetActive(false);
+
+        // Degradado superior y nombre del mapa: se ocultan durante la intro
+        RectTransform rtCabeceraMapa = Crear("Cabecera_Mapa", raiz.transform);
+        Estirar(rtCabeceraMapa);
+        grupoCabecera = rtCabeceraMapa.gameObject;
+
         // Degradados para que el texto se lea sobre cualquier imagen
-        Image sup = CrearImagen("Degradado_Superior", raiz.transform, new Color(0f, 0f, 0f, 0.85f));
+        Image sup = CrearImagen("Degradado_Superior", rtCabeceraMapa, new Color(0f, 0f, 0f, 0.85f));
         sup.sprite = Degradado(true);
         Anclar(sup.rectTransform, V(0, 1), V(1, 1), V(0.5f, 1), Vector2.zero, V(0, 360));
 
@@ -401,15 +759,15 @@ public class LoadingScreen : MonoBehaviour
         Anclar(inf.rectTransform, V(0, 0), V(1, 0), V(0.5f, 0), Vector2.zero, V(0, 420));
 
         // ---------- Arriba a la izquierda: nombre del mapa ----------
-        TextMeshProUGUI etiqueta = CrearTexto("Etiqueta", raiz.transform, "CARGANDO MAPA",
+        TextMeshProUGUI etiqueta = CrearTexto("Etiqueta", rtCabeceraMapa, "CARGANDO MAPA",
             22f, Gris, TextAlignmentOptions.TopLeft, fuenteTexto, 4f);
         Anclar(etiqueta.rectTransform, V(0, 1), V(0, 1), V(0, 1), V(120, -70), V(900, 34));
 
-        txtMapa = CrearTexto("Nombre_Mapa", raiz.transform, "",
+        txtMapa = CrearTexto("Nombre_Mapa", rtCabeceraMapa, "",
             88f, Color.white, TextAlignmentOptions.TopLeft, fuenteTitulo, 1f);
         Anclar(txtMapa.rectTransform, V(0, 1), V(0, 1), V(0, 1), V(120, -104), V(1400, 120));
 
-        Image lineaRoja = CrearImagen("Linea_Roja", raiz.transform, Rojo);
+        Image lineaRoja = CrearImagen("Linea_Roja", rtCabeceraMapa, Rojo);
         Anclar(lineaRoja.rectTransform, V(0, 1), V(0, 1), V(0, 1), V(120, -218), V(100, 4));
 
         // ---------- Abajo a la izquierda: consejos ----------
@@ -453,6 +811,18 @@ public class LoadingScreen : MonoBehaviour
         rellenoRect.anchorMax = V(0, 1);
         rellenoRect.offsetMin = Vector2.zero;
         rellenoRect.offsetMax = Vector2.zero;
+
+        // ---------- Boton para que el host inicie la partida ----------
+        imgBoton = CrearImagen("Boton_Comenzar", raiz.transform, Rojo);
+        rtBoton = imgBoton.rectTransform;
+        Anclar(rtBoton, V(1, 0), V(1, 0), V(1, 0), V(-120, 170), V(380, 76));
+
+        TextMeshProUGUI textoBoton = CrearTexto("Texto", rtBoton, "INICIAR PARTIDA",
+            32f, Color.white, TextAlignmentOptions.Center, fuenteTexto, 4f);
+        Estirar(textoBoton.rectTransform);
+
+        botonComenzar = rtBoton.gameObject;
+        botonComenzar.SetActive(false);
     }
 
     // ---------- helpers de UI ----------

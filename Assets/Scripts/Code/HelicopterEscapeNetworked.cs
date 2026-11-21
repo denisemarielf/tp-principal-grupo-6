@@ -72,6 +72,7 @@ public class HelicopterEscapeNetworked : NetworkBehaviour
     private State state = State.Idle;
 
     private bool arrivedEventFired;
+    private bool autoStartPendiente;
     private AudioSource rotorSource;
     private float audioTimer;
 
@@ -87,7 +88,8 @@ public class HelicopterEscapeNetworked : NetworkBehaviour
         // Cliente que entra tarde: si el vuelo ya empezó, arrancar el audio
         if (flightStartTime.Value >= 0.0) PlayRotorSound();
 
-        if (IsServer && playOnSpawn) StartArrival();
+        // Con playOnSpawn el vuelo espera a que se cierre la pantalla de carga (el host da inicio a la partida).
+        if (IsServer && playOnSpawn) autoStartPendiente = true;
     }
 
     public override void OnNetworkDespawn()
@@ -129,6 +131,12 @@ public class HelicopterEscapeNetworked : NetworkBehaviour
     private void Update()
     {
         if (!IsSpawned || startPoint == null || hoverPoint == null) return;
+
+        if (autoStartPendiente && !LoadingScreen.EstaVisible)
+        {
+            autoStartPendiente = false;
+            StartArrival();
+        }
 
         double elapsed = flightStartTime.Value < 0.0
             ? -1.0

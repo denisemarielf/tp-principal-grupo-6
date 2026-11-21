@@ -116,6 +116,7 @@ public class Ai : NetworkBehaviour
     private void Update()
     {
         if (!IsServer) return;
+        if (LoadingScreen.EstaVisible) return;
         if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
 
         if (aggroTimer > 0f)

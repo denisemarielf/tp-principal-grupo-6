@@ -319,6 +319,9 @@ public class AIDirector : MonoBehaviour
         if (!running)
             return;
 
+        if (LoadingScreen.EstaVisible)
+            return;
+
         float dt = Time.deltaTime;
 
         refreshTimer -= dt;

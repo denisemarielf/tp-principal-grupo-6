@@ -84,13 +84,13 @@ public class MeleeLogic : EquippableWeapon
         if (!IsOwner) return;
         UpdateAttackLock();
 
-        if (!isEquipped || PauseMenuUI.IsOpen) return;
+        if (!isEquipped || PauseMenuUI.InputBloqueado) return;
         if (isAutomatic && attackAction != null && attackAction.IsPressed())
             TryAttack();
     }
     public bool TryAttack()
     {
-        if (!IsOwner || !isEquipped || PauseMenuUI.IsOpen || !CanAttack) return false;
+        if (!IsOwner || !isEquipped || PauseMenuUI.InputBloqueado || !CanAttack) return false;
 
         nextLocalAttackTime = Time.time + attackCooldown;
         if (weaponAnimator != null)
