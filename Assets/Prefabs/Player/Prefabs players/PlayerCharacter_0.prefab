@@ -1440,6 +1440,10 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: b54b2039-8978-4638-9092-bdaca6352d8d
     m_ActionName: 'Player/InventoryPrev[/Keyboard/z]'
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 57f1e4ae-fe15-4653-8627-41081e9bf248
+    m_ActionName: 'Player/ViewObjetive[/Keyboard/tab]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: Player
@@ -1490,7 +1494,7 @@ MonoBehaviour:
   airAcceleration: 2
   friction: 6
   jumpHeight: 3.5
-  gravity: -17
+  gravity: -20
   sprintMultiplier: 1.6
   isSprinting: 0
   animator: {fileID: 2663431334178221259}
@@ -1511,9 +1515,12 @@ MonoBehaviour:
   localHud: {fileID: 7739054632452436582}
   extraLocalHud: []
   interactRange: 5
+  interactRayDistance: 6
+  interactAimRadius: 0.6
   pickupLayer:
     serializedVersion: 2
     m_Bits: 256
+  objectivePanel: {fileID: 0}
   playerNameText: {fileID: 872479686743807261}
 --- !u!114 &7712562877563550526
 MonoBehaviour:
@@ -1602,6 +1609,7 @@ MonoBehaviour:
   healSounds:
   - {fileID: 8300000, guid: 191792caeeadbf848ae310c991c851fe, type: 3}
   healVolume: 0.8
+  hitReactionCooldown: 0.8
 --- !u!82 &3910103281167729676
 AudioSource:
   m_ObjectHideFlags: 0
@@ -3072,6 +3080,7 @@ MonoBehaviour:
   visuals: {fileID: 7060779764537263821}
   presentation: {fileID: 4010765667292694362}
   pickupHandler: {fileID: 1829795104860405576}
+  armsRenderers: []
 --- !u!82 &7745916340032628152
 AudioSource:
   m_ObjectHideFlags: 0
@@ -4589,6 +4598,8 @@ MonoBehaviour:
     m_ColorSpace: -1
     m_NumColorKeys: 3
     m_NumAlphaKeys: 2
+  applyMenuStyle: 1
+  backgroundImage: {fileID: 0}
 --- !u!1 &5376685545025488097
 GameObject:
   m_ObjectHideFlags: 0
@@ -6821,9 +6832,23 @@ MonoBehaviour:
     cross_Hair: {fileID: 7351612596842849095}
     compact_Size: 70
     expanded_Size: 80
-    max_Size: 110
+    sprint_Size: 110
+    max_Spread_Size: 220
     size_Change_Speed: 10
-  shootPulseDuration: 0.15
+  hitMarker: {fileID: 0}
+  hitColor: {r: 1, g: 1, b: 1, a: 1}
+  killColor: {r: 1, g: 0.15, b: 0.1, a: 1}
+  hitMarkerDuration: 0.18
+  killMarkerDuration: 0.35
+  punchScale: 1.4
+  hitAudio: {fileID: 0}
+  hitSound: {fileID: 0}
+  killSound: {fileID: 0}
+  hitPitchRange: {x: 0.95, y: 1.08}
+  headshotColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  headshotPunchScale: 1.9
+  headshotSound: {fileID: 0}
+  headshotKillSound: {fileID: 0}
 --- !u!114 &6552821173577055497
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6855,6 +6880,7 @@ MonoBehaviour:
   rescueText: {fileID: 7187978948723125151}
   rescuePanel: {fileID: 0}
   levelCompletePanel: {fileID: 6232852666024054752}
+  applyMenuStyle: 1
 --- !u!1 &7797608464584795576
 GameObject:
   m_ObjectHideFlags: 0
@@ -8250,6 +8276,26 @@ MonoBehaviour:
   sensitivity: 7
   weaponPivot: {fileID: 29664896406910336}
   weaponSwitcher: {fileID: 3088416575911931480}
+  thirdPersonDistance: 3.2
+  thirdPersonOffset: {x: 0.45, y: 0.35, z: 0}
+  cameraCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  cameraRadius: 0.3
+  thirdPersonNearClip: 0.1
+  aimDistance: 1.8
+  aimOffset: {x: 0.6, y: 0.25, z: 0}
+  aimFovDelta: -12
+  movePullBack: 0.6
+  moveFovBoost: 7
+  referenceSpeed: 6
+  strafeRoll: 2.5
+  releaseSmoothTime: 0.18
+  hitPitch: 3.5
+  hitYaw: 2
+  hitRoll: 3
+  hitSpring: 120
+  hitDamping: 14
   networkPitch:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
