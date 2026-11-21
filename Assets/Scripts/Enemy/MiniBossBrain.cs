@@ -162,6 +162,16 @@ public class MiniBossBrain : NetworkBehaviour
             return;
         }
 
+        // Pooling: Die() deja el agente apagado y una accion cortada deja busy en true. Sin esto el jefe queda quieto.
+        agent.enabled = true;
+        busy = false;
+        running = false;
+        target = null;
+        searchTimer = 0f;
+        repathTimer = 0f;
+        nextRollTime = 0f;
+        nextAttackTime = 0f;
+
         agent.speed = walkSpeed;
         nextRunTime = Time.time + Random.Range(runCooldown.x, runCooldown.y);
         nextJumpTime = Time.time + 3f;
@@ -173,7 +183,25 @@ public class MiniBossBrain : NetworkBehaviour
         if (!agent.isOnNavMesh && NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5f, NavMesh.AllAreas))
             agent.Warp(hit.position);
 
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.ResetPath();
+        }
+
         RefreshTarget();
+    }
+
+    // Pooling: las corrutinas mueren con SetActive(false); este estado hay que limpiarlo a mano.
+    public override void OnNetworkDespawn()
+    {
+        StopAllCoroutines();
+        busy = false;
+        running = false;
+        target = null;
+
+        if (agent != null)
+            agent.enabled = false;
     }
 
     private bool Dead => health != null && health.IsDead();

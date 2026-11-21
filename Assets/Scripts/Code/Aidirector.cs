@@ -394,7 +394,7 @@ public class AIDirector : MonoBehaviour
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             EnemyHealth enemy = enemies[i];
-            if (enemy == null)
+            if (enemy == null || !enemy.IsSpawned)
             {
                 enemies.RemoveAt(i);
                 continue;
@@ -670,7 +670,7 @@ public class AIDirector : MonoBehaviour
     {
         for (int i = mobEnemies.Count - 1; i >= 0; i--)
         {
-            if (mobEnemies[i] == null || mobEnemies[i].IsDead())
+            if (mobEnemies[i] == null || !mobEnemies[i].IsSpawned || mobEnemies[i].IsDead())
                 mobEnemies.RemoveAt(i);
         }
 
@@ -681,7 +681,7 @@ public class AIDirector : MonoBehaviour
     {
         for (int i = miniBosses.Count - 1; i >= 0; i--)
         {
-            if (miniBosses[i] == null || miniBosses[i].IsDead())
+            if (miniBosses[i] == null || !miniBosses[i].IsSpawned || miniBosses[i].IsDead())
                 miniBosses.RemoveAt(i);
         }
 
@@ -1028,8 +1028,11 @@ public class AIDirector : MonoBehaviour
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             EnemyHealth enemy = enemies[i];
-            if (enemy == null)
+            if (enemy == null || !enemy.IsSpawned)
+            {
+                enemies.RemoveAt(i);
                 continue;
+            }
 
             Vector3 pos = enemy.transform.position;
             bool far = true;

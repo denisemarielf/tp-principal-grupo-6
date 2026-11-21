@@ -28,6 +28,20 @@ public class MiniBossHealthBar : MonoBehaviour
         Build();
     }
 
+    // Pooling: LateUpdate apaga la barra al morir y nadie la volvia a prender cuando el jefe se reusa.
+    private void OnEnable()
+    {
+        if (barRoot != null && !barRoot.gameObject.activeSelf)
+            barRoot.gameObject.SetActive(true);
+    }
+
+    // Al volver al pool: la proxima vida salta directo a su vida real en vez de interpolar desde la anterior.
+    private void OnDisable()
+    {
+        initialised = false;
+        shown = 1f;
+    }
+
     private void Build()
     {
         GameObject root = new GameObject("MiniBossHealthBar", typeof(RectTransform));

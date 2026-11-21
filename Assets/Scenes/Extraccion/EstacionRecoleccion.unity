@@ -26731,6 +26731,51 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
+--- !u!1 &574253300
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 574253302}
+  - component: {fileID: 574253301}
+  m_Layer: 0
+  m_Name: EnemyPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &574253301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574253300}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9851caababe493c4abbd4da3d8ce5de4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game::EnemyPool
+  prewarmPerPrefab: 0
+--- !u!4 &574253302
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574253300}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 334.438, y: 0, z: 252.81856}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &575132966
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -107935,8 +107980,8 @@ MonoBehaviour:
   maxMiniBossesPerWave: 2
   maxMiniBossesAlive: 3
   miniBossChance: 0.13
-  normalWeight: 0.7
-  fragilWeight: 0.1
+  normalWeight: 0.5
+  fragilWeight: 0.4
   resistenteWeight: 0.2
   peakIntensity: 0.85
   fadeIntensity: 0.25
@@ -635759,3 +635804,4 @@ SceneRoots:
   - {fileID: 4614154}
   - {fileID: 925552479}
   - {fileID: 1436198832}
+  - {fileID: 574253302}

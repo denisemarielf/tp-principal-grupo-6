@@ -121,7 +121,7 @@ public int BreakSecondsLeft => breakSecondsLeft.Value;
         for (int i = currentWave.Count - 1; i >= 0; i--)
         {
             EnemyHealth enemy = currentWave[i];
-            if (enemy == null)
+            if (enemy == null || !enemy.IsSpawned)
             {
                 currentWave.RemoveAt(i);
                 continue;

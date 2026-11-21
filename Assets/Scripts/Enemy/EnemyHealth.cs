@@ -140,10 +140,59 @@ public class EnemyHealth : NetworkBehaviour
             AudioSource.PlayClipAtPoint(clip, transform.position, deathVolume);
     }
 
+    private struct ChildPose
+    {
+        public Transform t;
+        public Vector3 pos;
+        public Quaternion rot;
+    }
+
+    private ChildPose[] childPoses;
+    private Collider bodyCollider;
+
+    private void Awake()
+    {
+        bodyCollider = GetComponent<Collider>();
+        childPoses = new ChildPose[transform.childCount];
+        for (int i = 0; i < childPoses.Length; i++)
+        {
+            Transform child = transform.GetChild(i);
+            childPoses[i] = new ChildPose { t = child, pos = child.localPosition, rot = child.localRotation };
+        }
+    }
+
+    // Pooling: deshace lo que dejo la muerte (collider, Ai, modelo movido por root motion, Animator).
+    private void ResetForReuse()
+    {
+        deathStarted = false;
+        pinToGround = false;
+        deathModel = null;
+        deathAnimator = null;
+        activeDeathClip = null;
+
+        if (bodyCollider != null)
+            bodyCollider.enabled = true;
+        if (ai != null)
+            ai.enabled = true;
+
+        foreach (ChildPose pose in childPoses)
+        {
+            pose.t.localPosition = pose.pos;
+            pose.t.localRotation = pose.rot;
+        }
+
+        foreach (Animator animator in GetComponentsInChildren<Animator>(true))
+        {
+            animator.applyRootMotion = false;
+            animator.Rebind();
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         ai = GetComponent<Ai>();
         enemyCombat = GetComponent<EnemyCombat>();
+        ResetForReuse();
         All.Add(this);
         isDead.OnValueChanged += OnDeadChanged;
 
@@ -152,7 +201,11 @@ public class EnemyHealth : NetworkBehaviour
         maxHealth = baseHealth * DifficultyTuning.HealthMul;
 
         if (IsServer)
+        {
             currentHealth.Value = maxHealth;
+            deathVariant.Value = 0;   // antes que isDead
+            isDead.Value = false;
+        }
 
         if (isDead.Value)
             PlayDeath();
