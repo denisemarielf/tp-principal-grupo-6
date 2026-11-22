@@ -22,6 +22,7 @@ public class ObjectiveHUD : MonoBehaviour
     [SerializeField] private GameObject distanceRow;
     [Tooltip("Opcional: CanvasGroup del panel para ocultar también el fondo.")]
     [SerializeField] private CanvasGroup panelGroup;
+    private GameObject panelObject;
     //n
     [Header("Escenas")]
     // Objetivo general de cada mapa: se cambia acá, por código.
@@ -60,6 +61,9 @@ public class ObjectiveHUD : MonoBehaviour
 
     private void Awake()
     {
+        // El panel completo (padre directo de la descripción).
+        if (objectiveDescription != null && objectiveDescription.transform.parent != null)
+            panelObject = objectiveDescription.transform.parent.gameObject;
         // Si falta asignar las filas en el Inspector, las busca solas.
         if (distanceRow == null && distanceText != null)
         {
@@ -97,8 +101,8 @@ public class ObjectiveHUD : MonoBehaviour
             UpdateZoneObjective(OfficesGoal);
         else if (scene == ExtractionSceneName)
             UpdateZoneObjective(ExtractionGoal);
-        else if (scene == SurvivalSceneName)
-            UpdateZoneObjective(SurvivalGoal);
+        else if (scene == SurvivalSceneName || scene == PlayerCarryOver.EasterEggSceneName)
+            Hide(); // en estos mapas no se muestra el objetivo    
         else if (scene == CollectionSceneName)
             UpdateStation();
         else
@@ -356,12 +360,15 @@ public class ObjectiveHUD : MonoBehaviour
         SetActive(titleRow != null ? titleRow : (objectiveTitle != null ? objectiveTitle.gameObject : null), false);
         SetActive(objectiveDescription != null ? objectiveDescription.gameObject : null, false);
         SetActive(distanceRow != null ? distanceRow : (distanceText != null ? distanceText.gameObject : null), false);
+        lastDescription = null;
     }
 
     private void SetPanelVisible(bool visible)
     {
         if (panelGroup != null)
             panelGroup.alpha = visible ? 1f : 0f;
+
+        SetActive(panelObject, visible);
     }
 
     private static void SetActive(GameObject go, bool active)

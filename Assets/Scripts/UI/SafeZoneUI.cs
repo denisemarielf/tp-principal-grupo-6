@@ -144,7 +144,7 @@ public class SafeZoneUI : MonoBehaviour
     private void UpdateRescueText()
     {
         SafeZone zone = SafeZone.Current;
-        bool show = zone != null && !zone.IsCompleted && zone.TotalNpcs > 0;
+        bool show = zone != null && !zone.IsCompleted && zone.TotalNpcs > 0 && !HideRescueInThisScene();
 
         // Si hay panel, se prende/apaga todo junto (texto + iconos).
         if (rescuePanel != null)
@@ -517,6 +517,12 @@ public class SafeZoneUI : MonoBehaviour
         return SceneManager.GetActiveScene().name == PlayerCarryOver.EasterEggSceneName;
     }
 
+    // Mapas donde no se muestra el panel de civiles y puntos.
+    private static bool HideRescueInThisScene()
+    {
+        string scene = SceneManager.GetActiveScene().name;
+        return scene == "SupervivenciaScene" || scene == PlayerCarryOver.EasterEggSceneName;
+    }
     private static bool HasNextScene()
     {
         return IsSuburbScene() || IsOfficesScene();
