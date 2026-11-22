@@ -265,6 +265,7 @@ public class GeneradorMenuPrincipal : MonoBehaviour
 
     void OnDestroy()
     {
+        GameOptions.Changed -= AplicarVolumenMusica;
         DesuscribirDeRed();
         DejarDeEscucharCargaLobby();
     }
@@ -279,6 +280,11 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         audioSourceMusica = gameObject.AddComponent<AudioSource>();
         audioSourceMusica.loop = true;
         audioSourceMusica.playOnAwake = false;
+
+        // Igual que MusicDirector: la musica lleva su propio volumen (general * musica) y no pasa por el listener.
+        audioSourceMusica.ignoreListenerVolume = true;
+        AplicarVolumenMusica();
+        GameOptions.Changed += AplicarVolumenMusica;
 
         audioSourceSFX = gameObject.AddComponent<AudioSource>();
         audioSourceSFX.loop = false;
@@ -298,6 +304,13 @@ public class GeneradorMenuPrincipal : MonoBehaviour
             audioSourceMusica.clip = musicaFondo;
             audioSourceMusica.Play();
         }
+    }
+
+
+    private void AplicarVolumenMusica()
+    {
+        if (audioSourceMusica != null)
+            audioSourceMusica.volume = GameOptions.MusicGain;
     }
 
 
