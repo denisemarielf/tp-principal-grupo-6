@@ -1,6 +1,4 @@
 
-
-
 using System.Collections;
 using NUnit.Framework;
 using Unity.Netcode;
@@ -25,7 +23,6 @@ public class EnemyCombatTests
         Assert.That(loadOperation, Is.Not.Null);
 
         yield return new WaitUntil(() => loadOperation.isDone);
-
         yield return null;
 
         // Esperar al NetworkManager.
@@ -48,7 +45,7 @@ public class EnemyCombatTests
         Assert.That(
             networkManager.IsListening,
             Is.False,
-            "El NetworkManager ya está escuchando. Revisar AutoHost."
+            "El NetworkManager ya está escuchando."
         );
 
         // Iniciar el Host.
@@ -73,37 +70,80 @@ public class EnemyCombatTests
             yield return null;
         }
 
-        // Esperar al jugador y al enemigo.
+        // Esperar a que Netcode procese la conexión del Host.
+        yield return null;
+        yield return null;
+
+        // Generar manualmente el jugador.
+        // El proyecto deshabilita el spawn automático mediante Connection Approval.
+
+        GameObject playerPrefab =
+            networkManager.NetworkConfig.PlayerPrefab;
+
+        Assert.That(
+            playerPrefab,
+            Is.Not.Null,
+            "El NetworkManager no tiene asignado el PlayerPrefab."
+        );
+
+        GameObject player = Object.Instantiate(
+            playerPrefab,
+            Vector3.zero,
+            Quaternion.identity
+        );
+
+        NetworkObject playerNetworkObject =
+            player.GetComponent<NetworkObject>();
+
+        Assert.That(
+            playerNetworkObject,
+            Is.Not.Null,
+            "El PlayerPrefab no tiene NetworkObject."
+        );
+
+        playerNetworkObject.SpawnAsPlayerObject(
+            NetworkManager.ServerClientId,
+            true
+        );
+
+        // Obtener el jugador generado.
+        playerObject =
+            networkManager.SpawnManager.GetLocalPlayerObject();
+
+        Assert.That(
+            playerObject,
+            Is.Not.Null,
+            "No se pudo generar el PlayerObject del Host."
+        );
+
+        playerHealth =
+            playerObject.GetComponent<PlayerHealth>();
+
+        Assert.That(
+            playerHealth,
+            Is.Not.Null,
+            "El jugador no tiene el componente PlayerHealth."
+        );
+
+        // Esperar al enemigo.
         timeout = Time.realtimeSinceStartup + 10f;
 
-        while (
-            networkManager.SpawnManager.GetLocalPlayerObject() == null ||
-            Object.FindFirstObjectByType<EnemyCombat>() == null
-        )
+        while (Object.FindFirstObjectByType<EnemyCombat>() == null)
         {
             Assert.Less(
                 Time.realtimeSinceStartup,
                 timeout,
-                "No se encontró el jugador o el enemigo."
+                "No se encontró EnemyCombat en TestScene."
             );
 
             yield return null;
         }
 
-        playerObject =
-            networkManager.SpawnManager.GetLocalPlayerObject();
+        enemy = Object.FindFirstObjectByType<EnemyCombat>();
 
-        playerHealth =
-            playerObject.GetComponent<PlayerHealth>();
-
-        enemy =
-            Object.FindFirstObjectByType<EnemyCombat>();
-
-        Assert.That(playerHealth, Is.Not.Null);
         Assert.That(enemy, Is.Not.Null);
         Assert.That(enemy.IsSpawned, Is.True);
 
-        // Comprobar que el enemigo siga existiendo.
         Assert.That(
             enemy.gameObject.activeInHierarchy,
             Is.True
@@ -161,9 +201,6 @@ public class EnemyCombatTests
             "El enemigo no debería dañar al jugador fuera del rango."
         );
     }
-
-
-    
 
     [UnityTearDown]
     public IEnumerator TearDown()
