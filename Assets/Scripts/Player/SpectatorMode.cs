@@ -59,7 +59,7 @@ public class SpectatorMode : MonoBehaviour
             return;
         }
 
-        if (!PauseMenuUI.IsOpen && Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
+        if (!PauseMenuUI.InputBloqueado && Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
             index = (index + 1) % living.Count;
 
         index = Mathf.Clamp(index, 0, living.Count - 1);
@@ -76,7 +76,7 @@ public class SpectatorMode : MonoBehaviour
             pitch = 15f;
         }
 
-        if (!PauseMenuUI.IsOpen)
+        if (!PauseMenuUI.InputBloqueado)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

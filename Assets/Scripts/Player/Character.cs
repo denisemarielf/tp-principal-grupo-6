@@ -246,7 +246,7 @@ public class Character : NetworkBehaviour
    
     public void OnUseItem(InputAction.CallbackContext context)
     {
-        if (!IsOwner || IsDead() || !context.performed || inventory == null) return;
+        if (!IsOwner || IsDead() || !context.performed || inventory == null || LoadingScreen.EstaVisible) return;
 
         inventory.RequestUseSlotServerRpc(inventory.SelectedSlot);
     }
@@ -284,7 +284,7 @@ public class Character : NetworkBehaviour
     public void OnInteraction(InputAction.CallbackContext context)
     {
        
-        if (!IsOwner || IsDead() || !context.performed) return;
+        if (!IsOwner || IsDead() || !context.performed || LoadingScreen.EstaVisible) return;
 
         if (FuelInteraction.TryInteract(transform.position)) return;
 

@@ -216,6 +216,7 @@ public class MiniBossBrain : NetworkBehaviour
     {
         if (!IsServer || !IsSpawned) return;
         if (Dead) return;
+        if (LoadingScreen.EstaVisible) return;
         if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
 
         if (GameFinished)

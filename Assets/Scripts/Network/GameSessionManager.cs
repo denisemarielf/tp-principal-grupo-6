@@ -41,7 +41,8 @@ public static class GameSessionManager
     // Solo el host. Carga la escena para todos los conectados; devuelve false si no se pudo iniciar la carga.
     // mode: el modo elegido en "Crear partida", que se aplica en todos los clientes junto con la escena.
     // None = no cambia el modo (pasar al siguiente nivel de la misma partida).
-    public static bool StartGame(string sceneName, GameMode mode = GameMode.None)
+    // playIntro: partida nueva en el primer nivel; la pantalla de carga muestra la intro de vinetas en todos.
+    public static bool StartGame(string sceneName, GameMode mode = GameMode.None, bool playIntro = false)
     {
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager == null || !networkManager.IsServer) return false;
@@ -50,6 +51,7 @@ public static class GameSessionManager
             MatchSettings.SetAndBroadcast(mode);
 
         MatchSettings.SetAndBroadcastDifficulty(CurrentGame.Difficulty);
+        MatchSettings.SetAndBroadcastIntro(playIntro);
 
         gameStarted = true;
         networkManager.SceneManager.OnLoadEventCompleted += OnGameSceneLoaded;
@@ -59,6 +61,7 @@ public static class GameSessionManager
         {
             Debug.LogError($"GameSessionManager: no se pudo cargar la escena '{sceneName}' ({status}). ¿Esta agregada en Build Settings?");
             networkManager.SceneManager.OnLoadEventCompleted -= OnGameSceneLoaded;
+            MatchSettings.SetAndBroadcastIntro(false);
             gameStarted = false;
             return false;
         }

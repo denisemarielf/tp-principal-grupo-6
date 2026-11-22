@@ -2676,7 +2676,12 @@ public class GeneradorMenuPrincipal : MonoBehaviour
         ultimaDificultad = dificultadSeleccionada;
 
         // El modo viaja junto con la escena a todos los clientes.
-        if (GameSessionManager.StartGame(escenaACargar, modoSeleccionado))
+        // La intro de vinetas solo va en partida nueva, en el primer nivel o en la Estacion (modo Extraccion).
+        bool conIntro = partidaGuardada == null &&
+            (string.Equals(escenaACargar, PlayerCarryOver.SuburbSceneName, System.StringComparison.OrdinalIgnoreCase) ||
+             PlayerCarryOver.HasStationIntro(escenaACargar));
+
+        if (GameSessionManager.StartGame(escenaACargar, modoSeleccionado, conIntro))
         {
             btnIniciarPartida.interactable = false;
         }

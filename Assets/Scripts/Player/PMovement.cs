@@ -131,7 +131,7 @@ public class PMovement : NetworkBehaviour
 
     public void TryJump()
     {
-        if (frozen.Value || held)
+        if (frozen.Value || held || LoadingScreen.EstaVisible)
             return;
         if (IsGrounded)
         {
@@ -174,7 +174,7 @@ public class PMovement : NetworkBehaviour
         if (controller == null)
             return;
 
-        if (frozen.Value)
+        if (frozen.Value || LoadingScreen.EstaVisible)
         {
             velocity = Vector3.zero;
             controller.Move(new Vector3(0f, verticalVelocity * Time.deltaTime, 0f));
