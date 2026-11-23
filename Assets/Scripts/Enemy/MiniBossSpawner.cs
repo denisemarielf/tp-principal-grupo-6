@@ -42,6 +42,13 @@ public class MiniBossSpawner : MonoBehaviour
 
         alive.RemoveAll(o => o == null || !o.IsSpawned);
 
+        // El temporizador arranca recien cuando se cierra la pantalla de carga.
+        if (LoadingScreen.EstaVisible)
+        {
+            nextSpawnTime = Time.time + firstSpawnDelay;
+            return;
+        }
+
         if (Time.time < nextSpawnTime || alive.Count >= maxAlive)
             return;
         if (SafeZone.Current != null && SafeZone.Current.IsCompleted)

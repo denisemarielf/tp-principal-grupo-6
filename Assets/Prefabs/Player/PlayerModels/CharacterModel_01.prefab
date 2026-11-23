@@ -152729,11 +152729,25 @@ MonoBehaviour:
     TransitionIndex: 1
   - IsCrossFadeExit: 0
     Layer: 0
+    OriginatingState: 765711723
+    DestinationState: -1087222035
+    TransitionDuration: 0.05
+    TriggerNameHash: 1654612129
+    TransitionIndex: 2
+  - IsCrossFadeExit: 0
+    Layer: 0
     OriginatingState: 1748754976
     DestinationState: 125937960
     TransitionDuration: 0.08
     TriggerNameHash: 125937960
     TransitionIndex: 1
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: 1748754976
+    DestinationState: -1087222035
+    TransitionDuration: 0.05
+    TriggerNameHash: 1654612129
+    TransitionIndex: 2
   AnimatorParameterEntries:
     ParameterEntries:
     - name: Blend
@@ -152754,6 +152768,10 @@ MonoBehaviour:
       ParameterType: 4
     - name: Jump
       NameHash: 125937960
+      Synchronize: 1
+      ParameterType: 9
+    - name: Hit
+      NameHash: 1654612129
       Synchronize: 1
       ParameterType: 9
   AnimatorParametersExpanded: 0

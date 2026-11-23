@@ -37,6 +37,29 @@ public class FuelGeneratorGroup : MonoBehaviour
 
         return false;
     }
+    // Posición del generador sin encender más cercano a 'from'. False si ya están todos encendidos.
+    public bool TryGetNearestUnpowered(Vector3 from, out Vector3 position)
+    {
+        position = default;
+        if (generators == null) return false;
+
+        float best = float.MaxValue;
+        bool found = false;
+
+        foreach (FuelGenerator generator in generators)
+        {
+            if (generator == null || generator.IsPowered) continue;
+
+            float d = (generator.transform.position - from).sqrMagnitude;
+            if (d < best)
+            {
+                best = d;
+                position = generator.transform.position;
+                found = true;
+            }
+        }
+        return found;
+    }
 
     private void OnEnable()
     {

@@ -290,65 +290,89 @@ public class ObjectivePanelToggle : NetworkBehaviour
     }
 
     // Ajusta el fondo al rectangulo que ocupan, TODOS juntos, los iconos y textos visibles de los paneles.
+
     private void RefreshBackdrop()
     {
         if (backdrop == null)
             return;
 
+        // Primero actualizamos los Layout Groups de los paneles.
+        Canvas.ForceUpdateCanvases();
+
+        foreach (RectTransform panel in panels)
+        {
+            if (panel == null || !panel.gameObject.activeInHierarchy)
+                continue;
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
+        }
+
+        Canvas.ForceUpdateCanvases();
+
         RectTransform parent = (RectTransform)backdrop.parent;
 
         Vector2 min = new Vector2(float.MaxValue, float.MaxValue);
         Vector2 max = new Vector2(float.MinValue, float.MinValue);
+
         bool found = false;
 
+        // Medimos los RECTÁNGULOS completos de los dos paneles.
+        // No medimos sus imágenes ni sus textos por separado.
         for (int i = 0; i < panels.Length; i++)
         {
-            // Si el panel esta a mitad de la animacion, se mide como si estuviera en su posicion final.
-            Vector3 offset = panels[i].anchoredPosition - shownPositions[i];
+            RectTransform panel = panels[i];
 
-            panels[i].GetComponentsInChildren(false, graphicsBuffer);
+            if (panel == null || !panel.gameObject.activeInHierarchy)
+                continue;
 
-            foreach (Graphic graphic in graphicsBuffer)
+            // Compensamos el movimiento de la animación:
+            // medimos el panel como si estuviera en su posición final.
+            Vector2 offset = panel.anchoredPosition - shownPositions[i];
+
+            panel.GetWorldCorners(corners);
+
+            for (int k = 0; k < 4; k++)
             {
-                if (graphic.rectTransform == panels[i]) continue;   // ni el grafico propio del panel
-                if (graphic.color.a < 0.02f) continue;              // ni lo invisible
+                Vector2 point = parent.InverseTransformPoint(corners[k]);
+                point -= offset;
 
-                graphic.rectTransform.GetWorldCorners(corners);
-
-                for (int k = 0; k < 4; k++)
-                {
-                    Vector3 p = parent.InverseTransformPoint(corners[k]) - offset;
-                    min = Vector2.Min(min, p);
-                    max = Vector2.Max(max, p);
-                    found = true;
-                }
+                min = Vector2.Min(min, point);
+                max = Vector2.Max(max, point);
             }
+
+            found = true;
         }
 
         backdrop.gameObject.SetActive(found);
+
         if (!found)
             return;
 
-        min -= Vector2.one * backdropPadding;
-        max += Vector2.one * backdropPadding;
+        // Margen alrededor de los dos paneles.
+        min -= new Vector2(backdropPadding, backdropPadding);
+        max += new Vector2(backdropPadding, backdropPadding);
 
-        // Nunca se sale de la pantalla (el area del canvas que lo contiene).
+        // Evitar que el fondo salga del Canvas.
         min = Vector2.Max(min, parent.rect.min);
         max = Vector2.Min(max, parent.rect.max);
 
-        Vector2 size = Vector2.Max(max - min, Vector2.zero);
+        Vector2 size = max - min;
         Vector2 center = (min + max) * 0.5f;
 
-        // Las coordenadas locales son relativas al pivote del padre; el fondo se ancla al centro de su rect.
+        // Ajustamos únicamente el fondo, nunca los paneles.
         backdrop.sizeDelta = size;
         backdropShown = center - parent.rect.center;
 
-        commonDistance = slideDistance > 0f ? slideDistance : size.x + extraMargin;
+        commonDistance = slideDistance > 0f
+            ? slideDistance
+            : size.x + extraMargin;
+
         backdropHidden = backdropShown + slideDirection * commonDistance;
 
         RecomputeHiddenPositions();
         ApplyBackdrop();
     }
+
 
     private static void CreateBorderLine(RectTransform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 size, Color color)
     {

@@ -35,7 +35,7 @@ public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
         // frame; TryShoot respeta el cooldown solo. isEquipped evita que un
         // arma guardada (no equipada) siga disparando porque el botón físico
         // es el mismo para todas.
-        if (!IsOwner || !isEquipped || PauseMenuUI.IsOpen) return;
+        if (!IsOwner || !isEquipped || PauseMenuUI.InputBloqueado) return;
 
         // La mira refleja la dispersión del arma equipada.
         weaponLogic.UpdateCrosshairSpread();
@@ -51,6 +51,8 @@ public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
         if (!IsOwner) return;
 
         shootAction = context.action; // guardamos la referencia para consultarla en Update
+
+        if (LoadingScreen.EstaVisible) return;
 
         if (context.performed)
         {
@@ -80,7 +82,7 @@ public class ShootLogic : EquippableWeapon          // antes: NetworkBehaviour
 
     public override void OnReload(InputAction.CallbackContext context)
     {
-        if (!IsOwner) return;
+        if (!IsOwner || LoadingScreen.EstaVisible) return;
         if (context.performed) ammoManager.TryReload();
     }
 

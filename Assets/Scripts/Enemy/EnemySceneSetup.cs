@@ -256,7 +256,7 @@ public class EnemySceneSetup : MonoBehaviour
             position += Vector3.up * FeetLift(enemyPrefab);
         }
 
-        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        GameObject enemy = EnemyPool.Create(enemyPrefab, position, Quaternion.identity);
         ConfigureSpawnedEnemy(enemy, variant);
 
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
@@ -329,7 +329,7 @@ public class EnemySceneSetup : MonoBehaviour
         else
             position += Vector3.up * FeetLift(enemyPrefab);
 
-        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        GameObject enemy = EnemyPool.Create(enemyPrefab, position, Quaternion.identity);
         ConfigureSpawnedEnemy(enemy, variant);
 
         NetworkObject netObj = enemy.GetComponent<NetworkObject>();
@@ -350,7 +350,7 @@ public class EnemySceneSetup : MonoBehaviour
 
         position += Vector3.up * FeetLift(enemyPrefab);
 
-        GameObject enemy = Instantiate(enemyPrefab, position, Quaternion.identity);
+        GameObject enemy = EnemyPool.Create(enemyPrefab, position, Quaternion.identity);
         ConfigureSpawnedEnemy(enemy, variant);
 
         // Solo puede caminar por piso: no se sube a techos de autos ni copas.
@@ -527,7 +527,7 @@ public class EnemySceneSetup : MonoBehaviour
             ~0,
             NavMeshCollectGeometry.PhysicsColliders,
             0,
-            VehicleMarkups(),
+            BuildMarkups(),
             sources);
 
         // Los jugadores y enemigos ya spawneados se mueven: no son parte del piso.
@@ -559,6 +559,32 @@ public class EnemySceneSetup : MonoBehaviour
             box.center = center;
             box.size = size;
         }
+    }
+
+    private static List<NavMeshBuildMarkup> BuildMarkups()
+    {
+        List<NavMeshBuildMarkup> markups = VehicleMarkups();
+        markups.AddRange(DoorMarkups());
+        return markups;
+    }
+
+    // Las puertas quedan fuera del horneado: cerradas taparian el vano y el cuarto quedaria
+    // desconectado. El bloqueo en juego lo hace el NavMeshObstacle (Carve) de cada puerta.
+    private static List<NavMeshBuildMarkup> DoorMarkups()
+    {
+        var markups = new List<NavMeshBuildMarkup>();
+        foreach (Door door in FindObjectsByType<Door>())
+        {
+            markups.Add(new NavMeshBuildMarkup
+            {
+                root = door.transform,
+                overrideArea = false,
+                ignoreFromBuild = true,
+                applyToChildren = true
+            });
+        }
+
+        return markups;
     }
 
     // Los autos no son piso: se hornean como zona no caminable para que el NavMesh los rodee.

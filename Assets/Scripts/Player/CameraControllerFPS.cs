@@ -35,6 +35,11 @@ public class CameraControllerFPS : NetworkBehaviour
     private bool thirdPerson;
 
     public bool IsThirdPerson => thirdPerson;
+
+    // Posición de los ojos (donde está la cámara en primera persona), sin importar la vista actual.
+    public Vector3 EyeWorldPosition => transform.parent != null
+        ? transform.parent.TransformPoint(firstPersonLocalPosition)
+        : transform.position;
     private bool lastThirdPerson;
     private bool viewApplied;
     private Vector3 firstPersonLocalPosition;
@@ -221,7 +226,7 @@ public class CameraControllerFPS : NetworkBehaviour
 
         if (isLocal && !OwnerIsDead())
         {
-            if (!PauseMenuUI.IsOpen
+            if (!PauseMenuUI.InputBloqueado
                 && Mouse.current != null
                 && Mouse.current.leftButton.wasPressedThisFrame
                 && Cursor.lockState != CursorLockMode.Locked)
@@ -232,7 +237,7 @@ public class CameraControllerFPS : NetworkBehaviour
                 }
             }
 
-            if (!PauseMenuUI.IsOpen && Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
+            if (!PauseMenuUI.InputBloqueado && Mouse.current != null && Cursor.lockState == CursorLockMode.Locked)
             {
                 if (skipMouseFrames > 0)
                 {
@@ -280,11 +285,11 @@ public class CameraControllerFPS : NetworkBehaviour
                                     * Quaternion.Euler(recoilOffset)
                                     * Quaternion.Euler(hitOffset);
 
-            if (!PauseMenuUI.IsOpen && !EndScreenShown && Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
+            if (!PauseMenuUI.InputBloqueado && !EndScreenShown && Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
                 thirdPerson = !thirdPerson;
 
             // Cambio de hombro (en tercera persona)
-            if (thirdPerson && !PauseMenuUI.IsOpen && Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame)
+            if (thirdPerson && !PauseMenuUI.InputBloqueado && Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame)
                 shoulderSide = -shoulderSide;
 
             ApplyView();
@@ -361,7 +366,7 @@ public class CameraControllerFPS : NetworkBehaviour
         float strafe = Mathf.Clamp(Vector3.Dot(vel, body.right) / referenceSpeed, -1f, 1f);
         strafeSmoothed = Mathf.Lerp(strafeSmoothed, strafe, k);
 
-        bool aiming = !PauseMenuUI.IsOpen && Mouse.current != null && Mouse.current.rightButton.isPressed;
+        bool aiming = !PauseMenuUI.InputBloqueado && Mouse.current != null && Mouse.current.rightButton.isPressed;
         aimBlend = Mathf.MoveTowards(aimBlend, aiming ? 1f : 0f, dt * 6f);
         shoulderBlend = Mathf.MoveTowards(shoulderBlend, shoulderSide, dt * 6f);
 

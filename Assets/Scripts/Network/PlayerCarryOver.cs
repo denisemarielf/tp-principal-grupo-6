@@ -47,6 +47,12 @@ public static class PlayerCarryOver
 
     public static bool HasServerPending => serverPending;
 
+    // La intro de vinetas de la Estacion solo va en el modo Extraccion (Recoleccion y Supervivencia usan otras escenas).
+    public static bool HasStationIntro(string sceneName)
+    {
+        return sceneName == StationSceneName;
+    }
+
     // Null si no hay nivel siguiente.
     public static string NextSceneAfter(string sceneName)
     {

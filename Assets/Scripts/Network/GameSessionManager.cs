@@ -41,7 +41,8 @@ public static class GameSessionManager
     // Solo el host. Carga la escena para todos los conectados; devuelve false si no se pudo iniciar la carga.
     // mode: el modo elegido en "Crear partida", que se aplica en todos los clientes junto con la escena.
     // None = no cambia el modo (pasar al siguiente nivel de la misma partida).
-    public static bool StartGame(string sceneName, GameMode mode = GameMode.None)
+    // playIntro: partida nueva en el primer nivel; la pantalla de carga muestra la intro de vinetas en todos.
+    public static bool StartGame(string sceneName, GameMode mode = GameMode.None, bool playIntro = false)
     {
         NetworkManager networkManager = NetworkManager.Singleton;
         if (networkManager == null || !networkManager.IsServer) return false;
@@ -50,6 +51,7 @@ public static class GameSessionManager
             MatchSettings.SetAndBroadcast(mode);
 
         MatchSettings.SetAndBroadcastDifficulty(CurrentGame.Difficulty);
+        MatchSettings.SetAndBroadcastIntro(playIntro);
 
         gameStarted = true;
         networkManager.SceneManager.OnLoadEventCompleted += OnGameSceneLoaded;
@@ -59,11 +61,63 @@ public static class GameSessionManager
         {
             Debug.LogError($"GameSessionManager: no se pudo cargar la escena '{sceneName}' ({status}). ¿Esta agregada en Build Settings?");
             networkManager.SceneManager.OnLoadEventCompleted -= OnGameSceneLoaded;
+            MatchSettings.SetAndBroadcastIntro(false);
             gameStarted = false;
             return false;
         }
 
         return true;
+    }
+
+    // Solo el host. Vuelve a cargar el nivel actual para todos los conectados, sin pasar por el menu:
+    // la sala y la conexion siguen igual, y se mantienen el modo y la dificultad de la partida.
+    // Los personajes se destruyen con la escena (SpawnAsPlayerObject con destroyWithScene = true) y
+    // OnGameSceneLoaded los vuelve a crear, igual que al pasar de nivel.
+    public static bool RestartMatch()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null || !networkManager.IsServer || !networkManager.IsListening) return false;
+
+        return StartGame(SceneManager.GetActiveScene().name);
+    }
+
+    // Solo el host. Lleva a todos los jugadores de vuelta al lobby de la MISMA sala: no se apaga la red,
+    // se carga la escena del menu por Netcode. Ahi el host puede elegir otro mapa, modo o dificultad
+    // y volver a iniciar con la gente que ya esta conectada.
+    public static bool ReturnToLobby()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null || !networkManager.IsServer || !networkManager.IsListening) return false;
+
+        // Los objetos de red creados durante la partida (enemigos, pickups...) no tienen que viajar al lobby:
+        // si se crearon sin destroyWithScene, Netcode los conserva al cambiar de escena.
+        foreach (NetworkObject spawned in new List<NetworkObject>(networkManager.SpawnManager.SpawnedObjectsList))
+        {
+            if (spawned == null || !spawned.IsSpawned || spawned.IsPlayerObject) continue;
+            if (spawned.IsSceneObject == true) continue; // los de escena se van con la escena
+
+            spawned.Despawn(true);
+        }
+
+        SceneEventProgressStatus status = networkManager.SceneManager.LoadScene(MainMenuSceneName, LoadSceneMode.Single);
+        if (status != SceneEventProgressStatus.Started)
+        {
+            Debug.LogError($"GameSessionManager: no se pudo volver al lobby ({status}). ¿'{MainMenuSceneName}' esta en Build Settings?");
+            return false;
+        }
+
+        return true;
+    }
+
+    // Lo llama el menu en TODAS las maquinas al aparecer con la sala todavia conectada: descarta el estado
+    // de la partida anterior y vuelve a aceptar jugadores nuevos mientras la sala esta en el lobby.
+    public static void PrepareLobbyReturn()
+    {
+        gameStarted = false;
+        MatchSettings.Reset();
+        PlayerCarryOver.Clear();
+        SavedGameLoader.Clear();
+        CurrentGame.Clear();
     }
 
     // Apaga la red, descarta el NetworkManager persistente (MainMenu trae el suyo) y carga el menu.

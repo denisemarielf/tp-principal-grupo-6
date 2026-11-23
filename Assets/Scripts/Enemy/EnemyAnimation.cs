@@ -180,8 +180,20 @@ public class EnemyAnimation : NetworkBehaviour
         if (IsServer && debugLogs)
             Debug.Log("[EnemyAnimation] " + name + ": attackVariants=" + attackVariants + ", attackLengths=" + (attackLengths != null ? attackLengths.Length : 0) + ", biteLength=" + biteLength + ", hitVariants=" + hitVariants, this);
 
+        // Pooling: estado local del uso anterior.
+        lastState = -1;
+        hitIndex = 0;
+        hitUntil = 0f;
+        nextHitTime = 0f;
+        nextStepTime = 0f;
+
         if (IsServer)
+        {
+            attackVariant.Value = 0;
+            isBiting.Value = false;
+            isAttacking.Value = false;
             walkVariant.Value = Random.Range(0, Mathf.Max(1, walkVariants));
+        }
     }
 
     private void Update()

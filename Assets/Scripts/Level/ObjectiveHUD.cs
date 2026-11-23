@@ -2,6 +2,8 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
+using UnityEngine.UI;
 
 // HUD del objetivo del modo activo (US 5.10 CA2).
 // Usa tres textos independientes: titulo, descripcion y distancia.
@@ -14,10 +16,24 @@ public class ObjectiveHUD : MonoBehaviour
     [SerializeField] private TMP_Text objectiveTitle;
     [SerializeField] private TMP_Text objectiveDescription;
     [SerializeField] private TMP_Text distanceText;
-
+    //n
+    [Header("Filas (para ocultar texto + icono juntos)")]
+    [SerializeField] private GameObject titleRow;
+    [SerializeField] private GameObject distanceRow;
+    [Tooltip("Opcional: CanvasGroup del panel para ocultar también el fondo.")]
+    [SerializeField] private CanvasGroup panelGroup;
+    private GameObject panelObject;
+    //n
     [Header("Escenas")]
-    [SerializeField] private string extractionSceneName = "ExtraccionScene";
-    [SerializeField] private string collectionSceneName = "EstacionRecoleccion";
+    // Objetivo general de cada mapa: se cambia acá, por código.
+    private const string OfficesGoal = "Atravesá la horda de enemigos y llegá al punto seguro";
+    private const string ExtractionGoal = "Llegá al tren y hacé lo necesario para huir";
+    private const string CollectionGoal = "Superá los obstáculos del mapa y buscá la zona segura para huir";
+    private const string SurvivalGoal = "Aguantá las oleadas, escoltá a los civiles y escapá por la zona segura";
+
+    private const string ExtractionSceneName = "ExtraccionScene";
+    private const string CollectionSceneName = "EstacionRecoleccion";
+    private const string SurvivalSceneName = "SupervivenciaScene";
 
     [Header("Estilo (mismo look que el menú)")]
     [Tooltip("Aplica la tipografía y los colores del menú principal a este HUD.")]
@@ -28,18 +44,41 @@ public class ObjectiveHUD : MonoBehaviour
     private static readonly Color StyleGreen = new Color(0.2f, 0.85f, 0.3f, 1f);
     private static readonly Color StyleAmber = new Color(0.95f, 0.78f, 0.28f, 1f);
     private static readonly Color StyleText = new Color(0.93f, 0.94f, 0.92f, 1f);
-
     private static readonly Color StyleMuted = new Color(0.55f, 0.57f, 0.56f, 1f);
 
-    private float descriptionHeight;
+    private string lastDescription;
+    private bool lastHadDistance;
+
+    // private float descriptionHeight;
     private bool cansFound;
     private FuelGeneratorGroup generatorGroup;
     private float nextGroupSearch;
 
+    private SafeZone cachedZone;
+    private Collider cachedZoneCol;
+    private ExtractionPhone phone;
+    private float nextPhoneSearch;
+
     private void Awake()
     {
+        // El panel completo (padre directo de la descripción).
+        if (objectiveDescription != null && objectiveDescription.transform.parent != null)
+            panelObject = objectiveDescription.transform.parent.gameObject;
+        // Si falta asignar las filas en el Inspector, las busca solas.
+        if (distanceRow == null && distanceText != null)
+        {
+            HorizontalLayoutGroup g = distanceText.GetComponentInParent<HorizontalLayoutGroup>();
+            if (g != null) distanceRow = g.gameObject;
+        }
+        if (titleRow == null && objectiveTitle != null)
+        {
+            HorizontalLayoutGroup g = objectiveTitle.GetComponentInParent<HorizontalLayoutGroup>();
+            if (g != null) titleRow = g.gameObject;
+        }
+
+        // Sin texto justificado.
         if (objectiveDescription != null)
-            descriptionHeight = objectiveDescription.rectTransform.sizeDelta.y;
+            objectiveDescription.alignment = TextAlignmentOptions.TopLeft;
 
         if (applyMenuStyle)
         {
@@ -59,10 +98,12 @@ public class ObjectiveHUD : MonoBehaviour
         if (scene == PlayerCarryOver.SuburbSceneName)
             UpdateSuburb();
         else if (scene == PlayerCarryOver.OfficesSceneName)
-            Show("Atravesá la horda de enemigos y llega al punto seguro", null);
-        else if (scene == extractionSceneName)
-            Show("Llegá al tren y haz lo necesario para huir", null);
-        else if (scene == collectionSceneName)
+            UpdateZoneObjective(OfficesGoal);
+        else if (scene == ExtractionSceneName)
+            UpdateZoneObjective(ExtractionGoal);
+        else if (scene == SurvivalSceneName || scene == PlayerCarryOver.EasterEggSceneName)
+            Hide(); // en estos mapas no se muestra el objetivo    
+        else if (scene == CollectionSceneName)
             UpdateStation();
         else
             Hide();
@@ -71,7 +112,7 @@ public class ObjectiveHUD : MonoBehaviour
     // Estación: objetivo general + los pasos de la nafta, en orden. Lo hecho se pinta en verde.
     private void UpdateStation()
     {
-        const string goal = "Llegá al tren y haz lo necesario para huir";
+        
 
         if (generatorGroup == null && Time.unscaledTime >= nextGroupSearch)
         {
@@ -81,7 +122,7 @@ public class ObjectiveHUD : MonoBehaviour
 
         if (generatorGroup == null || generatorGroup.Total == 0)
         {
-            Show(goal, null);
+            Show(CollectionGoal, null);
             return;
         }
 
@@ -97,7 +138,18 @@ public class ObjectiveHUD : MonoBehaviour
         string step1 = Step("1. Encontrá los bidones vacíos que están en las carpas", cansFound, true);
         string step2 = Step($"2. Cargá los generadores con la nafta de los autos ({powered}/{generatorGroup.Total})", step2Done, cansFound);
 
-        Show($"{goal}\n{step1}\n{step2}", null);
+        FindPhone();
+        string escape = EscapeSteps(3, step2Done, out string distance);
+
+        // Mientras falten generadores, la distancia apunta al generador sin cargar más cercano.
+        if (!allPowered && TryGetLocalPlayerPosition(out Vector3 playerPos)
+            && generatorGroup.TryGetNearestUnpowered(playerPos, out Vector3 genPos))
+        {
+            float dGen = DistanceToLocalPlayer(genPos);
+            if (dGen >= 0f) distance = $"DISTANCIA: {dGen:0} m";
+        }
+
+        Show($"{CollectionGoal}\n{step1}\n{step2}\n{escape}", distance);
     }
 
     // Hecho = verde, el que toca ahora = blanco, el que todavía no = gris.
@@ -110,49 +162,170 @@ public class ObjectiveHUD : MonoBehaviour
     private void UpdateSuburb()
     {
         SafeZone zone = SafeZone.Current;
-        if (zone == null)
+        if (zone == null || zone.IsCompleted)
         {
-            Hide();
+            Hide(); // el panel de SafeZoneUI ya muestra el resumen
             return;
         }
 
-        if (zone.IsCompleted)
-        {
-            // El panel de SafeZoneUI ya muestra el resumen; no duplicar el objetivo.
-            Hide();
-            return;
-        }
-
-        NetworkObject player = NetworkManager.Singleton != null
-            ? NetworkManager.Singleton.LocalClient?.PlayerObject
-            : null;
-
-        if (player == null)
+        if (!TryGetZoneDistance(out float distance, out bool inside))
         {
             Show("Llegá a la zona segura", null);
             return;
         }
 
-        Collider col = zone.GetComponent<Collider>();
-        Vector3 pos = player.transform.position;
-        Vector3 closest = col.ClosestPoint(pos);
-
-        // Distancia horizontal (ignoramos la altura)
-        float dx = pos.x - closest.x;
-        float dz = pos.z - closest.z;
-        float distance = Mathf.Sqrt(dx * dx + dz * dz);
-
-        if (distance < 0.1f)
+        if (inside)
             Show("Esperá a tu equipo en la zona segura", null);
         else
             Show("Llegá a la zona segura", $"DISTANCIA: {distance:0} m");
     }
 
-    // Muestra titulo + descripcion. La distancia es opcional (null = oculta).
-    // 'success' pinta la descripcion en verde (ej. nivel completado).
+    // Distancia horizontal del jugador LOCAL a la zona segura actual.
+    // Devuelve false si no hay zona, si sigue bloqueada o si todavía no existe el jugador.
+    private bool TryGetZoneDistance(out float distance, out bool inside)
+    {
+        distance = 0f;
+        inside = false;
+
+        SafeZone zone = SafeZone.Current;
+        if (zone == null ) return false;
+
+        if (zone != cachedZone)
+        {
+            cachedZone = zone;
+            cachedZoneCol = zone.GetComponent<Collider>();
+        }
+        if (cachedZoneCol == null) return false;
+
+        NetworkObject player = NetworkManager.Singleton != null
+            ? NetworkManager.Singleton.LocalClient?.PlayerObject
+            : null;
+        if (player == null) return false;
+
+        Vector3 pos = player.transform.position;
+        Vector3 closest = cachedZoneCol.ClosestPoint(pos);
+        float dx = pos.x - closest.x;
+        float dz = pos.z - closest.z;
+        distance = Mathf.Sqrt(dx * dx + dz * dz);
+        inside = distance < 0.1f;
+        return true;
+    }
+
+    private float DistanceToLocalPlayer(Vector3 target)
+    {
+        NetworkObject player = NetworkManager.Singleton != null
+            ? NetworkManager.Singleton.LocalClient?.PlayerObject
+            : null;
+        if (player == null) return -1f;
+
+        Vector3 p = player.transform.position;
+        float dx = p.x - target.x;
+        float dz = p.z - target.z;
+        return Mathf.Sqrt(dx * dx + dz * dz);
+    }
+
+    //n
+    private bool TryGetLocalPlayerPosition(out Vector3 position)
+    {
+        position = default;
+        NetworkObject player = NetworkManager.Singleton != null
+            ? NetworkManager.Singleton.LocalClient?.PlayerObject
+            : null;
+        if (player == null) return false;
+
+        position = player.transform.position;
+        return true;
+    }
+
+    // Objetivo genérico: si el mapa tiene teléfono de extracción, guía por fases
+    // (panel -> llamar -> resistir -> zona segura). Si no, va directo a la zona segura.
+    private void FindPhone()
+    {
+        if (phone == null && Time.unscaledTime >= nextPhoneSearch)
+        {
+            phone = FindFirstObjectByType<ExtractionPhone>();
+            nextPhoneSearch = Time.unscaledTime + 1f;
+        }
+    }
+
+    private void UpdateZoneObjective(string goal)
+    {
+        SafeZone zone = SafeZone.Current;
+        if (zone != null && zone.IsCompleted)
+        {
+            Hide();
+            return;
+        }
+
+        FindPhone();
+        string steps = EscapeSteps(1, true, out string distance);
+        Show($"{goal}\n{steps}", distance);
+    }
+
+    // Pasos de escape: [panel] -> [llamar helicóptero] -> zona segura.
+    // 'firstNumber' es el número del primer paso; 'active' = false los deja todos en gris.
+    // La distancia apunta al paso actual: teléfono (panel / llamar) o zona segura.
+    private string EscapeSteps(int firstNumber, bool active, out string distance)
+    {
+        distance = null;
+        int n = firstNumber;
+
+        bool hasPhone = phone != null && phone.IsSpawned;
+        bool hasPanel = hasPhone && phone.HasPanel;
+        bool panelDone = !hasPanel || (hasPhone && phone.IsUnlocked);
+        bool called = hasPhone && phone.State != ExtractionPhone.ExtractionState.Idle;
+        bool hasZone = TryGetZoneDistance(out float zoneDist, out bool inside);
+
+        bool panelCurrent = active && hasPanel && !panelDone;
+        bool callCurrent = active && hasPhone && panelDone && !called;
+        bool zoneCurrent = active && (!hasPhone || called);
+
+        // Solo cuenta como "en la zona" si ya es la fase de la zona segura.
+        bool inZone = zoneCurrent && inside;
+
+        var lines = new List<string>();
+
+        if (hasPanel)
+            lines.Add(Step($"{n++}. Arreglá el panel eléctrico", panelDone, panelCurrent));
+
+        if (hasPhone)
+            lines.Add(Step($"{n++}. Llamá al helicóptero para huir", called, callCurrent));
+
+        string zoneText;
+        if (inZone)
+            zoneText = $"{n}. Esperá a tu equipo en la zona segura";
+        else if (hasPhone && phone.State == ExtractionPhone.ExtractionState.Requested)
+        {
+            int secs = Mathf.CeilToInt(phone.SecondsLeft);
+            zoneText = $"{n}. Andá a la zona segura y escapá (helicóptero en {secs / 60}:{secs % 60:00})";
+        }
+        else
+            zoneText = $"{n}. Andá a la zona segura y escapá";
+
+        lines.Add(Step(zoneText, inZone, zoneCurrent));
+
+        if (panelCurrent || callCurrent)
+        {
+            // Panel: distancia al panel. Llamar: distancia al teléfono.
+            Transform target = (panelCurrent && phone.PanelTransform != null)
+                ? phone.PanelTransform
+                : phone.transform;
+
+            float d = DistanceToLocalPlayer(target.position);
+            if (d >= 0f) distance = $"DISTANCIA: {d:0} m";
+        }
+        else if (zoneCurrent && hasZone && !inZone)
+        {
+            distance = $"DISTANCIA: {zoneDist:0} m";
+        }
+
+        return string.Join("\n", lines);
+    }
+
     private void Show(string description, string distance, bool success = false)
     {
-        SetActive(objectiveTitle, true);
+        SetPanelVisible(true);
+        SetActive(titleRow != null ? titleRow : (objectiveTitle != null ? objectiveTitle.gameObject : null), true);
 
         if (objectiveDescription != null)
         {
@@ -161,36 +334,48 @@ public class ObjectiveHUD : MonoBehaviour
 
             if (applyMenuStyle)
                 objectiveDescription.color = success ? StyleGreen : StyleText;
-
-            // El texto largo crece hacia abajo sin pisar nada ni salirse del fondo.
-            RectTransform rect = objectiveDescription.rectTransform;
-            float needed = Mathf.Max(descriptionHeight, objectiveDescription.GetPreferredValues(description, rect.rect.width, 0f).y);
-            if (!Mathf.Approximately(rect.sizeDelta.y, needed))
-                rect.sizeDelta = new Vector2(rect.sizeDelta.x, needed);
         }
 
-        if (distanceText != null)
+        bool hasDistance = !string.IsNullOrEmpty(distance);
+        GameObject distanceObj = distanceRow != null ? distanceRow : (distanceText != null ? distanceText.gameObject : null);
+        SetActive(distanceObj, hasDistance);
+        if (hasDistance && distanceText != null)
+            distanceText.text = distance;
+
+        // Recalcula el alto del panel solo cuando algo cambió de forma que afecta el layout.
+        if (description != lastDescription || hasDistance != lastHadDistance)
         {
-            bool hasDistance = !string.IsNullOrEmpty(distance);
-            distanceText.gameObject.SetActive(hasDistance);
-            if (hasDistance)
-                distanceText.text = distance;
+            lastDescription = description;
+            lastHadDistance = hasDistance;
+
+            if (objectiveDescription != null && objectiveDescription.transform.parent is RectTransform panel)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
         }
     }
+
 
     private void Hide()
     {
-        SetActive(objectiveTitle, false);
-        SetActive(objectiveDescription, false);
-        SetActive(distanceText, false);
+        SetPanelVisible(false);
+        SetActive(titleRow != null ? titleRow : (objectiveTitle != null ? objectiveTitle.gameObject : null), false);
+        SetActive(objectiveDescription != null ? objectiveDescription.gameObject : null, false);
+        SetActive(distanceRow != null ? distanceRow : (distanceText != null ? distanceText.gameObject : null), false);
+        lastDescription = null;
     }
 
-    private static void SetActive(TMP_Text text, bool active)
+    private void SetPanelVisible(bool visible)
     {
-        if (text != null)
-            text.gameObject.SetActive(active);
+        if (panelGroup != null)
+            panelGroup.alpha = visible ? 1f : 0f;
+
+        SetActive(panelObject, visible);
     }
 
+    private static void SetActive(GameObject go, bool active)
+    {
+        if (go != null && go.activeSelf != active)
+            go.SetActive(active);
+    }
     // Solo cambia fuente, color, espaciado y sombra. El tamaño lo define el prefab.
     private static void StyleLabel(TMP_Text label, Color color, float letterSpacing)
     {
@@ -203,7 +388,7 @@ public class ObjectiveHUD : MonoBehaviour
             label.font = font;
 
         label.color = color;
-        label.characterSpacing = letterSpacing;
+        label.characterSpacing = 0f;
         label.outlineWidth = 0f;
 
         Material material = label.fontMaterial;
