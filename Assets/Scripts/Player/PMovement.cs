@@ -29,6 +29,10 @@ public class PMovement : NetworkBehaviour
     private Vector3 velocity;
     private float verticalVelocity;
 
+    // Empuje horizontal al quedar parado sobre un enemigo (la cabeza de una capsula se toma como suelo).
+    private const float EnemyHeadSlideSpeed = 4f;
+    private Vector3 enemyHeadPush;
+
     public Vector2 MoveInput => moveInput;
     public bool IsGrounded => controller != null && controller.isGrounded;
     public bool IsSprinting => isSprinting;
@@ -239,7 +243,30 @@ public class PMovement : NetworkBehaviour
         move.y =
         verticalVelocity * Time.deltaTime;
 
-        controller.Move(move);
+        move += enemyHeadPush * Time.deltaTime;
+        enemyHeadPush = Vector3.zero;
+
+        CollisionFlags flags = controller.Move(move);
+
+        // Chocar con un techo corta el ascenso: si no, queda pegado mientras la velocidad vertical sigue positiva.
+        if ((flags & CollisionFlags.Above) != 0 && verticalVelocity > 0f)
+            verticalVelocity = 0f;
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (!IsOwner || hit.normal.y < 0.3f)
+            return;
+
+        if (hit.collider.GetComponentInParent<EnemyHealth>() == null)
+            return;
+
+        Vector3 away = transform.position - hit.collider.bounds.center;
+        away.y = 0f;
+        if (away.sqrMagnitude < 0.0001f)
+            away = transform.forward;
+
+        enemyHeadPush = away.normalized * EnemyHeadSlideSpeed;
     }
 
     private void ApplyGravity()
