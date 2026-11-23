@@ -13,7 +13,6 @@ public class WeaponDamageTests
 {
     private NetworkManager networkManager;
 
-
     [UnitySetUp]
     public IEnumerator SetUp()
     {
@@ -51,15 +50,18 @@ public class WeaponDamageTests
             () => SceneManager.GetActiveScene().name == "SampleScene"
         );
 
-        // Esperar para comprobar si los enemigos aparecen con retraso.
-        yield return new WaitForSeconds(2f);
+        // Esperar a que el AiDirector genere al menos un enemigo.
+        // Puede tardar hasta 70 segundos.
+        yield return EsperarEnemigos(1);
 
         int cantidadEnemigos =
             Object.FindObjectsByType<EnemyHealth>(
                 FindObjectsSortMode.None
             ).Length;
 
-        Debug.Log($"Enemigos encontrados: {cantidadEnemigos}");
+        Debug.Log(
+            $"Enemigos encontrados: {cantidadEnemigos}"
+        );
 
         LogAssert.ignoreFailingMessages = false;
     }
@@ -89,6 +91,7 @@ public class WeaponDamageTests
 
         Assert.That(shootLogic, Is.Not.Null);
 
+        // Buscar el enemigo generado por el AiDirector.
         EnemyHealth enemy =
             Object.FindFirstObjectByType<EnemyHealth>();
 
@@ -98,12 +101,14 @@ public class WeaponDamageTests
             "Debe existir un enemigo en la escena."
         );
 
+        // Evitar que el enemigo se mueva durante la prueba.
         PrepararEnemigoParaPrueba(enemy);
 
         float vidaInicial = enemy.GetCurrentHealth();
 
         int danioEsperado = weaponLogic.damageAmount;
 
+        // Colocar al enemigo frente al arma.
         ColocarEnemigoFrenteAlArma(enemy, weaponLogic);
 
         Physics.SyncTransforms();
@@ -121,6 +126,7 @@ public class WeaponDamageTests
             $"{(impacto ? hit.collider.name : "NADA")}"
         );
 
+        // Obtener el método TryShoot.
         MethodInfo tryShoot = typeof(ShootLogic).GetMethod(
             "TryShoot",
             BindingFlags.Instance | BindingFlags.NonPublic
@@ -128,6 +134,7 @@ public class WeaponDamageTests
 
         Assert.That(tryShoot, Is.Not.Null);
 
+        // Ejecutar el disparo.
         tryShoot.Invoke(shootLogic, null);
 
         // Esperar a que se procese el disparo y el daño.
@@ -147,41 +154,34 @@ public class WeaponDamageTests
         );
     }
 
-
-
     private IEnumerator EsperarEnemigos(int cantidad)
     {
         float tiempoEspera = 0f;
+        float tiempoMaximo = 70f;
 
-        while (Object.FindObjectsByType<EnemyHealth>(
-                   FindObjectsSortMode.None
-               ).Length < cantidad &&
-               tiempoEspera < 10f)
+        while (
+            Object.FindObjectsByType<EnemyHealth>(
+                FindObjectsSortMode.None
+            ).Length < cantidad
+            &&
+            tiempoEspera < tiempoMaximo
+        )
         {
-            tiempoEspera += Time.deltaTime;
+            tiempoEspera += Time.unscaledDeltaTime;
             yield return null;
         }
 
-        Assert.That(
-            Object.FindObjectsByType<EnemyHealth>(
-                FindObjectsSortMode.None
-            ).Length,
-            Is.GreaterThanOrEqualTo(cantidad),
-            $"No aparecieron {cantidad} enemigos dentro del tiempo esperado."
-        );
-    }
-
-    private void PrepararEnemigosDeLaEscena()
-    {
         EnemyHealth[] enemigos =
             Object.FindObjectsByType<EnemyHealth>(
                 FindObjectsSortMode.None
             );
 
-        foreach (EnemyHealth enemy in enemigos)
-        {
-            PrepararEnemigoParaPrueba(enemy);
-        }
+        Assert.That(
+            enemigos.Length,
+            Is.GreaterThanOrEqualTo(cantidad),
+            $"El AiDirector no generó al menos {cantidad} " +
+            $"enemigos en {tiempoMaximo} segundos."
+        );
     }
 
     private void PrepararEnemigoParaPrueba(EnemyHealth enemy)
@@ -197,22 +197,23 @@ public class WeaponDamageTests
             agent.enabled = false;
     }
 
-
     private void ColocarEnemigoFrenteAlArma(
         EnemyHealth enemy,
-        WeaponLogic weaponLogic)
+        WeaponLogic weaponLogic
+    )
     {
         Transform puntoDisparo = weaponLogic.spawnPoint;
 
         float distancia = weaponLogic.hitscanRange * 0.5f;
 
-        // Colocar el enemigo sobre el eje exacto del disparo.
+        // Colocar al enemigo sobre el eje exacto del disparo.
         Vector3 posicionObjetivo =
-            puntoDisparo.position + puntoDisparo.forward * distancia;
+            puntoDisparo.position +
+            puntoDisparo.forward * distancia;
 
         enemy.transform.position = posicionObjetivo;
 
-        // Orientar también el enemigo hacia el arma.
+        // Orientar al enemigo hacia el arma.
         enemy.transform.LookAt(puntoDisparo.position);
 
         Physics.SyncTransforms();
@@ -223,7 +224,6 @@ public class WeaponDamageTests
             $"posición del enemigo: {enemy.transform.position}"
         );
     }
-
 
     [UnityTearDown]
     public IEnumerator TearDown()
@@ -239,9 +239,11 @@ public class WeaponDamageTests
             );
         }
 
-        if (networkManager != null &&
+        if (
+            networkManager != null &&
             networkManager.IsListening &&
-            !networkManager.ShutdownInProgress)
+            !networkManager.ShutdownInProgress
+        )
         {
             networkManager.Shutdown();
 

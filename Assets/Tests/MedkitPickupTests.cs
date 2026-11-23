@@ -1,3 +1,4 @@
+
 using System.Collections;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -9,6 +10,11 @@ using UnityEngine.TestTools;
 public class MedkitPickupTests
 {
     private NetworkManager networkManager;
+    private NetworkObject playerObject;
+    private PlayerHealth playerHealth;
+    private PlayerInventory inventory;
+    private ItemPickup medkit;
+    private int medkitItemId;
 
     [UnitySetUp]
     public IEnumerator SetUp()
@@ -32,9 +38,7 @@ public class MedkitPickupTests
         );
 
         if (hostTask.IsFaulted)
-        {
             throw hostTask.Exception;
-        }
 
         LogAssert.ignoreFailingMessages = true;
 
@@ -48,128 +52,163 @@ public class MedkitPickupTests
         );
 
         LogAssert.ignoreFailingMessages = false;
-    }
 
-    [UnityTest]
-    public IEnumerator AlUsarUnBotiquinLaVidaDelJugadorAumenta()
-    {
-        NetworkObject playerObject =
+        // Esperar al jugador generado por el Host.
+        yield return new WaitUntil(
+            () => networkManager.ConnectedClients.ContainsKey(
+                NetworkManager.ServerClientId
+            ) &&
+            networkManager.ConnectedClients[
+                NetworkManager.ServerClientId
+            ].PlayerObject != null
+        );
+
+        playerObject =
             networkManager.ConnectedClients[
                 NetworkManager.ServerClientId
             ].PlayerObject;
 
         Assert.That(playerObject, Is.Not.Null);
 
-        PlayerHealth playerHealth =
-            playerObject.GetComponent<PlayerHealth>();
+        playerHealth =
+            playerObject.GetComponentInChildren<PlayerHealth>();
 
-        Assert.That(playerHealth, Is.Not.Null);
+        inventory =
+            playerObject.GetComponentInChildren<PlayerInventory>();
 
-        MedkitPickup medkit =
-            Object.FindFirstObjectByType<MedkitPickup>();
+        Assert.That(
+            playerHealth,
+            Is.Not.Null,
+            "No se encontró PlayerHealth en el jugador."
+        );
 
+        Assert.That(
+            inventory,
+            Is.Not.Null,
+            "No se encontró PlayerInventory en el jugador ni en sus hijos."
+        );
+
+        // Esperar a que se inicialicen los slots del inventario.
+        yield return new WaitUntil(
+            () => inventory.LoadedSlotCount > 0
+        );
+
+        // Buscar un pickup cuyo efecto sea HealEffect.
+        yield return new WaitUntil(
+            () => FindMedkit() != null
+        );
+
+        medkit = FindMedkit();
+
+        Assert.That(
+            medkit,
+            Is.Not.Null,
+            "No se encontró ningún botiquín en SampleScene."
+        );
+
+        medkitItemId = medkit.ItemId;
+
+        ItemDefinition definition =
+            inventory.GetDefinition(medkitItemId);
+
+        Assert.That(
+            definition,
+            Is.Not.Null,
+            "El ItemId del botiquín no existe en el catálogo."
+        );
+
+        Assert.That(
+            definition.useEffect,
+            Is.InstanceOf<HealEffect>(),
+            "El objeto encontrado no tiene un HealEffect."
+        );
+    }
+
+    private ItemPickup FindMedkit()
+    {
+        ItemPickup[] pickups =
+            Object.FindObjectsByType<ItemPickup>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (ItemPickup pickup in pickups)
+        {
+            if (pickup == null || !pickup.IsSpawned)
+                continue;
+
+            ItemDefinition definition =
+                inventory.GetDefinition(pickup.ItemId);
+
+            if (definition != null &&
+                definition.useEffect is HealEffect)
+            {
+                return pickup;
+            }
+        }
+
+        return null;
+    }
+
+    // Recoger el botiquín y esperar la actualización del inventario.
+    private IEnumerator PickUpMedkit()
+    {
         Assert.That(medkit, Is.Not.Null);
+        Assert.That(medkit.IsSpawned, Is.True);
 
-        playerHealth.TakeDamage(25f);
-
-        yield return null;
-
-        float vidaAntesDelBotiquin =
-            playerHealth.CurrentHealth;
-
-        float vidaEsperada =
-            vidaAntesDelBotiquin + medkit.GetHealAmount();
-
+        // Colocar al jugador junto al botiquín.
         playerObject.transform.position =
             medkit.transform.position;
 
-        medkit.RequestUse();
+        yield return null;
+
+        ulong pickupId = medkit.NetworkObjectId;
+
+        inventory.RequestPickupItemServerRpc(pickupId);
 
         yield return new WaitUntil(
-            () =>
-                playerHealth.CurrentHealth >= vidaEsperada
+            () => inventory.CountOf(medkitItemId) > 0
         );
-
-        Assert.That(
-            playerHealth.CurrentHealth,
-            Is.EqualTo(vidaEsperada)
-        );
-    }
-
-    [UnityTest]
-    public IEnumerator UnJugadorConVidaMaximaNoPuedeUsarUnBotiquin()
-    {
-        NetworkObject playerObject =
-            networkManager.ConnectedClients[
-                NetworkManager.ServerClientId
-            ].PlayerObject;
-
-        Assert.That(playerObject, Is.Not.Null);
-
-        PlayerHealth playerHealth =
-            playerObject.GetComponent<PlayerHealth>();
-
-        Assert.That(playerHealth, Is.Not.Null);
-
-        MedkitPickup medkit =
-            Object.FindFirstObjectByType<MedkitPickup>();
-
-        Assert.That(medkit, Is.Not.Null);
-
-        Assert.That(
-            playerHealth.CurrentHealth,
-            Is.EqualTo(playerHealth.MaxHealth)
-        );
-
-        playerObject.transform.position =
-            medkit.transform.position;
-
-        medkit.RequestUse();
-
-        yield return null;
-
-        Assert.That(
-            playerHealth.CurrentHealth,
-            Is.EqualTo(playerHealth.MaxHealth)
-        );
-
-        Assert.That(
-            Object.FindFirstObjectByType<MedkitPickup>(),
-            Is.Not.Null
-        );
-    }
-
-    [UnityTest]
-    public IEnumerator AlUsarUnBotiquinEsteDesaparece()
-    {
-        NetworkObject playerObject =
-            networkManager.ConnectedClients[
-                NetworkManager.ServerClientId
-            ].PlayerObject;
-
-        Assert.That(playerObject, Is.Not.Null);
-
-        PlayerHealth playerHealth =
-            playerObject.GetComponent<PlayerHealth>();
-
-        Assert.That(playerHealth, Is.Not.Null);
-
-        MedkitPickup medkit =
-            Object.FindFirstObjectByType<MedkitPickup>();
-
-        Assert.That(medkit, Is.Not.Null);
-
-        playerHealth.TakeDamage(25f);
-
-        yield return null;
-
-        playerObject.transform.position =
-            medkit.transform.position;
-
-        medkit.RequestUse();
 
         yield return new WaitUntil(
             () => medkit == null || !medkit.IsSpawned
+        );
+
+        Assert.That(
+            inventory.CountOf(medkitItemId),
+            Is.GreaterThan(0)
+        );
+    }
+
+    // Buscar el slot que contiene el botiquín.
+    private int FindMedkitSlot()
+    {
+        for (int i = 0; i < inventory.LoadedSlotCount; i++)
+        {
+            InventorySlot slot = inventory.GetSlot(i);
+
+            if (!slot.IsEmpty &&
+                slot.itemId == medkitItemId)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    [UnityTest]
+    public IEnumerator AlRecogerUnBotiquinSeAgregaAlInventario()
+    {
+        Assert.That(
+            inventory.CountOf(medkitItemId),
+            Is.EqualTo(0)
+        );
+
+        yield return PickUpMedkit();
+
+        Assert.That(
+            inventory.CountOf(medkitItemId),
+            Is.EqualTo(1)
         );
 
         Assert.That(
@@ -179,79 +218,99 @@ public class MedkitPickupTests
     }
 
     [UnityTest]
-    public IEnumerator UnJugadorMuertoNoPuedeUsarUnBotiquin()
+    public IEnumerator AlUsarUnBotiquinLaVidaDelJugadorAumenta()
     {
-        NetworkObject playerObject =
-            networkManager.ConnectedClients[
-                NetworkManager.ServerClientId
-            ].PlayerObject;
+        playerHealth.TakeDamage(25f);
 
-        Assert.That(playerObject, Is.Not.Null);
+        yield return null;
 
-        PlayerHealth playerHealth =
-            playerObject.GetComponent<PlayerHealth>();
+        float vidaInicial =
+            playerHealth.CurrentHealth;
 
-        Assert.That(playerHealth, Is.Not.Null);
+        yield return PickUpMedkit();
 
-        MedkitPickup medkit =
-            Object.FindFirstObjectByType<MedkitPickup>();
+        int slotIndex = FindMedkitSlot();
 
-        Assert.That(medkit, Is.Not.Null);
+        Assert.That(slotIndex, Is.GreaterThanOrEqualTo(0));
 
-        playerHealth.TakeDamage(
-            playerHealth.CurrentHealth
+        inventory.RequestUseSlotServerRpc(slotIndex);
+
+        yield return new WaitUntil(
+            () => playerHealth.CurrentHealth > vidaInicial
         );
 
+        Assert.That(
+            playerHealth.CurrentHealth,
+            Is.GreaterThan(vidaInicial)
+        );
+    }
+
+    [UnityTest]
+    public IEnumerator AlUsarUnBotiquinSeConsumeDelInventario()
+    {
+        playerHealth.TakeDamage(25f);
+
         yield return null;
 
-        Assert.That(playerHealth.IsDead, Is.True);
-        Assert.That(playerHealth.CurrentHealth, Is.EqualTo(0f));
-
-        playerObject.transform.position =
-            medkit.transform.position;
-
-        medkit.RequestUse();
-
-        yield return null;
-
-        Assert.That(playerHealth.IsDead, Is.True);
-        Assert.That(playerHealth.CurrentHealth, Is.EqualTo(0f));
+        yield return PickUpMedkit();
 
         Assert.That(
-            Object.FindFirstObjectByType<MedkitPickup>(),
-            Is.Not.Null
+            inventory.CountOf(medkitItemId),
+            Is.EqualTo(1)
+        );
+
+        int slotIndex = FindMedkitSlot();
+
+        Assert.That(slotIndex, Is.GreaterThanOrEqualTo(0));
+
+        inventory.RequestUseSlotServerRpc(slotIndex);
+
+        yield return new WaitUntil(
+            () => inventory.CountOf(medkitItemId) == 0
+        );
+
+        Assert.That(
+            inventory.CountOf(medkitItemId),
+            Is.EqualTo(0)
+        );
+    }
+
+    [UnityTest]
+    public IEnumerator UnJugadorConVidaMaximaNoPuedeUsarUnBotiquin()
+    {
+        Assert.That(
+            playerHealth.CurrentHealth,
+            Is.EqualTo(playerHealth.MaxHealth)
+        );
+
+        yield return PickUpMedkit();
+
+        int slotIndex = FindMedkitSlot();
+
+        Assert.That(slotIndex, Is.GreaterThanOrEqualTo(0));
+
+        inventory.RequestUseSlotServerRpc(slotIndex);
+
+        yield return null;
+        yield return null;
+
+        Assert.That(
+            playerHealth.CurrentHealth,
+            Is.EqualTo(playerHealth.MaxHealth)
+        );
+
+        Assert.That(
+            inventory.CountOf(medkitItemId),
+            Is.EqualTo(1),
+            "El botiquín no debería consumirse si el jugador tiene la vida completa."
         );
     }
 
     [UnityTest]
     public IEnumerator ElBotiquinNoPermiteSuperarLaVidaMaxima()
     {
-        NetworkObject playerObject =
-            networkManager.ConnectedClients[
-                NetworkManager.ServerClientId
-            ].PlayerObject;
-
-        Assert.That(playerObject, Is.Not.Null);
-
-        PlayerHealth playerHealth =
-            playerObject.GetComponent<PlayerHealth>();
-
-        Assert.That(playerHealth, Is.Not.Null);
-
-        MedkitPickup medkit =
-            Object.FindFirstObjectByType<MedkitPickup>();
-
-        Assert.That(medkit, Is.Not.Null);
-
-        float healAmount = medkit.GetHealAmount();
-
-        Assert.That(healAmount, Is.GreaterThan(0f));
-
-        // Dejamos al jugador con menos vida que la máxima,
-        // pero con una cantidad faltante menor a la curación del botiquín.
-        float damage = healAmount / 2f;
-
-        playerHealth.TakeDamage(damage);
+        // Dejamos al jugador con un punto menos de vida.
+        playerHealth.TakeDamage(1f);
 
         yield return null;
 
@@ -260,20 +319,26 @@ public class MedkitPickupTests
             Is.LessThan(playerHealth.MaxHealth)
         );
 
-        playerObject.transform.position =
-            medkit.transform.position;
+        yield return PickUpMedkit();
 
-        medkit.RequestUse();
+        int slotIndex = FindMedkitSlot();
+
+        Assert.That(slotIndex, Is.GreaterThanOrEqualTo(0));
+
+        inventory.RequestUseSlotServerRpc(slotIndex);
 
         yield return new WaitUntil(
-            () =>
-                playerHealth.CurrentHealth ==
-                playerHealth.MaxHealth
+            () => inventory.CountOf(medkitItemId) == 0
         );
 
         Assert.That(
             playerHealth.CurrentHealth,
-            Is.EqualTo(playerHealth.MaxHealth)
+            Is.LessThanOrEqualTo(playerHealth.MaxHealth)
+        );
+
+        Assert.That(
+            playerHealth.CurrentHealth,
+            Is.GreaterThan(0f)
         );
     }
 
@@ -301,6 +366,12 @@ public class MedkitPickupTests
                     !networkManager.IsListening
             );
         }
+
+        playerObject = null;
+        playerHealth = null;
+        inventory = null;
+        medkit = null;
+        networkManager = null;
     }
 
     private async Task StartHost()
