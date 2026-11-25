@@ -1,4 +1,5 @@
 
+
 using System.Collections;
 using System.IO;
 using System.Threading.Tasks;
@@ -13,14 +14,13 @@ public class SaveGameIntegrationTests
     private NetworkManager networkManager;
     private string savePath;
 
+    // =====================================================
+    // CONFIGURACION INICIAL
+    // =====================================================
+
     [UnitySetUp]
     public IEnumerator SetUp()
     {
-        savePath = SaveSystem.DefaultPath;
-
-        if (File.Exists(savePath))
-            File.Delete(savePath);
-
         SceneManager.LoadScene("MainMenu");
 
         yield return new WaitUntil(
@@ -64,7 +64,26 @@ public class SaveGameIntegrationTests
                 NetworkManager.ServerClientId
             ].PlayerObject != null
         );
+
+        // Esperar a que la SafeZone esté registrada e inicializada.
+        yield return new WaitUntil(() =>
+            SafeZone.Current != null &&
+            SafeZone.Current.IsSpawned
+        );
+
+        // Obtener exactamente la misma ruta que utiliza SaveGameService.
+        savePath = SaveSystem.PathFor(CurrentGame.EnsureId());
+
+        Debug.Log("SaveGameIntegrationTests: ruta de guardado: " + savePath);
+
+        // Eliminar guardados anteriores para aislar la prueba.
+        if (File.Exists(savePath))
+            File.Delete(savePath);
     }
+
+    // =====================================================
+    // TEST 1: SALUD DEL JUGADOR
+    // =====================================================
 
     [UnityTest]
     public IEnumerator GuardarPartida_RegistraCorrectamenteLaSalud()
@@ -123,7 +142,12 @@ public class SaveGameIntegrationTests
         yield return new WaitUntil(() => terminado);
 
         Assert.That(guardadoCorrectamente, Is.True, mensaje);
-        Assert.That(File.Exists(savePath), Is.True);
+
+        Assert.That(
+            File.Exists(savePath),
+            Is.True,
+            "No se encontró el archivo en: " + savePath
+        );
 
         GameSaveData data =
             JsonUtility.FromJson<GameSaveData>(
@@ -151,6 +175,10 @@ public class SaveGameIntegrationTests
             Is.EqualTo(muertoEsperado)
         );
     }
+
+    // =====================================================
+    // TEST 2: ARMAS DEL JUGADOR
+    // =====================================================
 
     [UnityTest]
     public IEnumerator GuardarPartida_RegistraCorrectamenteLasArmas()
@@ -209,7 +237,7 @@ public class SaveGameIntegrationTests
         Assert.That(
             File.Exists(savePath),
             Is.True,
-            "Debe existir el archivo de guardado."
+            "No se encontró el archivo en: " + savePath
         );
 
         GameSaveData data =
@@ -256,86 +284,30 @@ public class SaveGameIntegrationTests
         }
     }
 
-    private IEnumerator MoverHostAZonaSegura(
-        NetworkObject playerObject
-    )
-    {
-        SafeZone zone = SafeZone.Current;
-
-        Assert.That(
-            zone,
-            Is.Not.Null,
-            "La escena debe tener una SafeZone activa."
-        );
-
-        Collider zoneCollider = zone.GetComponent<Collider>();
-
-        Assert.That(
-            zoneCollider,
-            Is.Not.Null,
-            "La SafeZone debe tener un Collider."
-        );
-
-        PlayerHealth health =
-            playerObject.GetComponent<PlayerHealth>();
-
-        Assert.That(health, Is.Not.Null);
-
-        // Salir primero y volver a entrar para provocar OnTriggerEnter.
-        Vector3 posicionOriginal = playerObject.transform.position;
-
-        playerObject.transform.position =
-            zoneCollider.bounds.center +
-            Vector3.up * 0.1f;
-
-        yield return new WaitForFixedUpdate();
-
-        if (zone.IsPlayerInside(health))
-        {
-            playerObject.transform.position =
-                posicionOriginal + Vector3.up * 0.1f;
-
-            yield return new WaitForFixedUpdate();
-        }
-
-        playerObject.transform.position =
-            zoneCollider.bounds.center;
-
-        float tiempoInicio = Time.realtimeSinceStartup;
-
-        yield return new WaitUntil(() =>
-            zone == null ||
-            health == null ||
-            zone.IsPlayerInside(health) ||
-            Time.realtimeSinceStartup - tiempoInicio > 5f
-        );
-
-        Assert.That(
-            zone != null &&
-            health != null &&
-            zone.IsPlayerInside(health),
-            Is.True,
-            "El host no pudo registrarse dentro de la zona segura."
-        );
-    }
-
+    // =====================================================
+    // TEST 3: INVENTARIO DEL JUGADOR
+    // =====================================================
 
     [UnityTest]
     public IEnumerator GuardarPartida_RegistraCorrectamenteElInventario()
     {
         // Obtener el jugador anfitrión.
         NetworkObject playerObject =
-            networkManager.ConnectedClients[NetworkManager.ServerClientId].PlayerObject;
+            networkManager.ConnectedClients[
+                NetworkManager.ServerClientId
+            ].PlayerObject;
 
         Assert.That(playerObject, Is.Not.Null);
 
         // Obtener su inventario.
-        PlayerInventory inventory = playerObject.GetComponent<PlayerInventory>();
+        PlayerInventory inventory =
+            playerObject.GetComponent<PlayerInventory>();
 
         Assert.That(inventory, Is.Not.Null);
 
         yield return new WaitUntil(
-            () => inventory != null && inventory.LoadedSlotCount > 0
+            () => inventory != null &&
+                  inventory.LoadedSlotCount > 0
         );
 
         // ID del botiquín en el catálogo.
@@ -397,11 +369,13 @@ public class SaveGameIntegrationTests
         Assert.That(
             File.Exists(savePath),
             Is.True,
-            "No se encontró el archivo de guardado."
+            "No se encontró el archivo en: " + savePath
         );
 
         GameSaveData data =
-            JsonUtility.FromJson<GameSaveData>(File.ReadAllText(savePath));
+            JsonUtility.FromJson<GameSaveData>(
+                File.ReadAllText(savePath)
+            );
 
         Assert.That(data, Is.Not.Null);
         Assert.That(data.players, Is.Not.Null);
@@ -424,7 +398,8 @@ public class SaveGameIntegrationTests
 
         for (int i = 0; i < cantidadRanuras; i++)
         {
-            InventorySlotSave slotGuardado = jugadorGuardado.inventory[i];
+            InventorySlotSave slotGuardado =
+                jugadorGuardado.inventory[i];
 
             Assert.That(
                 slotGuardado.itemId,
@@ -442,17 +417,119 @@ public class SaveGameIntegrationTests
         // Confirmar que el botiquín quedó registrado en el guardado.
         Assert.That(
             jugadorGuardado.inventory.Exists(
-                slot => slot.itemId == idBotiquin && slot.quantity >= 1
+                slot => slot.itemId == idBotiquin &&
+                        slot.quantity >= 1
             ),
             Is.True,
             "El guardado debe contener al menos un botiquín."
         );
     }
 
+    // =====================================================
+    // UTILIDAD: MOVER HOST A ZONA SEGURA
+    // =====================================================
+
+    private IEnumerator MoverHostAZonaSegura(
+        NetworkObject playerObject
+    )
+    {
+        SafeZone zone = SafeZone.Current;
+
+        Assert.That(
+            zone,
+            Is.Not.Null,
+            "No se encontró una SafeZone registrada."
+        );
+
+        Assert.That(
+            zone.IsSpawned,
+            Is.True,
+            "La SafeZone todavía no fue inicializada por Netcode."
+        );
+
+        Assert.That(
+            zone.IsServer,
+            Is.True,
+            "La SafeZone debe ejecutarse en el servidor."
+        );
+
+        Collider zoneCollider = zone.GetComponent<Collider>();
+
+        Assert.That(
+            zoneCollider,
+            Is.Not.Null,
+            "La SafeZone no tiene Collider."
+        );
+
+        Assert.That(
+            zoneCollider.enabled,
+            Is.True,
+            "El Collider de la SafeZone está deshabilitado."
+        );
+
+        Assert.That(
+            zoneCollider.isTrigger,
+            Is.True,
+            "El Collider de la SafeZone debe estar marcado como Trigger."
+        );
+
+        PlayerHealth health =
+            playerObject.GetComponent<PlayerHealth>();
+
+        Assert.That(
+            health,
+            Is.Not.Null,
+            "El jugador no tiene PlayerHealth."
+        );
+
+        // Primero sacar al jugador de la zona.
+        Vector3 centro = zoneCollider.bounds.center;
+
+        Vector3 posicionExterior =
+            centro +
+            zoneCollider.bounds.extents +
+            Vector3.one * 2f;
+
+        playerObject.transform.position = posicionExterior;
+
+        Physics.SyncTransforms();
+
+        yield return new WaitForFixedUpdate();
+
+        // Después introducirlo en la zona.
+        playerObject.transform.position = centro;
+
+        Physics.SyncTransforms();
+
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+
+        float tiempoInicio = Time.realtimeSinceStartup;
+
+        yield return new WaitUntil(() =>
+            zone == null ||
+            health == null ||
+            zone.IsPlayerInside(health) ||
+            Time.realtimeSinceStartup - tiempoInicio > 5f
+        );
+
+        Assert.That(
+            zone != null &&
+            health != null &&
+            zone.IsPlayerInside(health),
+            Is.True,
+            "El host no pudo registrarse dentro de la zona segura."
+        );
+    }
+
+    // =====================================================
+    // LIMPIEZA
+    // =====================================================
+
     [UnityTearDown]
     public IEnumerator TearDown()
     {
-        // Conservar el orden usado en los tests existentes.
+        // Volver al menú principal.
         if (SceneManager.GetActiveScene().name == "SampleScene")
         {
             SceneManager.LoadScene("MainMenu");
@@ -462,22 +539,32 @@ public class SaveGameIntegrationTests
             );
         }
 
+        // Cerrar la sesión de red.
         if (networkManager != null &&
             networkManager.IsListening &&
             !networkManager.ShutdownInProgress)
         {
             networkManager.Shutdown();
 
-            yield return new WaitUntil(
-                () =>
-                    !networkManager.ShutdownInProgress &&
-                    !networkManager.IsListening
+            yield return new WaitUntil(() =>
+                !networkManager.ShutdownInProgress &&
+                !networkManager.IsListening
             );
         }
 
-        if (!string.IsNullOrEmpty(savePath) && File.Exists(savePath))
+        // Eliminar el archivo generado por el test.
+        if (!string.IsNullOrEmpty(savePath) &&
+            File.Exists(savePath))
+        {
             File.Delete(savePath);
+        }
+
+        LogAssert.ignoreFailingMessages = false;
     }
+
+    // =====================================================
+    // INICIO DE SESION HOST
+    // =====================================================
 
     private async Task StartHost()
     {
@@ -488,4 +575,5 @@ public class SaveGameIntegrationTests
         );
     }
 }
+
 

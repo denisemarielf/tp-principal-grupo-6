@@ -50,8 +50,8 @@ public class MiniBossBrain : NetworkBehaviour
     [SerializeField] private float jumpLandOffset = 1.5f;   // aterriza un poco antes del blanco
 
     [Header("Lanzamiento por golpe (estilo Tank)")]
-    [SerializeField] private float launchHorizontal = 10f;
-    [SerializeField] private float launchVertical = 7f;
+    [SerializeField] private float launchHorizontal = 5f;
+    [SerializeField] private float launchVertical = 3.5f;
 
     [Header("Burla (Taunt)")]
     [SerializeField] private float tauntMinRange = 10f;
@@ -107,8 +107,8 @@ public class MiniBossBrain : NetworkBehaviour
     [Range(0.1f, 0.95f)]
     [SerializeField] private float throwReleaseNormalized = 0.6f; // momento en que lo suelta y sale volando
     [SerializeField] private float throwDamage = 35f;
-    [SerializeField] private float throwHorizontal = 16f;   // hacia ATRAS del jefe
-    [SerializeField] private float throwVertical = 8f;
+    [SerializeField] private float throwHorizontal = 8f;   // hacia ATRAS del jefe
+    [SerializeField] private float throwVertical = 4f;
     [SerializeField] private float throwDropBehind = 1.8f;  // donde queda el jugador justo antes de salir volando
     [SerializeField] private float throwDropHeight = 2.2f;
 
@@ -162,6 +162,16 @@ public class MiniBossBrain : NetworkBehaviour
             return;
         }
 
+        // Pooling: Die() deja el agente apagado y una accion cortada deja busy en true. Sin esto el jefe queda quieto.
+        agent.enabled = true;
+        busy = false;
+        running = false;
+        target = null;
+        searchTimer = 0f;
+        repathTimer = 0f;
+        nextRollTime = 0f;
+        nextAttackTime = 0f;
+
         agent.speed = walkSpeed;
         nextRunTime = Time.time + Random.Range(runCooldown.x, runCooldown.y);
         nextJumpTime = Time.time + 3f;
@@ -173,7 +183,25 @@ public class MiniBossBrain : NetworkBehaviour
         if (!agent.isOnNavMesh && NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 5f, NavMesh.AllAreas))
             agent.Warp(hit.position);
 
+        if (agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.ResetPath();
+        }
+
         RefreshTarget();
+    }
+
+    // Pooling: las corrutinas mueren con SetActive(false); este estado hay que limpiarlo a mano.
+    public override void OnNetworkDespawn()
+    {
+        StopAllCoroutines();
+        busy = false;
+        running = false;
+        target = null;
+
+        if (agent != null)
+            agent.enabled = false;
     }
 
     private bool Dead => health != null && health.IsDead();
@@ -188,6 +216,7 @@ public class MiniBossBrain : NetworkBehaviour
     {
         if (!IsServer || !IsSpawned) return;
         if (Dead) return;
+        if (LoadingScreen.EstaVisible) return;
         if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
 
         if (GameFinished)

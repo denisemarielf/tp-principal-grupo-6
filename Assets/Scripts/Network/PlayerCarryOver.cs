@@ -28,6 +28,8 @@ public static class PlayerCarryOver
         public InventorySlot[] inventory;
         public int weaponSlot0Type;
         public int weaponSlot1Type;
+        public bool hasMelee;
+        public int meleeType;
         public bool hasHealth;
         public float health;
     }
@@ -37,6 +39,8 @@ public static class PlayerCarryOver
         public int weaponIndex;
         public int weaponSlot0Type;
         public int weaponSlot1Type;
+        public bool hasMelee;
+        public int meleeType;
         public AmmoSlot ammo0;
         public AmmoSlot ammo1;
     }
@@ -46,6 +50,12 @@ public static class PlayerCarryOver
     private static bool serverPending;
 
     public static bool HasServerPending => serverPending;
+
+    // La intro de vinetas de la Estacion solo va en el modo Extraccion (Recoleccion y Supervivencia usan otras escenas).
+    public static bool HasStationIntro(string sceneName)
+    {
+        return sceneName == StationSceneName;
+    }
 
     // Null si no hay nivel siguiente.
     public static string NextSceneAfter(string sceneName)
@@ -72,6 +82,8 @@ public static class PlayerCarryOver
             weaponIndex = switcher != null ? switcher.CurrentWeaponIndex : 0,
             weaponSlot0Type = loadout != null ? loadout.GetSlotType(0) : -1,
             weaponSlot1Type = loadout != null ? loadout.GetSlotType(1) : -1,
+            hasMelee = loadout != null,
+            meleeType = loadout != null ? loadout.GetSlotType(WeaponLoadout.MeleeSlot) : -1,
             ammo0 = ReadAmmo(loadout, 0),
             ammo1 = ReadAmmo(loadout, 1)
         };
@@ -91,7 +103,8 @@ public static class PlayerCarryOver
 
         OwnerSnapshot snap = localOwnerSnapshot.Value;
         return loadout.GetSlotType(0) == snap.weaponSlot0Type
-            && loadout.GetSlotType(1) == snap.weaponSlot1Type;
+            && loadout.GetSlotType(1) == snap.weaponSlot1Type
+            && (!snap.hasMelee || loadout.GetSlotType(WeaponLoadout.MeleeSlot) == snap.meleeType);
     }
 
     // Solo server: inventario y loadout de todos los jugadores conectados.
@@ -123,7 +136,9 @@ public static class PlayerCarryOver
             {
                 inventory = slots,
                 weaponSlot0Type = loadout != null ? loadout.GetSlotType(0) : -1,
-                weaponSlot1Type = loadout != null ? loadout.GetSlotType(1) : -1
+                weaponSlot1Type = loadout != null ? loadout.GetSlotType(1) : -1,
+                hasMelee = loadout != null,
+                meleeType = loadout != null ? loadout.GetSlotType(WeaponLoadout.MeleeSlot) : -1
             };
         }
 
@@ -178,6 +193,10 @@ public static class PlayerCarryOver
         {
             loadout.SetSlotType(0, snap.weaponSlot0Type);
             loadout.SetSlotType(1, snap.weaponSlot1Type);
+
+            // La melee (tecla 1) viaja con el jugador; las partidas guardadas no la traen y conservan la inicial.
+            if (snap.hasMelee)
+                loadout.SetSlotType(WeaponLoadout.MeleeSlot, snap.meleeType);
         }
     }
 

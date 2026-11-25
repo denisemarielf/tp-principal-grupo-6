@@ -23,12 +23,16 @@ public static class MatchSettings
 
     private const string ModeMessage = "MatchSettings.Mode";
     private const string DifficultyMessage = "MatchSettings.Difficulty";
+    private const string IntroMessage = "MatchSettings.Intro";
 
     private static readonly GameMode[] ModosExtraccion = { GameMode.Extraccion };
     private static readonly GameMode[] ModosEstacion = { GameMode.Extraccion, GameMode.Supervivencia, GameMode.Recoleccion };
 
     public static GameMode Mode { get; private set; }
     public static int Difficulty { get; private set; } = 1;
+
+    // Partida nueva que arranca en el primer nivel: la pantalla de carga muestra la intro de vinetas.
+    public static bool IntroPending { get; private set; }
 
     // Cada mapa solo ofrece los modos que le corresponden. El primero es el que viene elegido por defecto.
     public static GameMode[] ModesForMap(int mapIndex)
@@ -89,6 +93,38 @@ public static class MatchSettings
     {
         Mode = GameMode.None;
         Difficulty = 1;
+        IntroPending = false;
+    }
+
+    // La pantalla de carga lo consume una sola vez.
+    public static bool ConsumeIntro()
+    {
+        bool pending = IntroPending;
+        IntroPending = false;
+        return pending;
+    }
+
+    // Solo el host: avisa a todos (host incluido) si esta carga lleva la intro de vinetas.
+    public static void SetAndBroadcastIntro(bool pending)
+    {
+        IntroPending = pending;
+
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null || !manager.IsServer || manager.CustomMessagingManager == null)
+            return;
+
+        foreach (ulong clientId in manager.ConnectedClientsIds)
+        {
+            if (clientId == NetworkManager.ServerClientId)
+                continue;
+
+            using (FastBufferWriter writer =
+                new FastBufferWriter(1, Allocator.Temp))
+            {
+                writer.WriteValueSafe(pending);
+                manager.CustomMessagingManager.SendNamedMessage(IntroMessage, clientId, writer);
+            }
+        }
     }
 
     // Solo el host: fija el modo y se lo manda a los clientes conectados.
@@ -143,6 +179,13 @@ public static class MatchSettings
     {
         manager.CustomMessagingManager.RegisterNamedMessageHandler(ModeMessage, OnModeReceived);
         manager.CustomMessagingManager.RegisterNamedMessageHandler(DifficultyMessage, OnDifficultyReceived);
+        manager.CustomMessagingManager.RegisterNamedMessageHandler(IntroMessage, OnIntroReceived);
+    }
+
+    private static void OnIntroReceived(ulong senderClientId, FastBufferReader reader)
+    {
+        reader.ReadValueSafe(out bool value);
+        IntroPending = value;
     }
 
     private static void OnModeReceived(ulong senderClientId, FastBufferReader reader)

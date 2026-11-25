@@ -41,6 +41,10 @@ public class SafeZoneUI : MonoBehaviour
     private static Sprite fadeSprite;
 
     private GameObject continueButton;
+    private GameObject restartButton;
+    private GameObject lobbyButton;
+    // Escena en la que se completo el nivel: si al cargar la siguiente es la misma, fue un reinicio.
+    private static string completedSceneName;
     private TMP_Text waitingHostText;
     private bool continueUiBuilt;
     private bool panelStyled;
@@ -64,6 +68,11 @@ public class SafeZoneUI : MonoBehaviour
     {
         SafeZone.LevelCompleted += OnLevelCompleted;
         MatchStatsService.BoardReady += OnBoardReady;
+
+        // Si el host murió, el HUD estaba apagado y se perdió el evento.
+        // Al volver a prenderlo (modo espectador) hay que mostrar el panel igual.
+        if (SafeZone.Current != null && SafeZone.Current.IsCompleted)
+            OnLevelCompleted();
     }
 
     private void OnDisable()
@@ -80,6 +89,14 @@ public class SafeZoneUI : MonoBehaviour
 
     private void Start()
     {
+        // Reinicio del mismo nivel: no se arrastra lo capturado al completarlo.
+        if (completedSceneName != null)
+        {
+            if (completedSceneName == SceneManager.GetActiveScene().name)
+                PlayerCarryOver.Clear();
+            completedSceneName = null;
+        }
+
         // Por si el nivel ya se habia completado antes de que se creara este HUD.
         if (SafeZone.Current != null && SafeZone.Current.IsCompleted)
             OnLevelCompleted();
@@ -127,7 +144,7 @@ public class SafeZoneUI : MonoBehaviour
     private void UpdateRescueText()
     {
         SafeZone zone = SafeZone.Current;
-        bool show = zone != null && !zone.IsCompleted && zone.TotalNpcs > 0;
+        bool show = zone != null && !zone.IsCompleted && zone.TotalNpcs > 0 && !HideRescueInThisScene();
 
         // Si hay panel, se prende/apaga todo junto (texto + iconos).
         if (rescuePanel != null)
@@ -155,6 +172,8 @@ public class SafeZoneUI : MonoBehaviour
             rescuePanel.SetActive(false);
         else if (rescueText != null)
             rescueText.gameObject.SetActive(false);
+
+        completedSceneName = SceneManager.GetActiveScene().name;
 
         StyleLevelCompletePanel();
         HideGameplayHudKeepSummary();
@@ -247,13 +266,17 @@ public class SafeZoneUI : MonoBehaviour
     }
     private void SetupContinueUi()
     {
-        if (levelCompletePanel == null || !HasNextScene()) return;
+        if (levelCompletePanel == null) return;
 
         EnsureContinueUi();
 
         bool isServer = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
         if (continueButton != null)
             continueButton.SetActive(isServer);
+        if (restartButton != null)
+            restartButton.SetActive(isServer);
+        if (lobbyButton != null)
+            lobbyButton.SetActive(isServer);
         if (waitingHostText != null)
             waitingHostText.gameObject.SetActive(!isServer);
     }
@@ -268,9 +291,10 @@ public class SafeZoneUI : MonoBehaviour
 
         // Columna derecha: titulo + botones. El resumen queda a la izquierda (EnsureMatchBoard).
         const float rightColumnX = 380f;
+        const float firstButtonY = -20f;
+        const float buttonStep = 90f;
 
-        if (menuRect != null)
-            menuRect.anchoredPosition = new Vector2(rightColumnX, -110f);
+        bool isServer = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
 
         foreach (TMP_Text title in levelCompletePanel.GetComponentsInChildren<TMP_Text>(true))
         {
@@ -293,17 +317,51 @@ public class SafeZoneUI : MonoBehaviour
                 panelFont = menuLabel.font;
         }
 
-        bool toStation = IsOfficesScene();
-        continueButton = CreatePanelButton(
+        // Botones del host, apilados: [continuar] / reiniciar / lobby. Despues va "volver al menu".
+        int slot = 0;
+
+        if (HasNextScene())
+        {
+            bool toStation = IsOfficesScene();
+            continueButton = CreatePanelButton(
+                levelCompletePanel.transform,
+                toStation ? "ContinueToStationButton" : "ContinueToOfficesButton",
+                applyMenuStyle
+                    ? (toStation ? "CONTINUAR A LA ESTACION" : "CONTINUAR A OFICINAS")
+                    : (toStation ? "Continuar a la estacion" : "Continuar a Oficinas"),
+                new Vector2(rightColumnX, firstButtonY - buttonStep * slot),
+                toStation ? ContinueToStation : ContinueToOffices,
+                panelFont,
+                applyMenuStyle);
+            slot++;
+        }
+
+        restartButton = CreatePanelButton(
             levelCompletePanel.transform,
-            toStation ? "ContinueToStationButton" : "ContinueToOfficesButton",
-            applyMenuStyle
-                ? (toStation ? "CONTINUAR A LA ESTACION" : "CONTINUAR A OFICINAS")
-                : (toStation ? "Continuar a la estacion" : "Continuar a Oficinas"),
-            new Vector2(rightColumnX, -20f),
-            toStation ? ContinueToStation : ContinueToOffices,
+            "RestartMatchButton",
+            applyMenuStyle ? "REINICIAR PARTIDA" : "Reiniciar partida",
+            new Vector2(rightColumnX, firstButtonY - buttonStep * slot),
+            RestartMatch,
             panelFont,
-            applyMenuStyle);
+            applyMenuStyle,
+            false);
+        slot++;
+
+        lobbyButton = CreatePanelButton(
+            levelCompletePanel.transform,
+            "ReturnToLobbyButton",
+            applyMenuStyle ? "VOLVER AL LOBBY" : "Volver al lobby",
+            new Vector2(rightColumnX, firstButtonY - buttonStep * slot),
+            GoToLobby,
+            panelFont,
+            applyMenuStyle,
+            false);
+        slot++;
+
+        // Cliente: en el lugar de los botones del host va "esperando al host" y el menu queda justo debajo.
+        int menuSlot = isServer ? slot : 1;
+        if (menuRect != null)
+            menuRect.anchoredPosition = new Vector2(rightColumnX, firstButtonY - buttonStep * menuSlot);
 
         GameObject waitingGo = new GameObject("WaitingHostText", typeof(RectTransform));
         waitingGo.transform.SetParent(levelCompletePanel.transform, false);
@@ -311,7 +369,7 @@ public class SafeZoneUI : MonoBehaviour
         waitingRect.anchorMin = new Vector2(0.5f, 0.5f);
         waitingRect.anchorMax = new Vector2(0.5f, 0.5f);
         waitingRect.pivot = new Vector2(0.5f, 0.5f);
-        waitingRect.anchoredPosition = new Vector2(rightColumnX, -20f);
+        waitingRect.anchoredPosition = new Vector2(rightColumnX, firstButtonY);
         waitingRect.sizeDelta = new Vector2(420f, 40f);
 
         waitingHostText = waitingGo.AddComponent<TextMeshProUGUI>();
@@ -327,6 +385,38 @@ public class SafeZoneUI : MonoBehaviour
         waitingGo.SetActive(false);
         if (continueButton != null)
             continueButton.SetActive(false);
+        restartButton.SetActive(false);
+        lobbyButton.SetActive(false);
+    }
+
+    // Solo el host. Vuelve a cargar el nivel actual para todos (sala, modo y dificultad se mantienen).
+    private void RestartMatch()
+    {
+        SetHostButtonsInteractable(false);
+        if (!GameSessionManager.RestartMatch())
+            SetHostButtonsInteractable(true);
+    }
+
+    // Solo el host. Lleva a todos al lobby de la misma sala.
+    private void GoToLobby()
+    {
+        SetHostButtonsInteractable(false);
+        if (!GameSessionManager.ReturnToLobby())
+            SetHostButtonsInteractable(true);
+    }
+
+    private void SetHostButtonsInteractable(bool value)
+    {
+        SetInteractable(continueButton, value);
+        SetInteractable(restartButton, value);
+        SetInteractable(lobbyButton, value);
+    }
+
+    private static void SetInteractable(GameObject buttonObject, bool value)
+    {
+        if (buttonObject == null) return;
+        Button button = buttonObject.GetComponent<Button>();
+        if (button != null) button.interactable = value;
     }
 
     private void EnsureMatchBoard()
@@ -343,7 +433,7 @@ public class SafeZoneUI : MonoBehaviour
                 new Vector2(0f, 0.5f),
                 new Vector2(0f, 0.5f),
                 new Vector2(56f, 0f),
-                new Vector2(560f, 380f));
+                new Vector2(560f, 560f));
         }
         else
         {
@@ -354,7 +444,7 @@ public class SafeZoneUI : MonoBehaviour
                 boardRect.anchorMax = new Vector2(0f, 0.5f);
                 boardRect.pivot = new Vector2(0f, 0.5f);
                 boardRect.anchoredPosition = new Vector2(56f, 0f);
-                boardRect.sizeDelta = new Vector2(560f, 380f);
+                boardRect.sizeDelta = new Vector2(560f, 560f);
             }
         }
 
@@ -369,7 +459,8 @@ public class SafeZoneUI : MonoBehaviour
         Vector2 anchoredPosition,
         UnityEngine.Events.UnityAction onClick,
         TMP_FontAsset font,
-        bool menuStyle)
+        bool menuStyle,
+        bool primary = true)
     {
         GameObject buttonGo = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         buttonGo.transform.SetParent(parent, false);
@@ -407,7 +498,7 @@ public class SafeZoneUI : MonoBehaviour
 
         // El botón de "continuar" es la acción principal del panel.
         if (menuStyle)
-            StyleButton(button, tmp, true);
+            StyleButton(button, tmp, primary);
 
         return buttonGo;
     }
@@ -426,6 +517,12 @@ public class SafeZoneUI : MonoBehaviour
         return SceneManager.GetActiveScene().name == PlayerCarryOver.EasterEggSceneName;
     }
 
+    // Mapas donde no se muestra el panel de civiles y puntos.
+    private static bool HideRescueInThisScene()
+    {
+        string scene = SceneManager.GetActiveScene().name;
+        return scene == "SupervivenciaScene" || scene == PlayerCarryOver.EasterEggSceneName;
+    }
     private static bool HasNextScene()
     {
         return IsSuburbScene() || IsOfficesScene();
@@ -459,7 +556,8 @@ public class SafeZoneUI : MonoBehaviour
             PlayerCarryOver.CaptureLocalOwner(localPlayer.gameObject);
 
         PlayerCarryOver.CaptureServerState();
-        GameSessionManager.StartGame(sceneName);
+        // Al llegar a la Estacion se muestra su intro de vinetas en la pantalla de carga.
+        GameSessionManager.StartGame(sceneName, GameMode.None, sceneName == PlayerCarryOver.StationSceneName);
     }
 
     // Para el boton "Volver al menu" del panel.

@@ -271,12 +271,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::EnemyHealth
   ShowTopMostFoldoutHeaderGroup: 1
   variant: 1
-  maxHealth: 1500
+  maxHealth: 1750
   deathClip: {fileID: -203655887218126122, guid: 8a4a5187519fcfe4cbb1cba809f43d2c, type: 3}
   extraDeathClips: []
   deathSounds: []
   deathVolume: 1
   healthOverride: 1500
+  lootDropChance: 0.25
+  lootTable: []
+  lootHeightOffset: 0
+  lootScatterRadius: 0.4
+  lootGroundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  lootLifetime: 30
 --- !u!114 &8509709177148962458
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -344,12 +352,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Game::MiniBossBrain
   ShowTopMostFoldoutHeaderGroup: 1
   walkSpeed: 7.5
-  runSpeed: 16
+  runSpeed: 18
   targetSearchInterval: 0.3
   repathInterval: 0.2
   runCooldown: {x: 6, y: 12}
   runDuration: {x: 3, y: 5}
-  minDistanceToRun: 8
+  minDistanceToRun: 12
   meleeRange: 4
   meleeHitRange: 5
   meleeHalfAngle: 180
@@ -366,8 +374,8 @@ MonoBehaviour:
   jumpDamage: 60
   slamRadius: 5
   jumpLandOffset: 1.5
-  launchHorizontal: 20
-  launchVertical: 17
+  launchHorizontal: 10
+  launchVertical: 10
   tauntMinRange: 10
   tauntMaxRange: 30
   tauntChance: 0.25
@@ -386,7 +394,10 @@ MonoBehaviour:
   acidDuration: 5
   acidSpeedMultiplier: 0.5
   npcAcidDamage: 25
-  grabChance: 0.053
+  acidBlockMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  grabChance: 0.248
   grabCooldown: {x: 20, y: 35}
   grabReach: 4.5
   grabHalfAngle: 60
@@ -395,19 +406,23 @@ MonoBehaviour:
   grabReleaseNormalized: 0.9
   grabTicks: 4
   grabTotalDamage: 90
-  throwChance: 0.094
+  throwChance: 0.052
   throwCooldown: {x: 10, y: 16}
   throwReach: 4.5
   throwHalfAngle: 60
   throwLatchNormalized: 0.3
   throwReleaseNormalized: 0.6
   throwDamage: 35
-  throwHorizontal: 16
-  throwVertical: 8
+  throwHorizontal: 8
+  throwVertical: 4
   throwDropBehind: 1.8
   throwDropHeight: 2.2
   holdDistance: 1.4
   holdHeight: 1
+  attackBlockMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  attackRayHeight: 1.5
 --- !u!114 &2764652632390027804
 MonoBehaviour:
   m_ObjectHideFlags: 0

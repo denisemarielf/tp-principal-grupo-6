@@ -35,6 +35,9 @@ public class EnemySpawnerWaves : NetworkBehaviour
 
     private IEnumerator SpawnWavesLoop()
     {
+        while (LoadingScreen.EstaVisible)
+            yield return null;
+
         do
         {
             yield return StartCoroutine(SpawnEnemies());
@@ -49,6 +52,9 @@ public class EnemySpawnerWaves : NetworkBehaviour
     {
         for (int i = 0; i < enemiesToSpawn; i++)
         {
+            while (LoadingScreen.EstaVisible)
+                yield return null;
+
             SpawnOne();
             yield return new WaitForSeconds(timeSpawns);
         }

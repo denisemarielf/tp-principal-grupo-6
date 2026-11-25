@@ -77,8 +77,20 @@ public class MiniBossAnimation : NetworkBehaviour
     {
         health = GetComponent<EnemyHealth>();
         voice = GetComponent<EnemyVoice>();
+
+        // Pooling: estado local del uso anterior.
+        lastState = -1;
+        nextStepTime = 0f;
+
+        // Pooling: la NetworkVariable conserva el ultimo estado de la vida anterior (Walk, Attack...).
+        // Las variantes primero y state al final, para que lleguen juntas y en ese orden.
         if (IsServer)
+        {
+            attackVariant.Value = 0;
+            jumpVariant.Value = 0;
             idleVariant.Value = Random.Range(0, Mathf.Max(1, idleVariants));
+            state.Value = Idle;
+        }
     }
 
     // ---------- Server ----------

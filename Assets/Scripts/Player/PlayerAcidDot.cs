@@ -50,7 +50,7 @@ public class PlayerAcidDot : MonoBehaviour
         tickTimer -= Time.deltaTime;
         while (tickTimer <= 0f && ticksLeft > 0)
         {
-            health.TakeDamage(damagePerTick);
+            health.TakeDamage(damagePerTick, DamageKind.Acid);
             ticksLeft--;
             tickTimer += TickInterval;
         }

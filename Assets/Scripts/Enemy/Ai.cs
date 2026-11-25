@@ -60,6 +60,16 @@ public class Ai : NetworkBehaviour
     private bool isWanderMoving;
     private float wanderTimer;
 
+    private int defaultAreaMask;
+
+    private void Awake()
+    {
+        if (navMeshAgent == null)
+            navMeshAgent = GetComponent<NavMeshAgent>();
+        if (navMeshAgent != null)
+            defaultAreaMask = navMeshAgent.areaMask;
+    }
+
     public Transform CurrentPlayer => (aggroTimer > 0f && aggroTarget != null) ? aggroTarget : player;
 
     // US 7.2: normal 4, fragil 7 y duro 3. El jugador camina a 7.
@@ -102,7 +112,12 @@ public class Ai : NetworkBehaviour
         if (baseSpeed <= 0f && navMeshAgent != null)
             baseSpeed = navMeshAgent.speed;
 
+        // Pooling: Die() o OnNetworkDespawn lo dejaron apagado.
+        if (navMeshAgent != null)
+            navMeshAgent.enabled = true;
+
         homePosition = transform.position;
+        lastStuckSample = transform.position;
         wanderTimer = Random.Range(0f, wanderPause.y);
 
         // Desincroniza las busquedas para que una horda no las haga todas en el mismo frame.
@@ -111,11 +126,40 @@ public class Ai : NetworkBehaviour
 
         RefreshNearestPlayer();
         PlaceOnNavMesh();
+
+        if (navMeshAgent != null && navMeshAgent.isOnNavMesh)
+        {
+            navMeshAgent.isStopped = false;
+            navMeshAgent.ResetPath();
+        }
+    }
+
+    // Pooling: deja al zombie limpio para el proximo uso. Estos flags se resetean ACA y no en el spawn
+    // porque StartShelterSiege() y el areaMask de SpawnWaveEnemy se aplican antes de Spawn().
+    public override void OnNetworkDespawn()
+    {
+        if (navMeshAgent != null)
+        {
+            navMeshAgent.enabled = false;
+            navMeshAgent.areaMask = defaultAreaMask;
+        }
+
+        player = null;
+        aggroTarget = null;
+        aggroTimer = 0f;
+        alwaysChase = false;
+        shelterSiege = false;
+        isFollowingPlayer = false;
+        isWanderMoving = false;
+        stuckTimer = 0f;
+        stuckSampleTimer = 0f;
+        lastPlayerPosition = Vector3.one * 1000000f;
     }
 
     private void Update()
     {
         if (!IsServer) return;
+        if (LoadingScreen.EstaVisible) return;
         if (navMeshAgent == null || !navMeshAgent.enabled || !navMeshAgent.isOnNavMesh) return;
 
         if (aggroTimer > 0f)

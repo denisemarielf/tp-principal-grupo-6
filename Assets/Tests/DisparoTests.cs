@@ -655,6 +655,26 @@ public class DisparoTests
     {
         LogAssert.ignoreFailingMessages = true;
 
+        // 1. Apagar el Host.
+        if (networkManager != null &&
+            networkManager.IsListening &&
+            !networkManager.ShutdownInProgress)
+        {
+            networkManager.Shutdown();
+
+            yield return new WaitUntil(
+                () =>
+                    !networkManager.IsListening &&
+                    !networkManager.ShutdownInProgress
+            );
+        }
+
+        // 2. Esperar un par de frames para que Unity
+        // termine de procesar la destrucción de objetos.
+        yield return null;
+        yield return null;
+
+        // 3. Volver al menú principal.
         if (SceneManager.GetActiveScene().name == "SampleScene")
         {
             SceneManager.LoadScene("MainMenu");
@@ -664,18 +684,8 @@ public class DisparoTests
             );
         }
 
-        if (networkManager != null &&
-            networkManager.IsListening &&
-            !networkManager.ShutdownInProgress)
-        {
-            networkManager.Shutdown();
-
-            yield return new WaitUntil(
-                () =>
-                    !networkManager.ShutdownInProgress &&
-                    !networkManager.IsListening
-            );
-        }
+        // 4. Esperar la inicialización de la escena.
+        yield return null;
 
         LogAssert.ignoreFailingMessages = false;
     }

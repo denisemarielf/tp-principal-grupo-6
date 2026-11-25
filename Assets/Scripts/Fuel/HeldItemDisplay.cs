@@ -61,10 +61,23 @@ public class HeldItemDisplay : NetworkBehaviour
     {
         if (!IsSpawned) return;
 
+        // Muerto: el bidón no debe colgarse de la cámara de espectador.
+        if (IsOwner && OwnerIsDead())
+        {
+            Clear();
+            return;
+        }
+
         if (IsOwner)
             EvaluateOwner();
 
         RefreshVisual();
+    }
+
+    private bool OwnerIsDead()
+    {
+        PlayerHealth health = GetComponent<PlayerHealth>();
+        return health != null && health.IsDead;
     }
 
     // Al elegir un slot con un ítem que se sostiene, el arma se guarda.

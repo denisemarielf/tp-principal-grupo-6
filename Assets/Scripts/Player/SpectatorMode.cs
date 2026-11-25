@@ -18,7 +18,13 @@ public class SpectatorMode : MonoBehaviour
     private GameObject canvas;
     private TextMeshProUGUI label;
     private Camera[] weaponCameras;
+    private const float MouseSensitivity = 0.12f;
+    private const float MinPitch = -20f;
+    private const float MaxPitch = 70f;
 
+    private float yaw;
+    private float pitch = 15f;
+    private PlayerHealth lastTarget;
     private void Awake()
     {
         health = GetComponentInParent<PlayerHealth>();
@@ -42,25 +48,55 @@ public class SpectatorMode : MonoBehaviour
         }
 
         RefreshTargets();
+
+        // Esto tiene que ir DESPUÉS de RefreshTargets y ANTES de leer living[index]
         if (living.Count == 0)
         {
+            lastTarget = null;
             ShowWaitingOnly();
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             return;
         }
 
-        if (!PauseMenuUI.IsOpen && Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
+        if (!PauseMenuUI.InputBloqueado && Keyboard.current != null && Keyboard.current.qKey.wasPressedThisFrame)
             index = (index + 1) % living.Count;
 
-        if (index >= living.Count)
-            index = 0;
+        index = Mathf.Clamp(index, 0, living.Count - 1);
 
-        Follow(living[index]);
+        PlayerHealth target = living[index];
+        if (target == null)
+            return;
+
+        // Al cambiar de objetivo, la cámara arranca detrás del nuevo jugador
+        if (target != lastTarget)
+        {
+            lastTarget = target;
+            yaw = target.transform.eulerAngles.y;
+            pitch = 15f;
+        }
+
+        if (!PauseMenuUI.InputBloqueado)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            ReadMouseLook();
+        }
+
+        Follow(target);
         following = true;
-        ShowLabel(living[index]);
+        ShowLabel(target);
     }
 
+    private void ReadMouseLook()
+    {
+        if (Mouse.current == null)
+            return;
+
+        Vector2 delta = Mouse.current.delta.ReadValue();
+        yaw += delta.x * MouseSensitivity;
+        pitch = Mathf.Clamp(pitch - delta.y * MouseSensitivity, MinPitch, MaxPitch);
+    }
     private void OnDisable()
     {
         HideLabel();
@@ -109,13 +145,9 @@ public class SpectatorMode : MonoBehaviour
     {
         Transform body = target.transform;
         Vector3 focus = body.position + Vector3.up * EyeHeight;
-        Vector3 forward = body.forward;
-        forward.y = 0f;
-        if (forward.sqrMagnitude < 0.001f)
-            forward = Vector3.forward;
-        forward.Normalize();
 
-        Vector3 desired = focus - forward * FollowDistance + body.right * Shoulder + Vector3.up * 0.35f;
+        Quaternion orbit = Quaternion.Euler(pitch, yaw, 0f);
+        Vector3 desired = focus + orbit * new Vector3(Shoulder, 0f, -FollowDistance);
         desired = PullInFrontOfWalls(focus, desired, body);
         transform.position = desired;
 
@@ -123,7 +155,6 @@ public class SpectatorMode : MonoBehaviour
         if (look.sqrMagnitude > 0.001f)
             transform.rotation = Quaternion.LookRotation(look);
     }
-
     private Vector3 PullInFrontOfWalls(Vector3 origin, Vector3 desired, Transform targetBody)
     {
         Vector3 delta = desired - origin;
@@ -206,6 +237,7 @@ public class SpectatorMode : MonoBehaviour
     private void HideLabel()
     {
         following = false;
+        lastTarget = null;
         if (canvas != null)
             canvas.SetActive(false);
     }

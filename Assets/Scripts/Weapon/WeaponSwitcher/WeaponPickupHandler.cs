@@ -20,14 +20,20 @@ public class WeaponPickupHandler : MonoBehaviour
        
         if (loadout.HasWeaponType(type)) return;
 
-
-        // Ya tenemos esta arma: el pickup permanece.
-        if (loadout.HasWeaponType(type)) return;
-
         if (catalog.GetWeaponObjectByType(type) == null) return;
 
-        int freeSlot = loadout.FindFreeSlot();
+        if (loadout.IsMeleeType(weaponTypeIndex))
+        {
+            int held = loadout.GetSlotType(WeaponLoadout.MeleeSlot);
+            loadout.SetSlotType(WeaponLoadout.MeleeSlot, weaponTypeIndex);
+            if (held >= 0)
+                SpawnDroppedWeapon((WeaponType)held, transform.position);
 
+            ConsumePickup(pickupNetworkObjectId);
+            return;
+        }
+
+        int freeSlot = loadout.FindFreeSlot();
 
         if (freeSlot >= 0)
         {
@@ -35,15 +41,17 @@ public class WeaponPickupHandler : MonoBehaviour
         }
         else
         {
-            // Ambos ocupados: reemplazamos el arma en mano y la tiramos al suelo.
-            int slotToReplace = currentWeaponIndex >= 0 ? currentWeaponIndex : 0;
+            // Las dos armas de fuego están ocupadas: se reemplaza la que está en la mano.
+            // La melee de la tecla 1 no se toca.
+            int slotToReplace = currentWeaponIndex == 0 || currentWeaponIndex == 1
+                ? currentWeaponIndex
+                : 0;
             int droppedType = loadout.GetSlotType(slotToReplace);
 
             loadout.SetSlotType(slotToReplace, weaponTypeIndex);
 
-            SpawnDroppedWeapon(
-                (WeaponType)droppedType,
-                transform.position + transform.forward * 1f + Vector3.up * 0.3f);
+            if (droppedType >= 0)
+                SpawnDroppedWeapon((WeaponType)droppedType, transform.position);
         }
 
         ConsumePickup(pickupNetworkObjectId);
